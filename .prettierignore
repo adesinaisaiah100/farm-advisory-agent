@@ -1,0 +1,5 @@
+node_modules
+dist
+*.tsbuildinfo
+.pnpm-store
+**/node_modules/**

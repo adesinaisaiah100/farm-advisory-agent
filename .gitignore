@@ -1,0 +1,33 @@
+# --- Node / pnpm ---
+node_modules/
+*.tgz
+.pnpm-store/
+
+# --- Build output ---
+dist/
+build/
+*.tsbuildinfo
+.wrangler/
+.dev.vars
+
+# --- Coverage ---
+coverage/
+
+# --- Env & secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Tests ---
+tests/*.tmp/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# --- Neon branch data / local scratch ---
+*.sqlite
+*.db

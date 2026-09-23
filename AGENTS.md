@@ -1,0 +1,113 @@
+# Poultry Agent — Engineering Rules & Workflow
+
+This file is the contract for how we write code in this repo. Everything here is binding for hand-written code and AI-generated code alike.
+
+---
+
+## 1. The Product In One Line
+
+A conversational AI poultry advisory agent on WhatsApp for Nigerian semi-commercial farmers (200–2,000 birds):
+**four doors** — RESOLVE (guidance) · SUPPLY (referral slip) · ESCALATE (safety rule; real vet is post-MVP) · REPORT (anonymised surveillance signal).
+
+Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). When code and docs disagree, **fix the docs too.**
+
+## 2. The Locked Stack (no debating, no drift)
+
+| Layer | Choice |
+|---|---|
+| Language | TypeScript (strict) |
+| Workspace | pnpm monorepo |
+| HTTP API | Hono → Cloudflare Workers |
+| UI | React + Vite → Cloudflare Pages |
+| Agent SDK | Vercel AI SDK (`useChat`, `streamText`, `generateText`, `tool`) |
+| Validation | Zod (shared schemas in `@poultry/schemas`) |
+| DB/vector | Postgres + pgvector on Neon, Drizzle ORM |
+| Object storage | Cloudflare R2 |
+| WhatsApp | Baileys bridge on ONE small Node host |
+| Embeddings | Google `text-embedding-004` @ 768 dims (free) |
+| Pidgin transcription | OpenRouter free multimodal + dynamic Pidgin prompt |
+| LLM | OpenAI GPT-4o-mini (chat/tools/vision) |
+| Obs | Langfuse · Sentry · pino · `/health` `/ready` |
+
+## 3. Repository Rules
+
+- **Never commit secrets.** Env comes from `.env` / `.dev.vars` (gitignored); validated at boot by a Zod env-schema. `.env.example` is the only committed env file.
+- **No comments unless they explain WHY.** Name things so the code explains itself. Do not echo the code in a comment.
+- **Strict mode stays on.** `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `exactOptionalPropertyTypes` off only with a written reason.
+- **No `any`.** Write the type. `unknown` + zod parse for untrusted input.
+- **Interfaces before implementations.** Every external service (LLM, embed, transcript, R2, WhatsApp, DB) is behind an interface so tests supply a fake. Code in one package never imports another package's implementation details — only its public `src/index.ts`.
+- **Dependency direction is one-way:** `schemas ← core ← {rag, stores, media, bridge} ← api ← web`. `core` depends only on `schemas`. Nothing may import `apps/*`. No package may import a sibling's internals.
+- **Pidgin is data, not noise.** Farmer text is preserved verbatim; never "correct" it to formal English. Reply in Pidgin text.
+- **Phone numbers:** store E.164 (`+234...`); use `normalizePhone` from `@poultry/schemas`. Never treat `080...` and `+23480...` as different people.
+- **Formatting is enforced, not discussed:** Prettier + ESLint run in CI. `pnpm check` must pass before any merge.
+
+## 4. The /health Rule
+
+Every deployable exposes `/health` (liveness) and `/ready` (DB, R2, embed ping). If a new phase adds an external dependency, `/ready` must check it. A service that can't serve `/health` 200 is not done.
+
+## 5. Commit Workflow
+
+- One branch per phase (e.g. `phase/4-rag-ingestion`). Never commit unrelated files.
+- Conventional commits: `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`.
+- Each commit must leave `pnpm check` green (or the subset: typecheck + its own unit tests).
+- No merging into `main` until the phase's own tests + the full repo `pnpm check` pass.
+
+## 6. Definition of Done (per phase)
+
+1. Phase's unit tests pass (Vitest).
+2. `pnpm typecheck` green across the workspace.
+3. `pnpm lint` clean (exceptions only where the ask includes logging).
+4. The phase is **independently testable** — its tests don't require another phase to be built.
+5. `/health` + `/ready` reflect any new dependency.
+6. Docs stay truthful: `STACK.md`, `SYSTEM_DESIGN.md`, `PHASES.md` updated if the phase changed reality.
+7. Report: what was built, tests run, exit criteria matched, what's next.
+
+---
+
+## 7. How We Write Tests (binding)
+
+### The rule that makes this repo work
+**Every phase is independently testable.** That means every external dependency is an *interface with a fake* — a test never needs `main` built, a live WhatsApp socket, a real LLM, or a real database to run a unit test. Integration tests are separate scripts tagged to run only when the real thing is available.
+
+### Test file conventions
+- A test file `foo.test.ts` sits beside `foo.ts` in `src/`.
+- Use `describe`/`it`/`expect` from `vitest` (globals are off).
+- One `describe` per unit, one `it` per behaviour. Name behaviours, not code: `it('accepts a local-format number')`, not `it('checks regex')`.
+- Real data stays out of tests. Sample Pidgin transcripts live in `tests/fixtures/pidgin/`.
+
+### Coverage targets
+Pure logic (schemas, core, rag split, store lookup) **≥ 80% lines**. Thin adapters/glue ≥ 60%. Never ship a phase with 0 tests on its pure core.
+
+### Unit test rules
+1. **No network, no sockets, no real services.** Any HTTP/DB/LLM/socket use means you need a fake interface.
+2. Assert **behaviour**, not implementation internals (object shapes, status codes, states — not "function was called" unless the call itself is the contract).
+3. Deterministic: no `Math.random`, no wall-clock except via an injected clock. Fixed seeds.
+4. Golden tests for anything that formats text (referral slips, transcripts, citations): fixture in, exact string out.
+5. **Error paths are tests too.** Zod rejection, missing field, low-confidence transcript, empty search result — test the failure, not just the happy path.
+
+### Integration tests (separate from unit)
+- Placed under `src/*.integ.ts` or `tests/integ/`, tagged with `describe.sequential` and gated by an env var (e.g. `RUN_INTEG=1`).
+- They do NOT run in `pnpm check` / CI default. They run in `pnpm test:integ`.
+- Purpose: prove a real wiring (Neon + pgvector, R2, whisper) works end-to-end once, before a phase is marked done.
+
+### Test-quality bar
+- No test asserts `true`. No test is a copy of the implementation.
+- If your test survived because a fake is too permissive (a fake that always returns results), tighten the fake — a too-clean fake catches nothing.
+
+---
+
+## 8. Working With An Agent
+
+When an AI agent works in this repo, it must:
+1. Read `AGENTS.md` first, then `PHASES.md` to know which phase is active.
+2. Only build the current phase's contracted scope; unrelated changes are rejected.
+3. Run `pnpm check` (or the phase-local subset) before claiming done.
+4. Write the phase's tests as part of the phase — tests are not optional extras.
+5. Update `PHASES.md` status (✅ / 🔒 / ⏳) when a phase ships.
+
+## 9. Current Status
+
+```
+PHASE 0  Foundation / monorepo harness      ✅ shipped (this repo bootstraps green)
+PHASE 1-10  see PHASES.md                   ⏳ not started
+```

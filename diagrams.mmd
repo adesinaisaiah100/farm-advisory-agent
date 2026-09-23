@@ -1,0 +1,164 @@
+flowchart TB
+    subgraph CH["FARMER CHANNELS"]
+        WAUSER["Farmer on WhatsApp<br/>text / voice note / photo"]
+        WEBUSER["Farmer on Web chat"]
+    end
+
+    subgraph AD["WHATSAPP ADAPTER - Baileys"]
+        SOCK["Baileys socket listener<br/>events, not webhooks"]
+        NORM["normalize() to InboundMessage<br/>phone · msg_id · type · payload"]
+        DEDUP{"dedup?<br/>msg_id · TTL 24h"}
+        DROP["drop duplicate"]
+        FLOOK["farmer by E.164 phone<br/>getOrCreateFarmer"]
+        SESS["open / resume session<br/>(idle less than 24h)"]
+    end
+
+    subgraph MED["MEDIA PIPELINE"]
+        R2UP["download to R2<br/>media/phone/date/uuid"]
+        MEDROW["media reference row"]
+        ATRANS["transcribe audio<br/>to text + confidence"]
+        AVIS["vision image<br/>to observations + confidence"]
+        MCONF{"confidence < 0.6<br/>or nothing found?"}
+        RETRYASK["ask farmer to<br/>type it / new photo"]
+    end
+
+    subgraph OR["ORCHESTRATOR"]
+        ORCH["Orchestrator<br/>session_state · validateCase()<br/>missing() to filled,missing"]
+        MERGE["merge delta · validate · persist"]
+    end
+
+    subgraph AG["LLM AGENT"]
+        LLM["LLM Agent (Vercel AI SDK)<br/>streamText web · generateText WA"]
+        TOOLS["tools: update_case · search_kb<br/>store_lookup · analyze_image"]
+    end
+
+    subgraph RAGI["RAG - INGESTION"]
+        PDF["PDF / uploaded KB doc"]
+        PAG["Paginate + stamp PAGE markers"]
+        MAP["analyze_document<br/>1 LLM call per doc<br/>regions: pages · headings<br/>diseases[] section_types[] species[]"]
+        CUT["deterministic cut by page/heading"]
+        MCHUNK["micro-chunk 800-1000 tokens<br/>10 percent overlap"]
+        EMBED["embedding API"]
+    end
+
+    subgraph RAGR["RAG - RETRIEVAL"]
+        QEMB["embed query"]
+        STAGEA{"disease known?"}
+        PUREV["Stage A: pure vector<br/>ORDER BY vector distance<br/>LIMIT 8 · cap 2/group"]
+        ASKQ["LLM asks clarifying question"]
+        FILTV["Stage B: array filters + vector<br/>species ∩ · disease @><br/>section @>"]
+        STARVE{"fewer than 2 chunks?"}
+        RIPPLE["top-k + region titles<br/>+ sibling chunks"]
+        CIT["LLM answers with<br/>source citations"]
+        SMOKE["post-ingest smoke test<br/>10 canned queries"]
+    end
+
+    subgraph ST["STORAGE"]
+        PG[("Postgres + pgvector<br/>documents · chunk_groups · chunks · farmers<br/>sessions · messages · cases · reports<br/>stores · media · flags · outbox")]
+        R2[("R2: media evidence<br/>+ uploaded documents")]
+    end
+
+    subgraph OD["THE FOUR DOORS"]
+        RES["1 · RESOLVE<br/>guidance inline"]
+        SUP["2 · SUPPLY<br/>referral slip to agro-vet"]
+        ESC["3 · ESCALATE<br/>vet rule · post-MVP dispatch"]
+        RPT["4 · REPORT<br/>outbreak signal"]
+        ANON["anonymise<br/>LGA · species · suspected"]
+    end
+
+    subgraph SV["SURVEILLANCE / B2G"]
+        FEED["Ministry / LGA webhook<br/>outbreak early-warning"]
+    end
+
+    subgraph DB["DASHBOARD + ADMIN"]
+        AUTH["auth gate"]
+        ADM["view cases · review · retry<br/>feedback · export CSV · analytics"]
+    end
+
+    subgraph OB["OBSERVABILITY"]
+        HEA["health + ready<br/>db · r2 · embed"]
+        SN["Sentry - crashes"]
+        LF["Langfuse - LLM traces<br/>tokens · cost · replay"]
+        LO["pino logs - session_id + phone"]
+    end
+
+    subgraph OQ["OUTBOX QUEUE"]
+        QB["queue · status · attempt<br/>backoff 5s to 5min · 5 attempts"]
+    end
+
+    WAUSER --> SOCK
+    WEBUSER -- "text" --> ORCH
+    WEBUSER -- "media upload" --> R2UP
+    SOCK --> NORM --> DEDUP
+    DEDUP -- "duplicate" --> DROP
+    DEDUP -- "new" --> FLOOK --> SESS
+    SESS -- "text" --> ORCH
+    SESS -- "media" --> R2UP
+    R2UP --> MEDROW
+    MEDROW --> ATRANS
+    MEDROW --> AVIS
+    ATRANS --> MCONF
+    AVIS --> MCONF
+    MCONF -- "low" --> RETRYASK
+    MCONF -- "ok" --> ORCH
+    RETRYASK --> QB
+
+    ORCH --> LLM
+    LLM <--> TOOLS
+    ORCH --> MERGE
+    LLM -- "delta" --> MERGE
+    MERGE --> ORCH
+
+    TOOLS -- "search_kb" --> QEMB --> STAGEA
+    STAGEA -- "no, cold" --> PUREV
+    PUREV --> ASKQ --> QB
+    STAGEA -- "yes, warm" --> FILTV --> STARVE
+    STARVE -- "yes" --> PUREV
+    STARVE -- "no" --> RIPPLE --> CIT --> LLM
+
+    PDF --> PAG --> MAP --> CUT --> MCHUNK --> EMBED --> PG
+    PDF --> R2
+    MEDROW --> PG
+
+    TOOLS -- "store_lookup" --> SUP
+    LLM --> RES
+    LLM --> SUP
+    LLM --> ESC
+    RES --> QB
+    SUP --> QB
+    ESC --> QB
+    RES --> RPT
+    SUP --> RPT
+    ESC --> RPT
+    ORCH -- "incomplete case signal" --> RPT
+    PG -- "validated case" --> RPT
+    RPT --> ANON --> FEED
+
+    LLM -- "generateText (full msg)" --> QB
+    LLM -- "streamText" --> WEBUSER
+    QB --> WAUSER
+
+    ORCH -- "case complete" --> PG
+    QB --> PG
+
+    AUTH --> ADM
+    ADM --> PDF
+    ADM -- "retry / feedback" --> ORCH
+    ADM --> PG
+    SMOKE --> FILTV
+
+    HEA --> PG
+    HEA --> R2
+    HEA --> EMBED
+    LLM --> LF
+    TOOLS --> LF
+    ORCH --> LF
+    CIT --> LF
+    ORCH --> SN
+    SOCK --> SN
+    NORM --> SN
+    MED --> SN
+    ORCH --> LO
+    NORM --> LO
+    MED --> LO
+    QB --> LO

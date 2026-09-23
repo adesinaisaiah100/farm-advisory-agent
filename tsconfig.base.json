@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "exactOptionalPropertyTypes": false,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "types": [],
+    "paths": {
+      "@poultry/schemas": ["packages/schemas/src/index.ts"],
+      "@poultry/core": ["packages/core/src/index.ts"],
+      "@poultry/rag": ["packages/rag/src/index.ts"],
+      "@poultry/stores": ["packages/stores/src/index.ts"],
+      "@poultry/bridge": ["packages/bridge/src/index.ts"],
+      "@poultry/media": ["packages/media/src/index.ts"],
+      "@poultry/observability": ["packages/observability/src/index.ts"]
+    },
+    "baseUrl": "."
+  }
+}
