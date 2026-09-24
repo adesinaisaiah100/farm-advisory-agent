@@ -16,24 +16,24 @@ Exit: repo boots green from a clean clone (`pnpm install && pnpm check`). **Done
 
 ---
 
-## Phase 1 — Contracts (`@poultry/schemas`) 🔨 next
+## Phase 1 — Contracts (`@poultry/schemas`) ✅ (SHIPPED)
 
 **Boxes (all pure Zod, zero I/O):**
-- `PhoneSchema` + `normalizePhone` (E.164, `080…` → `+234…`) — seeded
-- `FarmerSchema` (sizes 200–2,000, species)
+- `PhoneSchema` + `normalizePhone` (E.164, `080…` → `+234…`)
+- `FarmerSchema` (sizes 200–2,000, species) + `isMiddleTier`
 - `InboundMessageSchema` (text or media, from/to, timestamps)
-- `SessionSchema` state machine (open/completed/void), `session_state`
-- `CaseSchema` (the extracted structured case: symptoms, duration, mortality, species, size…)
-- `MediaSchema` (kind, mime, r2_key, transcript, confidence)
-- `ReportSchema` (anonymised surveillance payload), `StoreSchema`, `OutboxSchema`
+- `SessionSchema` state machine (open/completed/void) + `canTransition`/`transitionSession`
+- `CaseSchema` (symptoms, duration, mortality, species, size, disease hits) + `hasCriticalSymptom`
+- `MediaSchema` (kind, mime, r2_key, transcript, confidence) + `isReliable`
+- `ReportSchema` (anonymisable) + `anonymise`, `StoreSchema`, `OutboxSchema` (+ backoff caps, `canRetry`)
 
-**Testable alone:** every schema has valid/invalid fixtures; `normalizePhone` table test; state-machine transition tests. No network, no DB.
+**Testable alone:** every schema has valid/invalid fixtures; normalizePhone table test; state-machine transitions; reliability threshold; anonymise strips phone. No network, no DB.
 
-Exit: all schemas parse, all rejections have precise Zod errors, phone normalization table passes.
+Exit: all schemas parse, all rejections have precise Zod errors, phone normalization table passes. **Done.**
 
 ---
 
-## Phase 2 — Orchestrator core (`@poultry/core`) 
+## Phase 2 — Orchestrator core (`@poultry/core`) 🔨 next 
 
 **Boxes:**
 - `diff/missing()` — deterministically compute which case fields are still missing from session state
@@ -197,8 +197,8 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Monorepo foundation + all canaries | ✅ |
-| 1 | Contract schemas (pure) | 🔨 next |
-| 2 | Orchestrator core (pure) | ⏳ |
+| 1 | Contract schemas (pure) | ✅ |
+| 2 | Orchestrator core (pure) | 🔨 next |
 | 3 | Store lookup | ⏳ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |

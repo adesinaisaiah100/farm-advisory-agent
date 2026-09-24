@@ -39,7 +39,7 @@ Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). Whe
 - **Dependency direction is one-way:** `schemas ← core ← {rag, stores, media, bridge} ← api ← web`. `core` depends only on `schemas`. Nothing may import `apps/*`. No package may import a sibling's internals.
 - **Pidgin is data, not noise.** Farmer text is preserved verbatim; never "correct" it to formal English. Reply in Pidgin text.
 - **Phone numbers:** store E.164 (`+234...`); use `normalizePhone` from `@poultry/schemas`. Never treat `080...` and `+23480...` as different people.
-- **Formatting is enforced, not discussed:** Prettier + ESLint run in CI. `pnpm check` must pass before any merge.
+- **Formatting is enforced, not discussed:** Prettier + ESLint run locally. `pnpm check` must pass before a phase is called done.
 
 ## 4. The /health Rule
 
@@ -50,7 +50,7 @@ Every deployable exposes `/health` (liveness) and `/ready` (DB, R2, embed ping).
 - One branch per phase (e.g. `phase/4-rag-ingestion`). Never commit unrelated files.
 - Conventional commits: `feat:`, `fix:`, `test:`, `refactor:`, `docs:`, `chore:`.
 - Each commit must leave `pnpm check` green (or the subset: typecheck + its own unit tests).
-- No merging into `main` until the phase's own tests + the full repo `pnpm check` pass.
+- No phase is marked done until its tests + the full repo `pnpm check` pass locally.
 
 ## 6. Definition of Done (per phase)
 
@@ -87,7 +87,7 @@ Pure logic (schemas, core, rag split, store lookup) **≥ 80% lines**. Thin adap
 
 ### Integration tests (separate from unit)
 - Placed under `src/*.integ.ts` or `tests/integ/`, tagged with `describe.sequential` and gated by an env var (e.g. `RUN_INTEG=1`).
-- They do NOT run in `pnpm check` / CI default. They run in `pnpm test:integ`.
+- They do NOT run in `pnpm check` by default. They run in `pnpm test:integ`.
 - Purpose: prove a real wiring (Neon + pgvector, R2, whisper) works end-to-end once, before a phase is marked done.
 
 ### Test-quality bar
@@ -109,5 +109,6 @@ When an AI agent works in this repo, it must:
 
 ```
 PHASE 0  Foundation / monorepo harness      ✅ shipped (this repo bootstraps green)
-PHASE 1-10  see PHASES.md                   ⏳ not started
+PHASE 1  Contracts (@poultry/schemas)        ✅ shipped (full contract set + tests)
+PHASE 2-10  see PHASES.md                   ⏳ not started
 ```
