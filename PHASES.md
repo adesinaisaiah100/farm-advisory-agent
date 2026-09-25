@@ -36,7 +36,7 @@ Exit: all schemas parse, all rejections have precise Zod errors, phone normaliza
 
 ---
 
-## Phase 2 — Orchestrator core (`@poultry/core`) 🔨 next 
+## Phase 2 — Orchestrator core (`@poultry/core`) ✅ (SHIPPED) 
 
 **Boxes:**
 - `diff/missing()` — deterministically compute which case fields are still missing from session state
@@ -201,7 +201,7 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 |---|---|---|
 | 0 | Monorepo foundation + all canaries | ✅ |
 | 1 | Contract schemas (pure) | ✅ |
-| 2 | Orchestrator core (pure) | 🔨 next |
+| 2 | Orchestrator core (pure) | ✅ |
 | 3 | Store lookup | ⏳ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |

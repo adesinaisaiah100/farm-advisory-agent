@@ -110,5 +110,6 @@ When an AI agent works in this repo, it must:
 ```
 PHASE 0  Foundation / monorepo harness      ✅ shipped (this repo bootstraps green)
 PHASE 1  Contracts (@poultry/schemas)        ✅ shipped (full contract set + tests)
-PHASE 2-10  see PHASES.md                   ⏳ not started
+PHASE 2  Orchestrator core (@poultry/core)   ✅ shipped (four-door core + tests)
+PHASE 3-10  see PHASES.md                   ⏳ not started
 ```

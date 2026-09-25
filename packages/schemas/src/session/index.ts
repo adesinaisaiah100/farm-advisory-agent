@@ -1,18 +1,14 @@
 import { z } from 'zod';
 import { DateTimeSchema, UuidSchema } from '../common.js';
+import { CaseSchema } from '../case/index.js';
 
 export const SessionStatusSchema = z.enum(['open', 'completed', 'void']);
 
 export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 
-export const CaseStatusSchema = z.enum(['in_progress', 'complete', 'escalated', 'void']);
-
-export type CaseStatus = z.infer<typeof CaseStatusSchema>;
-
 export const SessionStateSchema = z.object({
-  caseId: UuidSchema.optional(),
-  caseStatus: CaseStatusSchema,
-  missing: z.array(z.string()),
+  case: CaseSchema,
+  missing: z.array(z.string()).default([]),
   updatedAt: DateTimeSchema,
 });
 

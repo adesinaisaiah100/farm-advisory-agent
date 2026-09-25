@@ -10,7 +10,7 @@ function session(status: SessionStatus) {
     id: ID,
     phone: '+2348012345678',
     status,
-    state: { caseStatus: 'in_progress', missing: ['symptoms'], updatedAt: WHEN },
+    state: { case: { status: 'in_progress' }, missing: ['symptoms'], updatedAt: WHEN },
     startedAt: WHEN,
     lastActive: WHEN,
   };
@@ -27,7 +27,10 @@ describe('SessionSchema', () => {
   });
 
   it('rejects an invalid case status inside state', () => {
-    const bad = { ...session('open'), state: { caseStatus: 'open', missing: [], updatedAt: WHEN } };
+    const bad = {
+      ...session('open'),
+      state: { case: { status: 'open' }, missing: [], updatedAt: WHEN },
+    };
     expect(SessionSchema.safeParse(bad).success).toBe(false);
   });
 });

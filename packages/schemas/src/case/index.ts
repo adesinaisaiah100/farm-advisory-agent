@@ -1,7 +1,10 @@
 import { z } from 'zod';
 import { DateTimeSchema, UuidSchema } from '../common.js';
-import { CaseStatusSchema } from '../session/index.js';
 import { BirdStageSchema, SpeciesSchema } from '../farmer/index.js';
+
+export const CaseStatusSchema = z.enum(['in_progress', 'complete', 'escalated', 'void']);
+
+export type CaseStatus = z.infer<typeof CaseStatusSchema>;
 
 export const SymptomSchema = z.string().min(1);
 
