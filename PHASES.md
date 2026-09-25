@@ -4,6 +4,9 @@ Every phase below is **independently deployable and testable**: its tests pass w
 
 **Status legend:** ⏳ planned · 🔨 in progress · ✅ shipped
 
+**Narrative record of shipped phases:** see `phases/PHASE-0-foundation.md` and
+`phases/PHASE-1-contracts.md` (file structure + what was implemented + tests).
+
 ---
 
 ## Phase 0 — Monorepo Foundation ✅ (SHIPPED)
