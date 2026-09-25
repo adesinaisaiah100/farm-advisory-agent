@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { DateTimeSchema, UuidSchema } from '../common.js';
 import { CaseStatusSchema } from '../session/index.js';
-import { SpeciesSchema } from '../farmer/index.js';
+import { BirdStageSchema, SpeciesSchema } from '../farmer/index.js';
 
 export const SymptomSchema = z.string().min(1);
 
@@ -25,13 +25,17 @@ export const CaseSchema = z.object({
   farmId: UuidSchema.optional(),
   sessionId: UuidSchema.optional(),
   species: SpeciesSchema.optional(),
+  breed: z.string().min(1).max(80).optional(),
+  birdStage: BirdStageSchema.optional(),
   farmSize: z.number().int().min(200).max(2000).optional(),
   flockAgeWeeks: z.number().int().min(0).optional(),
   symptoms: z.array(SymptomSchema).optional(),
   onsetDays: z.number().int().min(1).optional(),
   mortalityCount: z.number().int().min(1).optional(),
   mortalityRatePct: z.number().min(0).max(100).optional(),
+  diseaseText: z.string().min(1).max(120).optional(),
   diseaseHits: z.array(DiseaseSchema).optional(),
+  needsConfirmation: z.array(z.string()).optional(),
   status: CaseStatusSchema,
   door: DoorSchema.optional(),
   editedAt: DateTimeSchema.optional(),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FarmerSchema, isMiddleTier, SpeciesSchema } from './index.js';
+import { BirdStageSchema, FarmerSchema, isMiddleTier, SpeciesSchema } from './index.js';
 
 describe('FarmerSchema', () => {
   it('accepts a minimum farmer with only a phone', () => {
@@ -23,6 +23,39 @@ describe('FarmerSchema', () => {
 
   it('rejects farm sizes above the middle tier', () => {
     expect(FarmerSchema.safeParse({ phone: '+2348012345678', farmSize: 5000 }).success).toBe(false);
+  });
+
+  it('accepts a cross-breed name as free text', () => {
+    expect(
+      FarmerSchema.safeParse({ phone: '+2348012345678', breed: 'Noiler (cross)' }).success,
+    ).toBe(true);
+  });
+
+  it('rejects an over-long breed name', () => {
+    expect(
+      FarmerSchema.safeParse({ phone: '+2348012345678', breed: 'x'.repeat(81) }).success,
+    ).toBe(false);
+  });
+});
+
+describe('BirdStageSchema', () => {
+  it('accepts known stages', () => {
+    for (const s of [
+      'chick',
+      'grower',
+      'pullet',
+      'point_of_lay',
+      'layer',
+      'finisher',
+      'spent',
+      'unknown',
+    ]) {
+      expect(BirdStageSchema.safeParse(s).success).toBe(true);
+    }
+  });
+
+  it('rejects a made-up stage', () => {
+    expect(BirdStageSchema.safeParse('in-molt').success).toBe(false);
   });
 });
 

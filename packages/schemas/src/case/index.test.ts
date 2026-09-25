@@ -17,6 +17,25 @@ describe('CaseSchema', () => {
     expect(CaseSchema.safeParse(c).success).toBe(true);
   });
 
+  it('accepts canonical disease text, breed, stage and confirm flags', () => {
+    const c = {
+      species: 'layer',
+      breed: 'Noiler (cross)',
+      birdStage: 'point_of_lay',
+      symptoms: ['birds no dey eat'],
+      diseaseText: 'Newcastle disease',
+      diseaseHits: ['newcastle'],
+      needsConfirmation: ['diseaseHits'],
+      status: 'in_progress',
+    };
+    expect(CaseSchema.safeParse(c).success).toBe(true);
+  });
+
+  it('rejects an unknown bird stage', () => {
+    const c = { status: 'in_progress', birdStage: 'in-molt' };
+    expect(CaseSchema.safeParse(c).success).toBe(false);
+  });
+
   it('accepts a complete case with disease hits and a door', () => {
     const c = {
       diseaseHits: ['newcastle'],
