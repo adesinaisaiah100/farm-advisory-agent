@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseData, Session } from '@poultry/schemas';
 import {
-  FALLBACK_REPLY,
+  FALLBACK_REPLY_EN,
   runTurn,
   type TurnDeps,
 } from './orchestrator.js';
-import type { ChatProvider } from './providers.js';
-import { ESCALATE_SCRIPT } from './slip.js';
+import type { ChatProvider, ChatInput, TurnMessage } from './providers.js';
+import { ESCALATE_SCRIPT, ESCALATE_SCRIPT_EN } from './slip.js';
 
 function caseData(overrides: Partial<CaseData> = {}): CaseData {
   return { status: 'in_progress', ...overrides };
@@ -16,6 +16,10 @@ function makeDeps(raw: unknown = {}): TurnDeps {
   const chat: ChatProvider = {
     complete: async () => raw,
   };
+  return makeDepsNowSyncing(chat);
+}
+
+function makeDepsNowSyncing(chat: ChatProvider): TurnDeps {
   let n = 0;
   return {
     chat,
@@ -89,16 +93,47 @@ describe('runTurn', () => {
     const deps = makeDeps({ delta: { symptoms: ['x'] }, reply: 42 });
     const result = await runTurn({ case: caseData(), query: 'hi' }, deps);
     expect(result.door).toBe('collect');
-    expect(result.reply).toBe(FALLBACK_REPLY);
+    expect(result.reply).toBe(FALLBACK_REPLY_EN);
     expect(result.changed).toEqual([]);
     expect(result.state.case).toEqual(caseData());
+    expect(result.replyLanguage).toBe('english');
   });
 
   it('rejects a delta with unknown keys', async () => {
     const deps = makeDeps({ delta: { symptoms: ['x'], evil: true }, reply: 'ok' });
     const result = await runTurn({ case: caseData(), query: 'hi' }, deps);
     expect(result.door).toBe('collect');
-    expect(result.reply).toBe(FALLBACK_REPLY);
+    expect(result.reply).toBe(FALLBACK_REPLY_EN);
+  });
+
+  it('uses the english escalation script for an english farmer', async () => {
+    const deps = makeDeps({
+      delta: { symptoms: ['sudden death'], species: 'broiler' },
+      reply: 'ok',
+    });
+    const result = await runTurn({ case: caseData(), query: 'My birds are dying suddenly' }, deps);
+    expect(result.door).toBe('escalate');
+    expect(result.reply).toBe(ESCALATE_SCRIPT_EN);
+    expect(result.replyLanguage).toBe('english');
+  });
+
+  it('captures the farmer profile name and passes history to the chat', async () => {
+    const history: readonly TurnMessage[] = [
+      { role: 'farmer', text: 'Boss, my name na Adaeze' },
+      { role: 'agent', text: 'Hear you' },
+    ];
+    let sawInput: ChatInput;
+    const chat: ChatProvider = {
+      complete: async (input) => {
+        sawInput = input;
+        return { delta: { species: 'broiler' }, profile: { name: 'Adaeze' }, reply: 'Noted.' };
+      },
+    };
+    const deps = makeDepsNowSyncing(chat);
+    const result = await runTurn({ case: caseData(), query: 'Na me be Adaeze, abeg help', history }, deps);
+    expect(result.profile).toEqual({ name: 'Adaeze' });
+    expect(result.replyLanguage).toBe('pidgin');
+    expect(sawInput!.history).toEqual(history);
   });
 
   it('never regresses missing() once a field is filled', async () => {

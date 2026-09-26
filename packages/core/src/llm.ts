@@ -21,9 +21,18 @@ export const CaseDeltaSchema = z
 
 export type CaseDelta = z.infer<typeof CaseDeltaSchema>;
 
+export const ProfileDeltaSchema = z
+  .object({
+    name: z.string().min(1).max(80).optional(),
+  })
+  .strict();
+
+export type ProfileDelta = z.infer<typeof ProfileDeltaSchema>;
+
 export const LlmReplySchema = z
   .object({
     delta: CaseDeltaSchema,
+    profile: ProfileDeltaSchema.optional(),
     reply: z.string().min(1),
   })
   .strict();

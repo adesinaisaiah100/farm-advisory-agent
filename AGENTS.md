@@ -37,7 +37,7 @@ Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). Whe
 - **No `any`.** Write the type. `unknown` + zod parse for untrusted input.
 - **Interfaces before implementations.** Every external service (LLM, embed, transcript, R2, WhatsApp, DB) is behind an interface so tests supply a fake. Code in one package never imports another package's implementation details — only its public `src/index.ts`.
 - **Dependency direction is one-way:** `schemas ← core ← {rag, stores, media, bridge} ← api ← web`. `core` depends only on `schemas`. Nothing may import `apps/*`. No package may import a sibling's internals.
-- **Pidgin is data, not noise.** Farmer text is preserved verbatim; never "correct" it to formal English. Reply in Pidgin text.
+- **Pidgin is data, not noise.** Farmer text is preserved verbatim; never "correct" it to formal English. Reply in the farmer's language: a heuristic `classifyLanguage` (code, no extra LLM call) picks Pidgin vs English per message; replies match the detected language, so an English-speaking farmer gets English.
 - **Phone numbers:** store E.164 (`+234...`); use `normalizePhone` from `@poultry/schemas`. Never treat `080...` and `+23480...` as different people.
 - **Formatting is enforced, not discussed:** Prettier + ESLint run locally. `pnpm check` must pass before a phase is called done.
 

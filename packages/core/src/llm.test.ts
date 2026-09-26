@@ -26,6 +26,14 @@ describe('LlmReplySchema', () => {
     expect(LlmReplySchema.safeParse(ok).success).toBe(true);
   });
 
+  it('accepts an optional profile delta', () => {
+    expect(LlmReplySchema.safeParse({ ...ok, profile: { name: 'Adaeze' } }).success).toBe(true);
+  });
+
+  it('rejects a profile with unknown keys', () => {
+    expect(LlmReplySchema.safeParse({ ...ok, profile: { evil: true } }).success).toBe(false);
+  });
+
   it('rejects a missing delta', () => {
     expect(LlmReplySchema.safeParse({ reply: 'x' }).success).toBe(false);
   });

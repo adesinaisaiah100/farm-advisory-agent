@@ -1,9 +1,17 @@
 import type { CaseData } from '@poultry/schemas';
+import type { ReplyLanguage } from './language.js';
+
+export interface TurnMessage {
+  role: 'farmer' | 'agent';
+  text: string;
+}
 
 export interface ChatInput {
   filled: CaseData;
   missing: string[];
   query: string;
+  history: readonly TurnMessage[];
+  replyLanguage: ReplyLanguage;
 }
 
 export interface ChatProvider {

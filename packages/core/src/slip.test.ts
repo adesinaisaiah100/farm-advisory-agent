@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { AgroStore, CaseData } from '@poultry/schemas';
-import { buildReferralSlip, ESCALATE_SCRIPT } from './slip.js';
+import { buildReferralSlip, ESCALATE_SCRIPT, ESCALATE_SCRIPT_EN } from './slip.js';
 
 function caseData(overrides: Partial<CaseData> = {}): CaseData {
   return {
@@ -22,6 +22,11 @@ describe('ESCAPE_SCRIPT', () => {
     expect(ESCALATE_SCRIPT.length).toBeGreaterThan(100);
     expect(ESCALATE_SCRIPT).toContain('separate the sick birds');
     expect(ESCALATE_SCRIPT).toContain('no sell or slaughter any sick bird');
+  });
+
+  it('has an English variant covering the same rules', () => {
+    expect(ESCALATE_SCRIPT_EN.length).toBeGreaterThan(100);
+    expect(ESCALATE_SCRIPT_EN).toContain('Do not sell or slaughter any sick bird');
   });
 });
 

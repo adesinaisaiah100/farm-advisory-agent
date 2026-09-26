@@ -1,4 +1,5 @@
 import type { AgroStore, CaseData } from '@poultry/schemas';
+import type { ReplyLanguage } from './language.js';
 import { mortalityRate } from './validate.js';
 
 export const ESCALATE_SCRIPT =
@@ -6,6 +7,16 @@ export const ESCALATE_SCRIPT =
   'We dey redirect you to a veterinary professional wey fit commot out go your farm. ' +
   'Until you see am: separate the sick birds, clean and disinfect the pen, throw away dead birds no touch am with bare hand, ' +
   'and no sell or slaughter any sick bird. You go still get follow-up for the report wey we send.';
+
+export const ESCALATE_SCRIPT_EN =
+  'Please do not delay this. The bird problem is serious — we need to take it seriously. ' +
+  'We are directing you to a veterinary professional who can come out to your farm. ' +
+  'Until you see one: separate the sick birds, clean and disinfect the pen, and do not touch dead birds with bare hands. ' +
+  'Do not sell or slaughter any sick bird. You will still get a follow-up on the report we send.';
+
+export function escalationScript(lang: ReplyLanguage): string {
+  return lang === 'pidgin' ? ESCALATE_SCRIPT : ESCALATE_SCRIPT_EN;
+}
 
 export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): string {
   const lines = ['CONTACT THIS AGRO-VET STORE', 'EVERY DAY OF DELAY COST YOU BIRDS.'];

@@ -1,21 +1,29 @@
 import type { CaseData, SessionState } from '@poultry/schemas';
+import { classifyLanguage, replyLanguageFor } from './language.js';
+import type { ReplyLanguage } from './language.js';
 import { LlmReplySchema } from './llm.js';
+import type { ProfileDelta } from './llm.js';
 import { mergeDelta } from './merge.js';
 import type { CaseField } from './merge.js';
 import { missing } from './missing.js';
-import type { ChatProvider } from './providers.js';
-import { buildReferralSlip, ESCALATE_SCRIPT } from './slip.js';
+import type { ChatProvider, TurnMessage } from './providers.js';
+import { buildReferralSlip, escalationScript } from './slip.js';
 import { validateCase } from './validate.js';
 import type { EffectiveDoor } from './validate.js';
 
 export const FALLBACK_REPLY =
   'Sorry, I no well understand wetin you write. Abeg try again — tell me wetin dey happen to di birds, how many e reach, and how many don die.';
 
+export const FALLBACK_REPLY_EN =
+  "Sorry, I didn't fully understand what you wrote. Please try again — tell me what's happening with the birds, how long it's been, and how many have died.";
+
 export interface TurnResult {
   state: SessionState;
   reply: string;
   door: EffectiveDoor;
   changed: CaseField[];
+  replyLanguage: ReplyLanguage;
+  profile: ProfileDelta | undefined;
 }
 
 export interface TurnDeps {
@@ -23,18 +31,35 @@ export interface TurnDeps {
   now: () => string;
 }
 
-export async function runTurn(input: { case: CaseData; query: string }, deps: TurnDeps): Promise<TurnResult> {
+export interface TurnInput {
+  case: CaseData;
+  query: string;
+  history?: readonly TurnMessage[];
+}
+
+export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnResult> {
   const filled = input.case;
   const missingFields = missing(filled);
-  const raw = await deps.chat.complete({ filled, missing: missingFields, query: input.query });
+  const replyLanguage = replyLanguageFor(classifyLanguage(input.query));
+  const history = input.history ?? [];
+
+  const raw = await deps.chat.complete({
+    filled,
+    missing: missingFields,
+    query: input.query,
+    history,
+    replyLanguage,
+  });
 
   const parsed = LlmReplySchema.safeParse(raw);
   if (!parsed.success) {
     return {
       state: { case: filled, missing: missingFields, updatedAt: deps.now() },
-      reply: FALLBACK_REPLY,
+      reply: replyLanguage === 'english' ? FALLBACK_REPLY_EN : FALLBACK_REPLY,
       door: 'collect',
       changed: [],
+      replyLanguage,
+      profile: undefined,
     };
   }
 
@@ -43,36 +68,50 @@ export async function runTurn(input: { case: CaseData; query: string }, deps: Tu
   nextCase.status = decision.caseStatus;
   nextCase.editedAt = deps.now();
 
-  const reply = replyFor(decision.door, parsed.data.reply, nextCase);
+  const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage);
 
   return {
     state: { case: nextCase, missing: missing(nextCase), updatedAt: deps.now() },
     reply,
     door: decision.door,
     changed: changedFields(filled, nextCase),
+    replyLanguage,
+    profile: parsed.data.profile,
   };
 }
 
-const COLLECT_PROMPT: Record<string, string> = {
-  species: 'which bird (broiler, layer, cockerel)?',
-  symptoms: 'wetin dey happen to di birds?',
-  onsetDays: 'how long dis one don dey happen?',
-  mortalityCount: 'how many birds don die?',
+const COLLECT_PROMPT: Record<ReplyLanguage, Record<string, string>> = {
+  pidgin: {
+    species: 'which bird (broiler, layer, cockerel)?',
+    symptoms: 'wetin dey happen to di birds?',
+    onsetDays: 'how long dis one don dey happen?',
+    mortalityCount: 'how many birds don die?',
+  },
+  english: {
+    species: 'which bird (broiler, layer, or cockerel)?',
+    symptoms: 'what signs are you seeing?',
+    onsetDays: 'how long has this been going on?',
+    mortalityCount: 'how many birds have died?',
+  },
 };
 
-function replyFor(door: EffectiveDoor, llmReply: string, c: CaseData): string {
+const COLLECT_INTRO: Record<ReplyLanguage, string> = {
+  pidgin: 'So we fit help you better, abeg tell us:',
+  english: 'So we can help you better, please tell us:',
+};
+
+function replyFor(door: EffectiveDoor, llmReply: string, c: CaseData, lang: ReplyLanguage): string {
   switch (door) {
     case 'escalate':
-      return ESCALATE_SCRIPT;
+      return escalationScript(lang);
     case 'supply':
       return buildReferralSlip(c, undefined);
     case 'resolve':
-      return llmReply;
     case 'report':
       return llmReply;
     case 'collect': {
-      const asks = missing(c).map((f) => COLLECT_PROMPT[f] ?? f).filter(Boolean);
-      return `${llmReply}\n\nSo we fit help you better, abeg tell us: ${asks.join(' ')}`;
+      const asks = missing(c).map((f) => COLLECT_PROMPT[lang][f] ?? f).filter(Boolean);
+      return `${llmReply}\n\n${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
     }
   }
 }

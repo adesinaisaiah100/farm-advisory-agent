@@ -56,7 +56,9 @@ A farmer sends a normal WhatsApp message — text, voice note, or photo — in P
 - *Why TS/Hono over Next:* TS-heavy team, no server actions, no forced `/app/api` — plain routes, deployable anywhere; AI SDK's `useChat`/`streamText` + Zod tool schemas provide the agent layer.
 - *Why not FastAPI/LangGraph:* TS-first team; porting the orchestrator to Python would mean building our own agent library — overkill for this scope. Python remains a future skill-bet, not this ship.
 
-**Orchestrator owns state, not the LLM.** The greatest reliability leak is trusting the model to know what is missing. The orchestrator holds `session_state`, computes `missing()` in deterministic code, sends the LLM only `{filled, missing, query}` (tiny context = token-efficient), and the LLM returns `{delta, reply}`. Orchestrator merges, validates, persists. **LLM talks; orchestrator decides.**
+**Orchestrator owns state, not the LLM.** The greatest reliability leak is trusting the model to know what is missing. The orchestrator holds `session_state`, computes `missing()` in deterministic code, sends the LLM `{filled, missing, query, history, replyLanguage}` and the LLM returns `{delta, profile?, reply}`. Orchestrator merges, validates, persists. **LLM talks; orchestrator decides.** The conversation history travels verbatim (Pidgin preserved) so replies are grounded in what the farmer actually said; the recent turn window keeps context token-frugal.
+
+**Language routing is code, not a second LLM call.** A heuristic `classifyLanguage` (marker filters, no extra inference) detects Pidgin vs English per message; replies and built-in scripts/fallbacks match the detected language, so an English-speaking farmer is never answered in Pidgin. Unknown/short messages default to English.
 
 **Persistence: chunk-by-chunk sessions, atomic reports.** Farmers abandon chats (60%+ will). Every turn UPSERTs the session state to Postgres — a partial conversation is never lost and still yields a surveillance signal even when incomplete. Only a fully validated case logs to the immutable `reports` table, keyed by `session_id` to stay idempotent against duplicate events.
 
