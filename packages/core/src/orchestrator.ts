@@ -18,6 +18,8 @@ export const FALLBACK_REPLY =
 export const FALLBACK_REPLY_EN =
   "Sorry, I didn't fully understand what you wrote. Please try again — tell me what's happening with the birds, how long it's been, and how many have died.";
 
+export const MAX_STALL = 2;
+
 export interface TurnResult {
   state: SessionState;
   reply: string;
@@ -37,6 +39,7 @@ export interface TurnDeps {
 export interface TurnInput {
   case: CaseData;
   notes?: string[];
+  stallCount?: number;
   query: string;
   history?: readonly TurnMessage[];
 }
@@ -65,9 +68,10 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
 
   const parsed = LlmReplySchema.safeParse(raw);
   if (!parsed.success) {
+    const stallCount = (input.stallCount ?? 0) + 1;
     return {
-      state: { case: filled, missing: missingFields, notes, updatedAt: deps.now() },
-      reply: replyLanguage === 'english' ? FALLBACK_REPLY_EN : FALLBACK_REPLY,
+      state: { case: filled, missing: missingFields, notes, stallCount, updatedAt: deps.now() },
+      reply: stallCount >= MAX_STALL ? stallReply(filled, replyLanguage) : fallbackReply(replyLanguage),
       door: 'collect',
       changed: [],
       replyLanguage,
@@ -83,7 +87,7 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
   const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage);
 
   return {
-    state: { case: nextCase, missing: missing(nextCase), notes, updatedAt: deps.now() },
+    state: { case: nextCase, missing: missing(nextCase), notes, stallCount: 0, updatedAt: deps.now() },
     reply,
     door: decision.door,
     changed: changedFields(filled, nextCase),
@@ -111,6 +115,18 @@ const COLLECT_INTRO: Record<ReplyLanguage, string> = {
   pidgin: 'So we fit help you better, abeg tell us:',
   english: 'So we can help you better, please tell us:',
 };
+
+function fallbackReply(lang: ReplyLanguage): string {
+  return lang === 'english' ? FALLBACK_REPLY_EN : FALLBACK_REPLY;
+}
+
+// After repeated invalid LLM replies, answer with the questions we already know in
+// code instead of paying for another model call that will fail the same way.
+function stallReply(c: CaseData, lang: ReplyLanguage): string {
+  const asks = missing(c).map((f) => COLLECT_PROMPT[lang][f] ?? f).filter(Boolean);
+  if (asks.length === 0) return fallbackReply(lang);
+  return `${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
+}
 
 function replyFor(door: EffectiveDoor, llmReply: string, c: CaseData, lang: ReplyLanguage): string {
   switch (door) {

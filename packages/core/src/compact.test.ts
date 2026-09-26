@@ -95,21 +95,55 @@ describe('compactHistory', () => {
     expect(result.history[0]?.text).not.toBe('msg 0');
   });
 
-  it('never drops below the minimum window', async () => {
+  it('cuts below the minimum window when the budget leaves no other choice', async () => {
     const compact: CompactProvider = {
       compact: async () => ({ notes: [] }),
     };
     const result = await compactHistory({ history: history(6), notes: [], budgetTokens: 0 }, deps(compact));
-    expect(result.history.length).toBeGreaterThanOrEqual(4);
+    expect(result.history.length).toBe(1);
   });
 
-  it('keeps history unchanged when compaction output is not zod-valid', async () => {
+  it('ignores invalid compaction output but still enforces the budget', async () => {
     const compact: CompactProvider = {
       compact: async () => ({ notes: 'not an array' }),
     };
-    const input = history(60);
-    const result = await compactHistory({ history: input, notes: [], budgetTokens: 100 }, deps(compact));
+    const result = await compactHistory({ history: history(60), notes: [], budgetTokens: 100 }, deps(compact));
     expect(result.compacted).toBe(false);
-    expect(result.history).toBe(input);
+    expect(costOf(result)).toBeLessThanOrEqual(100);
+  });
+
+  it('never ships a context over budget even when the fold lands heavy notes', async () => {
+    const compact: CompactProvider = {
+      compact: async () => ({ notes: Array.from({ length: 10 }, () => 'n'.repeat(50)) }),
+    };
+    const result = await compactHistory(
+      { history: history(60), notes: ['x'.repeat(500)], budgetTokens: 100 },
+      deps(compact),
+    );
+    expect(result.notes.length).toBeGreaterThan(0);
+    expect(costOf(result)).toBeLessThanOrEqual(100);
+  });
+
+  it('caps notes to a fixed count and token budget even when idle', async () => {
+    const input = Array.from({ length: 40 }, (_, i) => `note-${i}-${'y'.repeat(100)}`);
+    const result = await compactHistory(
+      { history: history(2), notes: input, budgetTokens: 10_000_000 },
+      deps(never),
+    );
+    expect(result.compacted).toBe(false);
+    expect(result.notes.length).toBeLessThanOrEqual(12);
+    expect(result.notes.reduce((acc, n) => acc + n.length, 0)).toBeLessThanOrEqual(500);
+  });
+
+  it('truncates a single overlong message before shipping it', async () => {
+    const huge = { role: 'farmer' as const, text: 'z'.repeat(10_000) };
+    const result = await compactHistory({ history: [huge], notes: [], budgetTokens: 100 }, deps(never));
+    expect(result.history[0]!.text.length).toBeLessThanOrEqual(4000);
   });
 });
+
+function costOf(result: { history: readonly TurnMessage[]; notes: string[] }): number {
+  const roleLength = { farmer: 6, agent: 5 };
+  const msgs = result.history.reduce((acc, m) => acc + roleLength[m.role] + m.text.length, 0);
+  return msgs + result.notes.reduce((acc, n) => acc + n.length, 0);
+}

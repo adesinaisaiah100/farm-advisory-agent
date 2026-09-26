@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseData, Session } from '@poultry/schemas';
 import {
+  FALLBACK_REPLY,
   FALLBACK_REPLY_EN,
   runTurn,
   type TurnDeps,
@@ -103,7 +104,34 @@ describe('runTurn', () => {
     expect(result.reply).toBe(FALLBACK_REPLY_EN);
     expect(result.changed).toEqual([]);
     expect(result.state.case).toEqual(caseData());
+    expect(result.state.stallCount).toBe(1);
     expect(result.replyLanguage).toBe('english');
+  });
+
+  it('degrades to a code-driven collect reply after MAX_STALL consecutive invalid replies', async () => {
+    const invalid = makeDeps({ reply: 42 });
+    const first = await runTurn({ case: caseData(), query: 'abeg o' }, invalid);
+    expect(first.reply).toBe(FALLBACK_REPLY);
+    expect(first.state.stallCount).toBe(1);
+
+    const second = await runTurn({ case: caseData(), query: 'abeg o', stallCount: 1 }, invalid);
+    expect(second.reply).toContain('wetin dey happen');
+    expect(second.reply).not.toBe(FALLBACK_REPLY);
+    expect(second.state.stallCount).toBe(2);
+    expect(second.door).toBe('collect');
+  });
+
+  it('keeps stalling in code until an LLM reply is valid again', async () => {
+    const invalid = makeDeps({ reply: {} });
+    const third = await runTurn({ case: caseData(), query: 'abeg o', stallCount: 2 }, invalid);
+    expect(third.reply).toContain('wetin dey happen');
+    expect(third.state.stallCount).toBe(3);
+  });
+
+  it('resets the stall counter on a valid reply', async () => {
+    const deps = makeDeps({ delta: { symptoms: ['coughing'] }, reply: 'Noted.' });
+    const result = await runTurn({ case: caseData(), query: 'my birds dey cough', stallCount: 5 }, deps);
+    expect(result.state.stallCount).toBe(0);
   });
 
   it('rejects a delta with unknown keys', async () => {

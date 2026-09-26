@@ -10,6 +10,7 @@ export const SessionStateSchema = z.object({
   case: CaseSchema,
   missing: z.array(z.string()).default([]),
   notes: z.array(z.string()).default([]),
+  stallCount: z.number().int().min(0).default(0),
   updatedAt: DateTimeSchema,
 });
 

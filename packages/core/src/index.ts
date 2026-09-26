@@ -1,4 +1,5 @@
 export * from './compact.js';
+export * from './compact-recall.js';
 export * from './language.js';
 export * from './llm.js';
 export * from './merge.js';

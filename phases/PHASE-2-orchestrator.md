@@ -162,3 +162,37 @@ Vitest's parallel worker forks under `pnpm -r` exhaust this machine's memory
 (spawn/`MemoryChunk` OOM — not a code failure; every package passes standalone). The
 workspace scripts in `package.json` now run `pnpm -r --workspace-concurrency=1` so
 `pnpm check` is reliable locally.
+
+---
+
+## Phase 2.3 — Memory hardening
+
+The engineering review found that the 2.2 budget was **advisory, not enforced**: three
+paths (nothing droppable, invalid fold, heavy fold) shipped the full over-budget context
+to the LLM, and `notes` could grow without bound, so the compaction loop could feed
+itself. Hardened in `compact.ts`:
+
+- **`enforceBudget`** — fail-closed. The window shrinks below its soft floor of 4
+  (down to one message) to make room first, because a freshly folded note carries more
+  facts per token than the old raw messages it replaced; oldest notes are dropped only
+  when the window is already minimal, and single-message text is capped
+  (`MAX_MESSAGE_CHARS` 4000). A turn can never ship context over budget, no matter how
+  bad the fold is.
+- **`capNotes`** — notes are bounded to `MAX_NOTES` (12) entries and `MAX_NOTES_TOKENS`
+  (500) from the oldest, both in the fold schema and in code, so the array cannot grow
+  forever. `CompactInput` now carries `maxNotes` so a provider can instruct the model to
+  **consolidate** rather than append.
+- Semantics change worth naming: `compacted` now means "a valid fold replaced the notes".
+  When the fold output is invalid, the window is still trimmed (fail-closed) but `notes`
+  are left untouched — the old "identity keep-everything" behavior was the bug.
+- **Stall fallback** — `SessionStateSchema.stallCount` (default 0), `MAX_STALL` = 2.
+  After two consecutive invalid LLM replies, `runTurn` answers with the collect questions
+  built in code (`missing()` + per-language `COLLECT_PROMPT`), so a broken model stops
+  costing money turn after turn. A valid reply resets the counter.
+- **`measureCompactRecall()`** — the first recall-eval harness: reports which facts
+  survive repeated compaction. Unit-tested with deterministic folds (preserving = 100%,
+  lossy = scored misses); the real LLM fold is held to a recall bar against the same
+  harness in Phase 8.
+- Tests: compact +3 (fail-closed, notes cap, oversized message), orchestrator +5 (stall
+  machine + extended fallback), schemas +2 (stallCount), recall +3 → core is now
+  **88 tests across 10 files**, schemas 87. `pnpm check` stays green.

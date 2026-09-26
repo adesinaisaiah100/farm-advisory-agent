@@ -39,9 +39,11 @@ export const LlmReplySchema = z
 
 export type LlmReply = z.infer<typeof LlmReplySchema>;
 
+export const MAX_NOTES = 12;
+
 export const CompactionResultSchema = z
   .object({
-    notes: z.array(z.string().min(1).max(240)),
+    notes: z.array(z.string().min(1).max(240)).max(MAX_NOTES),
   })
   .strict();
 

@@ -21,10 +21,27 @@ describe('SessionSchema', () => {
     expect(SessionSchema.safeParse(session('open')).success).toBe(true);
   });
 
-  it('defaults missing and notes to empty arrays', () => {
+  it('defaults missing, notes and stallCount', () => {
     const parsed = SessionSchema.parse({ ...session('open'), state: { case: { status: 'in_progress' }, updatedAt: WHEN } });
     expect(parsed.state.missing).toEqual([]);
     expect(parsed.state.notes).toEqual([]);
+    expect(parsed.state.stallCount).toBe(0);
+  });
+
+  it('accepts a positive stallCount', () => {
+    const stalling = {
+      ...session('open'),
+      state: { case: { status: 'in_progress' }, missing: [], notes: [], stallCount: 3, updatedAt: WHEN },
+    };
+    expect(SessionSchema.safeParse(stalling).success).toBe(true);
+  });
+
+  it('rejects a negative stallCount', () => {
+    const bad = {
+      ...session('open'),
+      state: { case: { status: 'in_progress' }, missing: [], stallCount: -1, updatedAt: WHEN },
+    };
+    expect(SessionSchema.safeParse(bad).success).toBe(false);
   });
 
   it('accepts session notes (compacted facts)', () => {

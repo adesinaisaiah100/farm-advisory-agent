@@ -18,6 +18,7 @@ export interface ChatInput {
 export interface CompactInput {
   notes: string[];
   dropped: readonly TurnMessage[];
+  maxNotes: number;
 }
 
 export interface CompactProvider {

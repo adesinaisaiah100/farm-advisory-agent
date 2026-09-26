@@ -78,6 +78,21 @@ Exit: a long chat stays token-frugal, notes persist with state for resume, compa
 
 ---
 
+## Phase 2.3 — Memory hardening (fail-closed compaction + stall fallback) ✅ (SHIPPED)
+
+**Boxes:**
+- **Fail-closed compaction:** the token budget is a delivered guarantee, not a suggestion — `enforceBudget` shrinks the window below its soft floor (down to one message) to make room for denser fold notes, then drops oldest notes only when the window is minimal, and caps single-message text (4000 chars); a turn can never ship context over budget even if the fold lands heavy or is invalid
+- **Note caps:** `CompactionResultSchema` rejects > 12 notes (`MAX_NOTES`); `capNotes` bounds count + total tokens (500) from the oldest entry, so notes can never grow unbounded
+- `CompactInput.maxNotes` tells providers to consolidate into ≤ N notes preserving facts
+- **Stall fallback:** `stallCount` on `SessionStateSchema`; after `MAX_STALL` (2) consecutive invalid LLM replies, `runTurn` answers with a code-driven collect question (`missing()` + per-language prompts) instead of burning another model call; resets on the first valid reply
+- **Recall-eval harness:** `measureCompactRecall()` scores which facts survive repeated compaction; deterministic folds in unit tests, real LLM fold judged against the same harness in Phase 8
+
+**Testable alone:** budget/floor/cap matrix now includes fail-closed cases, oversized-message truncation, and invalid-fold enforcement; notes-cap golden; stall state machine; recall report shape.
+
+Exit: `pnpm check` green with the hardened compaction (core 88 tests across 10 files). **Done.**
+
+---
+
 ## Phase 3 — Store lookup (`packages/stores`)
 
 **Boxes:**
@@ -229,6 +244,9 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 0 | Monorepo foundation + all canaries | ✅ |
 | 1 | Contract schemas (pure) | ✅ |
 | 2 | Orchestrator core (pure) | ✅ |
+| 2.1 | Language routing + conversation context | ✅ |
+| 2.2 | Memory model + budget compaction | ✅ |
+| 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
 | 3 | Store lookup | ⏳ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |

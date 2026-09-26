@@ -113,5 +113,6 @@ PHASE 1  Contracts (@poultry/schemas)        ✅ shipped (full contract set + te
 PHASE 2  Orchestrator core (@poultry/core)   ✅ shipped (four-door core + tests)
 PHASE 2.1 Language routing + history + name ✅ shipped (classifyLanguage, ChatInput.history, profile)
 PHASE 2.2 Memory model + compaction          ✅ shipped (notes, budget-triggered compaction)
+PHASE 2.3 Memory hardening                    ✅ shipped (fail-closed budget, note caps, stall fallback, recall eval)
 PHASE 3-10  see PHASES.md                   ⏳ not started
 ```
