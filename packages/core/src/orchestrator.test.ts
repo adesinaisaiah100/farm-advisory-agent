@@ -165,10 +165,14 @@ describe('runTurn', () => {
       },
     };
     const deps = makeDepsNowSyncing(chat);
-    const result = await runTurn({ case: caseData(), query: 'Na me be Adaeze, abeg help', history }, deps);
+    const result = await runTurn(
+      { case: caseData(), query: 'Na me be Adaeze, abeg help', history, farmerContext: 'Adaeze · Jos North · 800 birds · reply in pidgin' },
+      deps,
+    );
     expect(result.profile).toEqual({ name: 'Adaeze' });
     expect(result.replyLanguage).toBe('pidgin');
     expect(sawInput!.history).toEqual(history);
+    expect(sawInput!.farmerContext).toBe('Adaeze · Jos North · 800 birds · reply in pidgin');
   });
 
   it('compacts long history into notes before the chat turn', async () => {

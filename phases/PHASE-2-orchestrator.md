@@ -196,3 +196,38 @@ itself. Hardened in `compact.ts`:
 - Tests: compact +3 (fail-closed, notes cap, oversized message), orchestrator +5 (stall
   machine + extended fallback), schemas +2 (stallCount), recall +3 → core is now
   **88 tests across 10 files**, schemas 87. `pnpm check` stays green.
+
+---
+
+## Phase 2.4 — Master record contracts + injected context
+
+Green-lit design lock: **injected for what stays, tools for what changes.** The chart
+never lands in context raw.
+
+- **Injected at session open** — `farmer-context.ts`. `profileDigest()` renders one
+  compact line (name · LGA · farm size · species · breed · reply language, ≤ 90 tokens);
+  `openCasePointer()` renders the open episode as one line (`OPEN CASE #id · species ·
+  onset · dead · disease · status`, ≤ 60 tokens); `injectedContext()` composes the
+  `farmerContext` string the API passes to `runTurn`/the chat provider every turn. These
+  are stable facts needed every turn, so they ride in and never incur a tool call.
+- **Master-record slices** — `@poultry/schemas/src/slice/`. `CaseSnapshotSchema` is
+  `CaseSchema` with a **required** `id`; `DiseaseHistorySlice` (disease × count × last
+  onset), `RecentCaseSlice` (id · diseaseText · species · status · closedAt),
+  `MedicationSlice` (caseId · medication · givenAt · note); each list schema is capped
+  (history 20, recent 10, meds 30) so a projection can never flood context.
+- **The four read-only tool contracts** — `master-tools.ts`. `get_disease_history`,
+  `get_recent_cases(n)`, `get_case(id)`, `get_medication_history`, each with a
+  description, Zod input + schema-capped output, and a hard `tokenCap`; `checkSlice()`
+  and `withinSliceBudget()` reject a malformed or oversized slice before it reaches the
+  model. **Read-only by construction — there are no write tools; the orchestrator owns
+  every append.**
+- **`MasterStore` interface** — `master-store.ts`. Two read paths keyed by E.164 phone
+  (`profile`, `openCase`) plus `caseById` and the three history slices; the
+  `inMemoryMasterStore` fake lets Phases 3/8 test against a deterministic record.
+  The PostgreSQL store behind it, the Drizzle tables (`cases` append-only episodes,
+  `farmer_notes` append-only summaries, `farmers` as the materialized view), and the
+  close-episode → append wiring are Phase 5.
+- `ChatInput` + `TurnInput` grew `farmerContext?: string`; `runTurn` forwards it.
+- Tests: schemas +14 (slice module), core +25 (farmer-context 11, master-tools 10,
+  master-store 4) → core is now **113 tests across 13 files** (schemas 101).
+  `pnpm check` stays green.

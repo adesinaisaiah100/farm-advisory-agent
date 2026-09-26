@@ -64,9 +64,9 @@ A farmer sends a normal WhatsApp message — text, voice note, or photo — in P
 - **Session** — one active stretch. Same-day messages (idle < 24h) are one session; a session that resumes later surfaces a new session. Held in memory, upserted to Postgres every turn so a partial conversation is never lost.
 - **Episode (the case)** — the clinical unit. One illness may span several sessions ("e no better" the next day continues the same case). The working case is editable while the episode is open; the orchestrator ships the prior case so a resumed session extends it instead of starting blank.
 - **Resume contract.** A new session that continues an open episode is initialized with the prior session's `notes` + the open `case` — never a blank slate, never a rewind. The API layer must honor this, or continuity (and every compaction that preserved it) is silently wasted.
-- **Master record — the durable chart.** When an episode closes, its record is appended to the farmer's permanent chart: disease codes, dates, door decisions, and a per-session summary. It is an **append-only ledger + materialized "current state" view**: corrections append (old kept, newest shown) and the view is rebuilt from the ledger. Raw transcripts never land in the chart — only the structured case plus the summarized notes.
+- **Master record — the durable chart.** When an episode closes, its record is appended to the farmer's permanent chart: disease codes, dates, door decisions, and a per-session summary. Implemented as **append-only `cases` episodes + `farmer_notes` session summaries, with `farmers` as the materialized current-state view** — an **append-only ledger + materialized "current state" view**: corrections append (old kept, newest shown) and the view is rebuilt from the ledger. Raw transcripts never land in the chart — only the structured case plus the summarized notes.
 - **Verbatim is retained, compaction only shrinks the prompt.** "Compacted" means "removed from the prompt window", never "deleted": every message the farmer and agent exchanged stays verbatim in the `messages` table (already in the ER), so the audit trail is reconstructable long after the window and notes have moved on. This is the safety net that lets us hard-truncate old notes in code without destroying evidence.
-- **Tools over context.** The chart never dumps into context raw. During a live session the agent pulls specific slices on demand via tools (`get_farmer_profile`, `get_open_case`, `get_disease_history`, `get_recent_cases`, `get_session_summary`); a farmer with no history gets clean "none", never a rewound chat. Tool slices are schematized and token-tight.
+- **Master record reads: injected for what stays, tools for what changes.** The chart never dumps into context raw. Stable facts the agent needs every turn ride **injected** at session open — the profile digest + open-case pointer built by `profileDigest`/`openCasePointer` (the `farmerContext`, digest ≤ 90 tokens + pointer ≤ 60 tokens) — never round-tripped through a *tool call*. Everything transient is pulled **on demand through four read-only tools** (`get_disease_history`, `get_recent_cases`, `get_case(id)`, `get_medication_history`): read-only, derived projections with strict Zod slices, hard item and token caps, and a clean empty result for a new farmer. A farmer with no history gets clean "none", never a rewound chat. The LLM never writes the chart — the orchestrator owns every append.
 - **Only a fully validated case** logs to the immutable `reports` table (atomic, keyed by `session_id`).
 
 **Compaction = budget-triggered, note-first, fail-closed.** Verbatim history is bounded by a token budget (default 1800) that is a **delivered guarantee, not a suggestion**. A deterministic token counter triggers compaction before a turn when the window would blow the budget; oldest messages are folded into a `notes` field (compacted facts the schema can't hold: "already gave amprolium", "farmer corrected the breed", "no vet in her LGA") by one guarded LLM call, and the LLM then sees `{filled, missing, query, notes, windowed history, replyLanguage}`. Notes persist with session state so an abandoned-and-resumed chat resumes coherently with zero transcript. Three rules keep the budget real, in this order: **(1) notes are capped** — the fold schema rejects more than 12 notes and code caps count + total to 500 tokens from the oldest entry; **(2) the window shrinks below its soft floor** (down to one message) to make room first, because a freshly folded note is denser context than the raw messages it replaced; **(3) only when the window is already minimal** do oldest notes get dropped in code — and a single oversized message's text is itself capped (4000 chars). A turn can never ship context over the budget. Compact providers must tell the model to **consolidate** existing notes into at most `maxNotes` entries while preserving every fact — the schema rejects larger outputs, which keeps a misbehaving fold from being silently absorbed.
@@ -286,13 +286,14 @@ Models & key contract numbers:
 - **Pidgin transcription:** LLM-over-multimodal with a language-enforcing prompt keeps audio verbatim in Pidgin ("wetin you dey talk" stays as spoken) — bare Whisper auto-translates to English and is rejected. `conf < 0.6` → ask farmer to confirm.
 - **Why a Node bridge exists at all:** Workers are stateless/short-lived; Baileys needs a persistent socket + QR/state, so it runs on a tiny host that only polls the outbox and speaks `normalize()`. Swappable with the official WhatsApp API with zero changes to the core.
 
-### Database — full ER (12 tables)
+### Database — full ER (13 tables)
 
 ```mermaid
 erDiagram
     FARMER ||--o{ SESSION : runs
     SESSION ||--o{ MESSAGE : contains
     SESSION ||--o{ CASE : produces
+    SESSION ||--o{ FARMER_NOTES : "summary on close"
     CASE ||--o{ MEDIA : evidences
     CASE ||--o{ FLAG : raises
     FARMER ||--o{ OUTBOX : receives
@@ -311,6 +312,11 @@ erDiagram
         timestamp last_active
         jsonb state
         text status }
+    FARMER_NOTES { uuid id PK
+        text farmer_phone FK
+        uuid session_id FK
+        jsonb payload
+        timestamp created_at }
     MESSAGE { uuid id PK
         uuid session_id FK
         text wa_msg_id

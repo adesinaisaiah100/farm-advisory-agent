@@ -5,6 +5,7 @@ export * from './farmer/index.js';
 export * from './message/index.js';
 export * from './session/index.js';
 export * from './case/index.js';
+export * from './slice/index.js';
 export * from './media/index.js';
 export * from './report/index.js';
 export * from './store/index.js';

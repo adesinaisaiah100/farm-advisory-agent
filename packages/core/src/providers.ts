@@ -10,6 +10,7 @@ export interface ChatInput {
   filled: CaseData;
   missing: string[];
   notes: string[];
+  farmerContext?: string;
   query: string;
   history: readonly TurnMessage[];
   replyLanguage: ReplyLanguage;

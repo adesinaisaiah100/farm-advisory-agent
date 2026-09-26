@@ -40,6 +40,7 @@ export interface TurnInput {
   case: CaseData;
   notes?: string[];
   stallCount?: number;
+  farmerContext?: string;
   query: string;
   history?: readonly TurnMessage[];
 }
@@ -61,6 +62,7 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
     filled,
     missing: missingFields,
     notes,
+    farmerContext: input.farmerContext,
     query: input.query,
     history: windowed,
     replyLanguage,

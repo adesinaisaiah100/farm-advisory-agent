@@ -93,6 +93,22 @@ Exit: `pnpm check` green with the hardened compaction (core 88 tests across 10 f
 
 ---
 
+## Phase 2.4 — Master record contracts + injected context ✅ (SHIPPED)
+
+**Boxes (pure contracts, zero DB — data layer lands in Phase 5):**
+- **Master-record slices** (`@poultry/schemas` `slice/`): `DiseaseHistorySlice`, `RecentCaseSlice`, `CaseSnapshot` (a `Case` that must carry `id`), `MedicationSlice`, plus capped list schemas (history ≤ 20, recent cases ≤ 10, medications ≤ 30)
+- **Injected context** (`farmer-context.ts`): `profileDigest` (name · LGA · farm size · species · breed · reply language; ≤ 90 tokens) + `openCasePointer` (one line, ≤ 60 tokens) composed by `injectedContext()` as the `farmerContext` the API injects at session open — stable facts ride in context and never round-trip as a tool call
+- **Tool contracts** (`master-tools.ts`): the four agreed **read-only** tools — `get_disease_history`, `get_recent_cases`, `get_case`, `get_medication_history` — each with description, Zod input + output schema, and a hard token cap; `checkSlice`/`withinSliceBudget` guard a slice against its schema and cap before it ever reaches the model
+- **`MasterStore` interface** (`master-store.ts`) + `inMemoryMasterStore` fake for later phases: `profile`/`openCase` by E.164 phone, `caseById`, and the three history slices
+- `ChatInput` + `TurnInput` grow `farmerContext?: string`; `runTurn` forwards it to the chat provider
+- **Design lock:** the LLM never writes the chart — orchestrator owns every append
+
+**Testable alone:** slice accept/reject + caps; digest/pointer golden text + token caps; tool registry shape; slice-budget matrix; in-memory store reads. No DB, no tools wired to an LLM.
+
+Exit: `pnpm check` green (core 113 tests across 13 files, schemas 101). **Done.**
+
+---
+
 ## Phase 3 — Store lookup (`packages/stores`)
 
 **Boxes:**
@@ -247,6 +263,7 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 2.1 | Language routing + conversation context | ✅ |
 | 2.2 | Memory model + budget compaction | ✅ |
 | 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
+| 2.4 | Master record contracts + injected context | ✅ |
 | 3 | Store lookup | ⏳ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |
