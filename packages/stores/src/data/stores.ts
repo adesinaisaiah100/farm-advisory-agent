@@ -1,0 +1,78 @@
+import type { AgroStore } from '@poultry/schemas';
+
+export const STORES: AgroStore[] = [
+  {
+    id: 'e652b23f-7eeb-4828-a5f1-68671f10197c',
+    name: 'Adaeze Agro Vet',
+    phone: '+2348012345678',
+    state: 'Oyo',
+    lga: 'Ibadan North',
+    stock: ['newcastle vaccine', 'gumboro vaccine', 'vitamins', 'antibiotics'],
+    isOpen: true,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: 'a08f708f-d883-43c9-bf7b-9738bde3d4dc',
+    name: 'GreenField Vet Supplies',
+    phone: '+2348023456789',
+    state: 'Lagos',
+    lga: 'Ojo',
+    stock: ['newcastle vaccine', 'fowl pox vaccine', 'dewormer'],
+    isOpen: true,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: '291e9fc5-8402-4d98-b789-36cfe2396616',
+    name: 'Sunrise Agro Store',
+    phone: '+2348034567890',
+    state: 'Kaduna',
+    lga: 'Kaduna North',
+    stock: ['gumboro vaccine', 'vitamins'],
+    isOpen: false,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: '7f6c4571-3e98-48bf-ae76-d83374662b38',
+    name: 'FarmCare Supplies',
+    phone: '+2348045678901',
+    state: 'Enugu',
+    lga: 'Enugu North',
+    stock: ['antibiotics', 'dewormer'],
+    isOpen: true,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: 'f5b4f698-0b75-45ea-bdfb-42ec5177c968',
+    name: 'PoultryPlus Depot',
+    phone: '+2348056789012',
+    state: 'Ogun',
+    lga: 'Abeokuta North',
+    stock: ['newcastle vaccine', 'gumboro vaccine', 'vitamins'],
+    isOpen: true,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: '52846ca9-5b29-46e3-8659-b5cf53c963e7',
+    name: 'Hope Agro Vet',
+    phone: '+2348067890123',
+    state: 'Plateau',
+    lga: 'Jos North',
+    stock: ['fowl pox vaccine', 'antibiotics'],
+    isOpen: true,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+  {
+    id: '1b9d8c07-6e3a-4d1f-9e6a-2c4b6d8e0f13',
+    name: 'Ojo Agro Depot',
+    phone: '+2348078901234',
+    state: 'Lagos',
+    lga: 'Ojo',
+    stock: ['newcastle vaccine', 'dewormer', 'vitamins'],
+    isOpen: false,
+    updatedAt: '2026-09-20T00:00:00.000Z',
+  },
+];
+
+export function getStores(): AgroStore[] {
+  return STORES.map((store) => ({ ...store, stock: [...store.stock] }));
+}

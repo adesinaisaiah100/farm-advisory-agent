@@ -112,13 +112,18 @@ Exit: `pnpm check` green (core 113 tests across 13 files, schemas 101). **Done.*
 ## Phase 3 — Store lookup (`packages/stores`)
 
 **Boxes:**
-- Static `stores.json` seed (LGA-ish; a handful of realistic agro-vet entries, no fake phone numbers in code)
-- `searchByLga` / `hasItem` / nearest-by-LGA referral picking
-- Fallback when no store matches (still helpful: tell the farmer what to ask for)
+- Static seed of realistic agro-vet entries (`src/data/stores.ts`, unique UUIDs, E.164 `+234…`, no phone numbers written anywhere else)
+- `searchByLga(lga, state?)` / `hasStock(store, item)` / `pickReferral({ lga?, state?, item? })` referral picking
+- `coveredLgas()` so the UI can show which LGAs are covered
+- Fallback when no store matches: `pickReferral` returns `undefined` and the slip degrades to the generic "buy inside a known agro-vet store" guidance already golden-tested in `core/slip.ts`
 
-**Testable alone:** pure function over the JSON seed; golden referral output.
+**Testable alone:** pure function over the typed seed; golden referral output.
 
-Exit: referral logic + fallback matrix green.
+Picking rules, in order: filter by location → narrow to stores carrying the item when any do → prefer open → break ties by name. Unlisted LGA returns `undefined` rather than a far-away store.
+
+Shipped as 7 seed entries across 6 LGAs (Oyo, Lagos ×2, Kaduna, Enugu, Ogun, Plateau) — the second Lagos entry is deliberately closed so the open-preference rule is testable. `getStores()` hands back a deep-enough copy (fresh objects and stock arrays) so callers cannot mutate the directory.
+
+Exit: 17 stores tests green, typecheck + lint clean. **Done.**
 
 ---
 
@@ -264,7 +269,7 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 2.2 | Memory model + budget compaction | ✅ |
 | 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
 | 2.4 | Master record contracts + injected context | ✅ |
-| 3 | Store lookup | ⏳ |
+| 3 | Store lookup | ✅ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |
 | 6 | Media pipeline | ⏳ |
