@@ -111,5 +111,7 @@ When an AI agent works in this repo, it must:
 PHASE 0  Foundation / monorepo harness      ✅ shipped (this repo bootstraps green)
 PHASE 1  Contracts (@poultry/schemas)        ✅ shipped (full contract set + tests)
 PHASE 2  Orchestrator core (@poultry/core)   ✅ shipped (four-door core + tests)
+PHASE 2.1 Language routing + history + name ✅ shipped (classifyLanguage, ChatInput.history, profile)
+PHASE 2.2 Memory model + compaction          ✅ shipped (notes, budget-triggered compaction)
 PHASE 3-10  see PHASES.md                   ⏳ not started
 ```

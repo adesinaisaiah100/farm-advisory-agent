@@ -9,9 +9,23 @@ export interface TurnMessage {
 export interface ChatInput {
   filled: CaseData;
   missing: string[];
+  notes: string[];
   query: string;
   history: readonly TurnMessage[];
   replyLanguage: ReplyLanguage;
+}
+
+export interface CompactInput {
+  notes: string[];
+  dropped: readonly TurnMessage[];
+}
+
+export interface CompactProvider {
+  compact(input: CompactInput): Promise<unknown>;
+}
+
+export interface TokenCounter {
+  count(text: string): number;
 }
 
 export interface ChatProvider {

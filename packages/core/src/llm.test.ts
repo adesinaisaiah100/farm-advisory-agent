@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CaseDeltaSchema, LlmReplySchema } from './llm.js';
+import { CaseDeltaSchema, CompactionResultSchema, LlmReplySchema } from './llm.js';
 
 describe('CaseDeltaSchema', () => {
   it('accepts a partial capture', () => {
@@ -48,5 +48,23 @@ describe('LlmReplySchema', () => {
 
   it('rejects unknown top-level keys', () => {
     expect(LlmReplySchema.safeParse({ ...ok, hallucination: 'x' }).success).toBe(false);
+  });
+});
+
+describe('CompactionResultSchema', () => {
+  it('accepts folded notes', () => {
+    expect(CompactionResultSchema.safeParse({ notes: ['already gave amprolium 3 days ago'] }).success).toBe(true);
+  });
+
+  it('accepts zero notes', () => {
+    expect(CompactionResultSchema.safeParse({ notes: [] }).success).toBe(true);
+  });
+
+  it('rejects a string notes instead of an array', () => {
+    expect(CompactionResultSchema.safeParse({ notes: 'summary line' }).success).toBe(false);
+  });
+
+  it('rejects unknown keys', () => {
+    expect(CompactionResultSchema.safeParse({ notes: [], evil: true }).success).toBe(false);
   });
 });

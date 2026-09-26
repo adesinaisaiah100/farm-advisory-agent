@@ -5,12 +5,14 @@ import {
   runTurn,
   type TurnDeps,
 } from './orchestrator.js';
-import type { ChatProvider, ChatInput, TurnMessage } from './providers.js';
+import type { ChatProvider, ChatInput, CompactProvider, TokenCounter, TurnMessage } from './providers.js';
 import { ESCALATE_SCRIPT, ESCALATE_SCRIPT_EN } from './slip.js';
 
 function caseData(overrides: Partial<CaseData> = {}): CaseData {
   return { status: 'in_progress', ...overrides };
 }
+
+const countTokens: TokenCounter = { count: (s) => Math.ceil(s.length / 4) };
 
 function makeDeps(raw: unknown = {}): TurnDeps {
   const chat: ChatProvider = {
@@ -19,10 +21,15 @@ function makeDeps(raw: unknown = {}): TurnDeps {
   return makeDepsNowSyncing(chat);
 }
 
-function makeDepsNowSyncing(chat: ChatProvider): TurnDeps {
+function makeDepsNowSyncing(chat: ChatProvider, compact: CompactProvider | undefined = undefined): TurnDeps {
   let n = 0;
+  const neverCompact: CompactProvider = {
+    compact: async () => ({ notes: [] }),
+  };
   return {
     chat,
+    compact: compact ?? neverCompact,
+    count: countTokens,
     now: () => `2026-09-25T12:0${n++}:00.000Z`,
   };
 }
@@ -134,6 +141,32 @@ describe('runTurn', () => {
     expect(result.profile).toEqual({ name: 'Adaeze' });
     expect(result.replyLanguage).toBe('pidgin');
     expect(sawInput!.history).toEqual(history);
+  });
+
+  it('compacts long history into notes before the chat turn', async () => {
+    const longText = 'we dey talk about di birds for this farm and e don long well well so make we continue. '.repeat(4);
+    const history: readonly TurnMessage[] = Array.from({ length: 45 }, (_, i) => ({
+      role: i % 2 === 0 ? 'farmer' : 'agent',
+      text: `${longText} ${i}`,
+    }));
+    let sawInput: ChatInput;
+    const chat: ChatProvider = {
+      complete: async (input) => {
+        sawInput = input;
+        return { delta: {}, reply: 'ok' };
+      },
+    };
+    const compact: CompactProvider = {
+      compact: async (input) => {
+        expect(input.dropped.length).toBeGreaterThan(0);
+        return { notes: ['already gave amprolium 3 days ago'] };
+      },
+    };
+    const deps = makeDepsNowSyncing(chat, compact);
+    const result = await runTurn({ case: caseData(), query: 'how far', history }, deps);
+    expect(result.state.notes).toEqual(['already gave amprolium 3 days ago']);
+    expect(sawInput!.notes).toEqual(['already gave amprolium 3 days ago']);
+    expect(sawInput!.history.length).toBeLessThanOrEqual(40);
   });
 
   it('never regresses missing() once a field is filled', async () => {

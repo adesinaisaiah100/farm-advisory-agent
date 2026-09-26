@@ -118,3 +118,47 @@ SessionState = { case: CaseSchema, missing: string[], updatedAt: DateTime }
 truth. `CaseStatusSchema` moved home to `case/index.ts` (it belongs to the case, and
 this removes a session↔case import cycle). Session keeps a top-level `caseId` and its
 own open/completed/void status machine.
+
+---
+
+# Phase 2.1 & 2.2 amendments
+
+## 2.1 — Language routing, conversation context, farmer name
+
+- `language.ts` — **`classifyLanguage()`**: pure code (no extra LLM call) Pidgin/English
+  heuristic. Weighted marker filters (`dey`, `abeg`, `na`, `wetin`, … ×2 vs
+  `is/are/please/because` ×1); a message must clear a hit-count and beat the other
+  language's score. `replyLanguageFor()` maps unknown/short → English.
+- `ChatInput` grew `history: TurnMessage[]` + `replyLanguage`; `runTurn` accepts
+  `history` and forwards it — the LLM answers from the actual conversation.
+- `ProfileDeltaSchema` (`{ name }`) added to `LlmReplySchema`: farmer **name** lands in
+  a profile slot during the same turn, kept separate from clinical case data.
+- Language-matched built-ins: `ESCALATE_SCRIPT_EN`, `escalationScript(lang)`,
+  `FALLBACK_REPLY_EN`, per-language collect prompts.
+- `slip.test.ts` gained an `ESCALATE_SCRIPT_EN` sanity test.
+
+## 2.2 — Memory model + budget compaction
+
+The earlier scan is now a three-layer memory model (see `SYSTEM_DESIGN.md`):
+session → episode (the case) → master record (farmer chart, Phase 5). This phase
+implements the session-layer compaction that keeps context token-frugal:
+
+- `SessionStateSchema.notes: string[]` — compacted facts the case schema can't hold
+  ("already gave amprolium", "farmer corrected the breed").
+- `compact.ts` — **`compactHistory()`**: deterministic trigger. If history+notes exceed
+  the token budget (default 1800; floor 4 msgs, cap 40), the oldest messages are dropped
+  and folded into `notes` by one LLM call via `CompactProvider`; the result is guarded by
+  strict `CompactionResultSchema` and an invalid fold leaves the context untouched.
+  `TokenCounter` is a pure-code interface (deterministic in tests).
+- `runTurn` folds compaction in: `{ filled, missing, query, notes, windowed history,
+  replyLanguage }` reaches the LLM; `notes` persist on the produced `SessionState` so an
+  abandoned-and-resumed chat resumes coherently with zero transcript.
+- Tests (compact: 8; llm +4 schema; orchestrator +1 forced-compaction) bring core to
+  **79 tests across 9 files**; schemas to 85. `pnpm check` stays green.
+
+## Repo tooling note (this machine)
+
+Vitest's parallel worker forks under `pnpm -r` exhaust this machine's memory
+(spawn/`MemoryChunk` OOM — not a code failure; every package passes standalone). The
+workspace scripts in `package.json` now run `pnpm -r --workspace-concurrency=1` so
+`pnpm check` is reliable locally.

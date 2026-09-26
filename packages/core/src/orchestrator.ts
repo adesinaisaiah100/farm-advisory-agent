@@ -1,12 +1,13 @@
 import type { CaseData, SessionState } from '@poultry/schemas';
 import { classifyLanguage, replyLanguageFor } from './language.js';
 import type { ReplyLanguage } from './language.js';
+import { compactHistory, DEFAULT_BUDGET_TOKENS } from './compact.js';
 import { LlmReplySchema } from './llm.js';
 import type { ProfileDelta } from './llm.js';
 import { mergeDelta } from './merge.js';
 import type { CaseField } from './merge.js';
 import { missing } from './missing.js';
-import type { ChatProvider, TurnMessage } from './providers.js';
+import type { ChatProvider, CompactProvider, TokenCounter, TurnMessage } from './providers.js';
 import { buildReferralSlip, escalationScript } from './slip.js';
 import { validateCase } from './validate.js';
 import type { EffectiveDoor } from './validate.js';
@@ -28,11 +29,14 @@ export interface TurnResult {
 
 export interface TurnDeps {
   chat: ChatProvider;
+  compact: CompactProvider;
+  count: TokenCounter;
   now: () => string;
 }
 
 export interface TurnInput {
   case: CaseData;
+  notes?: string[];
   query: string;
   history?: readonly TurnMessage[];
 }
@@ -43,18 +47,26 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
   const replyLanguage = replyLanguageFor(classifyLanguage(input.query));
   const history = input.history ?? [];
 
+  const compacted = await compactHistory(
+    { history, notes: input.notes ?? [], budgetTokens: DEFAULT_BUDGET_TOKENS },
+    { compact: deps.compact, count: deps.count },
+  );
+  const notes = compacted.notes;
+  const windowed = compacted.history;
+
   const raw = await deps.chat.complete({
     filled,
     missing: missingFields,
+    notes,
     query: input.query,
-    history,
+    history: windowed,
     replyLanguage,
   });
 
   const parsed = LlmReplySchema.safeParse(raw);
   if (!parsed.success) {
     return {
-      state: { case: filled, missing: missingFields, updatedAt: deps.now() },
+      state: { case: filled, missing: missingFields, notes, updatedAt: deps.now() },
       reply: replyLanguage === 'english' ? FALLBACK_REPLY_EN : FALLBACK_REPLY,
       door: 'collect',
       changed: [],
@@ -71,7 +83,7 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
   const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage);
 
   return {
-    state: { case: nextCase, missing: missing(nextCase), updatedAt: deps.now() },
+    state: { case: nextCase, missing: missing(nextCase), notes, updatedAt: deps.now() },
     reply,
     door: decision.door,
     changed: changedFields(filled, nextCase),

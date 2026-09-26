@@ -51,6 +51,33 @@ Exit: state transitions + four-door matrix green; `missing()` monotonic — once
 
 ---
 
+## Phase 2.1 — Language routing + conversation context ✅ (SHIPPED)
+
+**Boxes:**
+- `classifyLanguage()` — code-only Pidgin/English heuristic (marker filters, weighted), zero extra LLM call; `replyLanguageFor()` maps unknown → English
+- `ChatInput` carries verbatim `history` + `replyLanguage`; `runTurn` accepts `history`
+- Farmer **name** capture via `ProfileDeltaSchema` (`profile: { name }`), kept separate from clinical case data
+- Language-matched built-ins: `ESCALATE_SCRIPT`/`ESCALATE_SCRIPT_EN`, per-language fallbacks and collect prompts
+
+**Testable alone:** classifier fixture matrix (Pidgin/English/short/ambiguous); escalation scripts golden; profile+history passthrough.
+
+Exit: Pidgin turns get Pidgin, English turns get English, name lands in profile, history reaches the LLM. **Done.**
+
+---
+
+## Phase 2.2 — Memory model + budget compaction ✅ (SHIPPED)
+
+**Boxes:**
+- `SessionStateSchema.notes` — per-session compacted facts the case schema can't hold ("already gave amprolium", "farmer corrected the breed")
+- `compactHistory()` — deterministic token-budget trigger (floor 4 msgs, cap 40); if over budget, drop oldest messages and fold them into notes via one guarded LLM call (`CompactionResultSchema`, strict); invalid output leaves context unchanged
+- `TokenCounter` + `CompactProvider` interfaces (fakes in tests)
+
+**Testable alone:** budget/floor/cap matrix; notes counted in budget; oldest-dropped ordering; zv-rejected compaction output ignored.
+
+Exit: a long chat stays token-frugal, notes persist with state for resume, compaction is provably budget-bounded. **Done.**
+
+---
+
 ## Phase 3 — Store lookup (`packages/stores`)
 
 **Boxes:**

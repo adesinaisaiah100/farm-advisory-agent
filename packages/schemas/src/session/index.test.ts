@@ -21,6 +21,25 @@ describe('SessionSchema', () => {
     expect(SessionSchema.safeParse(session('open')).success).toBe(true);
   });
 
+  it('defaults missing and notes to empty arrays', () => {
+    const parsed = SessionSchema.parse({ ...session('open'), state: { case: { status: 'in_progress' }, updatedAt: WHEN } });
+    expect(parsed.state.missing).toEqual([]);
+    expect(parsed.state.notes).toEqual([]);
+  });
+
+  it('accepts session notes (compacted facts)', () => {
+    const withNotes = {
+      ...session('open'),
+      state: {
+        case: { status: 'in_progress' },
+        missing: ['symptoms'],
+        notes: ['already gave amprolium 3 days ago'],
+        updatedAt: WHEN,
+      },
+    };
+    expect(SessionSchema.safeParse(withNotes).success).toBe(true);
+  });
+
   it('rejects an unknown status', () => {
     const bad = { ...session('open'), status: 'done' };
     expect(SessionSchema.safeParse(bad).success).toBe(false);

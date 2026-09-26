@@ -38,3 +38,11 @@ export const LlmReplySchema = z
   .strict();
 
 export type LlmReply = z.infer<typeof LlmReplySchema>;
+
+export const CompactionResultSchema = z
+  .object({
+    notes: z.array(z.string().min(1).max(240)),
+  })
+  .strict();
+
+export type CompactionResult = z.infer<typeof CompactionResultSchema>;

@@ -9,6 +9,7 @@ export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 export const SessionStateSchema = z.object({
   case: CaseSchema,
   missing: z.array(z.string()).default([]),
+  notes: z.array(z.string()).default([]),
   updatedAt: DateTimeSchema,
 });
 

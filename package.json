@@ -7,11 +7,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
-    "test:unit": "pnpm -r test:unit",
-    "test:integ": "pnpm -r test:integ",
+    "typecheck": "pnpm -r --workspace-concurrency=1 typecheck",
+    "lint": "pnpm -r --workspace-concurrency=1 lint",
+    "test": "pnpm -r --workspace-concurrency=1 test",
+    "test:unit": "pnpm -r --workspace-concurrency=1 test:unit",
+    "test:integ": "pnpm -r --workspace-concurrency=1 test:integ",
     "check": "pnpm typecheck && pnpm lint && pnpm test:unit"
   },
   "devDependencies": {
