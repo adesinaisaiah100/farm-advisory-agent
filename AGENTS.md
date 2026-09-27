@@ -115,6 +115,7 @@ PHASE 2.1 Language routing + history + name ✅ shipped (classifyLanguage, ChatI
 PHASE 2.2 Memory model + compaction          ✅ shipped (notes, budget-triggered compaction)
 PHASE 2.3 Memory hardening                    ✅ shipped (fail-closed budget, note caps, stall fallback, recall eval)
 PHASE 2.4 Master record contracts + context   ✅ shipped (profile digest + open-case pointer injected, 4 read-only tool contracts, MasterStore)
-PHASE 3  Store lookup (@poultry/stores)       ✅ shipped (typed seed, searchByLga/hasStock/pickReferral/coveredLgas, 17 tests)
+PHASE 3  Store lookup (@poultry/stores)       ✅ shipped (typed seed, searchByLga/hasStock/pickReferral/coveredLgas, 19 tests)
+PHASE 2.5 Triage confidence + ask-for ladder   ✅ shipped (3 confidence bands, 5th 'triage' door, 4 safety gaps closed, REFUSAL LIST)
 PHASE 4-10  see PHASES.md                   ⏳ not started
 ```

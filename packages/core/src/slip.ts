@@ -1,6 +1,7 @@
 import type { AgroStore, CaseData } from '@poultry/schemas';
 import type { ReplyLanguage } from './language.js';
 import { mortalityRate } from './validate.js';
+import { askFor, COUNTERFEIT_GUARD } from './askfor.js';
 
 export const ESCALATE_SCRIPT =
   'Abeg e no good to delay this one. Dis bird problem serious — you need make we take am serious. ' +
@@ -24,6 +25,7 @@ export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): s
     lines.push(`Store: ${store.name}`);
     lines.push(`Phone: ${store.phone}`);
     lines.push(`LGA: ${store.lga}, ${store.state}`);
+    lines.push(verifiedStockNote(store));
   }
   lines.push('', 'TELL THEM WHAT YOU SEE:');
   lines.push(`- Bird: ${c.species ?? 'unknown'}`);
@@ -35,11 +37,47 @@ export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): s
   const rate = mortalityRate(c);
   if (rate !== undefined) lines.push(`- Mortality rate: ${rate.toFixed(1)}%`);
   if (c.diseaseText) lines.push(`- Suspected: ${c.diseaseText}`);
-  lines.push('', 'ASK THEM FOR:');
-  lines.push('- The right medicine or vaccine for the symptoms above');
-  lines.push('- Dosage and days to give it — write it down');
+  lines.push('', ...askForBlock(c));
 
-  const storeHint = store ? `Buy only at ${store.name} and keep your receipt.` : 'Buy medicine only inside a known agro-vet store.';
+  const storeHint = store
+    ? `Buy only at ${store.name} and keep your receipt.`
+    : 'Buy medicine only inside a known agro-vet store.';
   lines.push('', storeHint);
   return lines.join('\n');
+}
+
+const ASK_HEADER = 'ASK THEM FOR:';
+const REFUSE_HEADER = 'DO NOT ACCEPT:';
+const UNVERIFIED_STOCK = 'We do not know what they stock today, so ask them.';
+
+export function verifiedStockNote(store: AgroStore): string {
+  if (
+    store.stock === undefined ||
+    store.stock.length === 0 ||
+    store.stockVerifiedAt === undefined
+  ) {
+    return UNVERIFIED_STOCK;
+  }
+  return `They confirmed on ${store.stockVerifiedAt.slice(0, 10)} that they stock: ${store.stock.join(', ')}.`;
+}
+
+export function askForBlock(c: CaseData): string[] {
+  const ladder = askFor(c);
+  if (ladder === undefined) {
+    return [
+      ASK_HEADER,
+      '- The treatment the agro-vet names for the signs above — I will not name a drug without a diagnosis',
+      ...COUNTERFEIT_GUARD.map((line) => `- ${line}`),
+    ];
+  }
+  return [
+    ASK_HEADER,
+    `- ${ladder.product}`,
+    `  Why: ${ladder.why}`,
+    ...ladder.askTheSeller.map((question) => `- Ask: ${question}`),
+    '',
+    REFUSE_HEADER,
+    ...ladder.refuse.map((line) => `- ${line}`),
+    ...(ladder.needsVet ? ['', 'A vet must confirm or administer this one.'] : []),
+  ];
 }

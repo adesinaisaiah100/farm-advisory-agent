@@ -146,7 +146,7 @@ Exit: 17 stores tests green, typecheck + lint clean. **Done.**
 
 **Testable alone:** pure functions over a differential; golden slip text per disease signature; the ambiguity and red-flag matrices are pure unit tests.
 
-Exit: confidence-band matrix + ask-for golden slips + the four fixes all green; core and schemas typecheck. **In progress.**
+Exit: confidence-band matrix + ask-for golden slips + the four fixes all green; 292 workspace tests, typecheck + lint clean. **Done.**
 
 ---
 
@@ -292,9 +292,9 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 2.2 | Memory model + budget compaction | ✅ |
 | 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
 | 2.4 | Master record contracts + injected context | ✅ |
-| 2.5 | Triage confidence + ask-for ladder | ⏳ |
+| 2.5 | Triage confidence + ask-for ladder | ✅ |
 | 3 | Store lookup | ✅ |
-| 3.1 | Ask-for ladder + strip fake inventory (folded into 2.5) | ⏳ |
+| 3.1 | Ask-for ladder + strip fake inventory (folded into 2.5) | ✅ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |
 | 6 | Media pipeline | ⏳ |

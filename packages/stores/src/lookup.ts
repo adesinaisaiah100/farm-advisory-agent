@@ -5,10 +5,15 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
+export function verifiedStock(store: AgroStore): readonly string[] {
+  if (store.stock === undefined || store.stockVerifiedAt === undefined) return [];
+  return store.stock;
+}
+
 export function hasStock(store: AgroStore, item: string): boolean {
   const wanted = normalize(item);
   if (wanted.length === 0) return false;
-  return store.stock.some((entry) => normalize(entry) === wanted);
+  return verifiedStock(store).some((entry) => normalize(entry) === wanted);
 }
 
 export interface ReferralQuery {
@@ -33,7 +38,7 @@ export function searchByLga(lga: string, state?: string): AgroStore[] {
   return STORES.filter(
     (store) =>
       normalize(store.lga) === wantedLga &&
-      (state === undefined || normalize(store.state) === normalize(state))
+      (state === undefined || normalize(store.state) === normalize(state)),
   );
 }
 
@@ -42,13 +47,11 @@ export function pickReferral(query: ReferralQuery = {}): AgroStore | undefined {
   if (candidates.length === 0) return undefined;
 
   let pool = candidates;
-  if (query.item !== undefined) {
-    const stocked = pool.filter((store) => hasStock(store, query.item as string));
+  const item = query.item;
+  if (item !== undefined) {
+    const stocked = pool.filter((store) => hasStock(store, item));
     if (stocked.length > 0) pool = stocked;
   }
-
-  const open = pool.filter((store) => store.isOpen);
-  if (open.length > 0) pool = open;
 
   return [...pool].sort((a, b) => a.name.localeCompare(b.name))[0];
 }
@@ -61,7 +64,7 @@ export function coveredLgas(): Array<{ lga: string; state: string }> {
       unique.set(key, { lga: store.lga, state: store.state });
     }
   }
-  return [...unique.values()].sort((a, b) =>
-    a.state.localeCompare(b.state) || a.lga.localeCompare(b.lga)
+  return [...unique.values()].sort(
+    (a, b) => a.state.localeCompare(b.state) || a.lga.localeCompare(b.lga),
   );
 }

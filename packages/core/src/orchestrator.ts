@@ -9,6 +9,7 @@ import type { CaseField } from './merge.js';
 import { missing } from './missing.js';
 import type { ChatProvider, CompactProvider, TokenCounter, TurnMessage } from './providers.js';
 import { buildReferralSlip, escalationScript } from './slip.js';
+import { assessTriage, triageReply } from './triage.js';
 import { validateCase } from './validate.js';
 import type { EffectiveDoor } from './validate.js';
 
@@ -73,7 +74,8 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
     const stallCount = (input.stallCount ?? 0) + 1;
     return {
       state: { case: filled, missing: missingFields, notes, stallCount, updatedAt: deps.now() },
-      reply: stallCount >= MAX_STALL ? stallReply(filled, replyLanguage) : fallbackReply(replyLanguage),
+      reply:
+        stallCount >= MAX_STALL ? stallReply(filled, replyLanguage) : fallbackReply(replyLanguage),
       door: 'collect',
       changed: [],
       replyLanguage,
@@ -85,11 +87,20 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
   const decision = validateCase(nextCase, parsed.data.delta.wantsSupply ?? false);
   nextCase.status = decision.caseStatus;
   nextCase.editedAt = deps.now();
+  if (decision.door === 'triage') {
+    nextCase.triageTurns = (filled.triageTurns ?? 0) + 1;
+  }
 
   const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage);
 
   return {
-    state: { case: nextCase, missing: missing(nextCase), notes, stallCount: 0, updatedAt: deps.now() },
+    state: {
+      case: nextCase,
+      missing: missing(nextCase),
+      notes,
+      stallCount: 0,
+      updatedAt: deps.now(),
+    },
     reply,
     door: decision.door,
     changed: changedFields(filled, nextCase),
@@ -125,7 +136,9 @@ function fallbackReply(lang: ReplyLanguage): string {
 // After repeated invalid LLM replies, answer with the questions we already know in
 // code instead of paying for another model call that will fail the same way.
 function stallReply(c: CaseData, lang: ReplyLanguage): string {
-  const asks = missing(c).map((f) => COLLECT_PROMPT[lang][f] ?? f).filter(Boolean);
+  const asks = missing(c)
+    .map((f) => COLLECT_PROMPT[lang][f] ?? f)
+    .filter(Boolean);
   if (asks.length === 0) return fallbackReply(lang);
   return `${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
 }
@@ -139,8 +152,14 @@ function replyFor(door: EffectiveDoor, llmReply: string, c: CaseData, lang: Repl
     case 'resolve':
     case 'report':
       return llmReply;
+    case 'triage':
+      // The model's own text is discarded on this door: it is the turn where the model
+      // is least sure, and a confident-sounding reply is exactly what must not reach a farmer.
+      return triageReply(assessTriage(c), lang);
     case 'collect': {
-      const asks = missing(c).map((f) => COLLECT_PROMPT[lang][f] ?? f).filter(Boolean);
+      const asks = missing(c)
+        .map((f) => COLLECT_PROMPT[lang][f] ?? f)
+        .filter(Boolean);
       return `${llmReply}\n\n${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
     }
   }
@@ -150,7 +169,8 @@ function changedFields(before: CaseData, after: CaseData): CaseField[] {
   const keys = new Set<CaseField>([...Object.keys(before), ...Object.keys(after)] as CaseField[]);
   const changed: CaseField[] = [];
   for (const key of keys) {
-    if ((before as Record<string, unknown>)[key] !== (after as Record<string, unknown>)[key]) changed.push(key);
+    if ((before as Record<string, unknown>)[key] !== (after as Record<string, unknown>)[key])
+      changed.push(key);
   }
   return changed;
 }

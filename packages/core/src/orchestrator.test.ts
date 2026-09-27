@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseData, Session } from '@poultry/schemas';
-import {
-  FALLBACK_REPLY,
-  FALLBACK_REPLY_EN,
-  runTurn,
-  type TurnDeps,
-} from './orchestrator.js';
-import type { ChatProvider, ChatInput, CompactProvider, TokenCounter, TurnMessage } from './providers.js';
+import { FALLBACK_REPLY, FALLBACK_REPLY_EN, runTurn, type TurnDeps } from './orchestrator.js';
+import type {
+  ChatProvider,
+  ChatInput,
+  CompactProvider,
+  TokenCounter,
+  TurnMessage,
+} from './providers.js';
 import { ESCALATE_SCRIPT, ESCALATE_SCRIPT_EN } from './slip.js';
 
 function caseData(overrides: Partial<CaseData> = {}): CaseData {
@@ -22,7 +23,10 @@ function makeDeps(raw: unknown = {}): TurnDeps {
   return makeDepsNowSyncing(chat);
 }
 
-function makeDepsNowSyncing(chat: ChatProvider, compact: CompactProvider | undefined = undefined): TurnDeps {
+function makeDepsNowSyncing(
+  chat: ChatProvider,
+  compact: CompactProvider | undefined = undefined,
+): TurnDeps {
   let n = 0;
   const neverCompact: CompactProvider = {
     compact: async () => ({ notes: [] }),
@@ -88,13 +92,57 @@ describe('runTurn', () => {
 
   it('builds a referral slip when the farmer wants supply', async () => {
     const deps = makeDeps({
-      delta: { species: 'broiler', symptoms: ['diarrhoea'], onsetDays: 1, mortalityCount: 1, farmSize: 300, wantsSupply: true },
+      delta: {
+        species: 'broiler',
+        symptoms: ['diarrhoea'],
+        onsetDays: 1,
+        mortalityCount: 1,
+        farmSize: 300,
+        wantsSupply: true,
+      },
       reply: 'I get the exact vitamins for you.',
     });
     const result = await runTurn({ case: caseData(), query: 'I wan buy vitamins' }, deps);
     expect(result.door).toBe('supply');
     expect(result.reply).toContain('CONTACT THIS AGRO-VET STORE');
-    expect(result.reply).toContain('symptoms');
+    expect(result.reply).toContain('- Symptoms: diarrhoea');
+  });
+
+  it('asks a discriminating question instead of resolving an ambiguous case', async () => {
+    const deps = makeDeps({
+      delta: {
+        species: 'broiler',
+        symptoms: ['sneezing', 'watery eyes'],
+        onsetDays: 2,
+        mortalityCount: 2,
+        farmSize: 400,
+        diseaseHits: ['newcastle', 'infectious_bronchitis'],
+      },
+      reply: 'Give am amoxicillin for 5 days.',
+    });
+    const result = await runTurn({ case: caseData(), query: 'my birds dey sneeze' }, deps);
+    expect(result.door).toBe('triage');
+    expect(result.reply).toContain('not 100% sure');
+    expect(result.reply).toContain('post-mortem');
+    expect(result.reply).not.toContain('amoxicillin');
+    expect(result.state.case.triageTurns).toBe(1);
+  });
+
+  it('discards the model reply on the triage door, where it is least trustworthy', async () => {
+    const deps = makeDeps({
+      delta: {
+        species: 'broiler',
+        symptoms: ['diarrhoea'],
+        onsetDays: 2,
+        mortalityCount: 2,
+        farmSize: 400,
+        needsConfirmation: ['diseaseHits'],
+      },
+      reply: 'Just buy erythromycin.',
+    });
+    const result = await runTurn({ case: caseData(), query: 'diarrhoea dey plenty' }, deps);
+    expect(result.door).toBe('triage');
+    expect(result.reply).not.toContain('erythromycin');
   });
 
   it('falls back when the LLM reply is not zod-valid', async () => {
@@ -130,7 +178,10 @@ describe('runTurn', () => {
 
   it('resets the stall counter on a valid reply', async () => {
     const deps = makeDeps({ delta: { symptoms: ['coughing'] }, reply: 'Noted.' });
-    const result = await runTurn({ case: caseData(), query: 'my birds dey cough', stallCount: 5 }, deps);
+    const result = await runTurn(
+      { case: caseData(), query: 'my birds dey cough', stallCount: 5 },
+      deps,
+    );
     expect(result.state.stallCount).toBe(0);
   });
 
@@ -166,7 +217,12 @@ describe('runTurn', () => {
     };
     const deps = makeDepsNowSyncing(chat);
     const result = await runTurn(
-      { case: caseData(), query: 'Na me be Adaeze, abeg help', history, farmerContext: 'Adaeze · Jos North · 800 birds · reply in pidgin' },
+      {
+        case: caseData(),
+        query: 'Na me be Adaeze, abeg help',
+        history,
+        farmerContext: 'Adaeze · Jos North · 800 birds · reply in pidgin',
+      },
       deps,
     );
     expect(result.profile).toEqual({ name: 'Adaeze' });
@@ -176,7 +232,10 @@ describe('runTurn', () => {
   });
 
   it('compacts long history into notes before the chat turn', async () => {
-    const longText = 'we dey talk about di birds for this farm and e don long well well so make we continue. '.repeat(4);
+    const longText =
+      'we dey talk about di birds for this farm and e don long well well so make we continue. '.repeat(
+        4,
+      );
     const history: readonly TurnMessage[] = Array.from({ length: 45 }, (_, i) => ({
       role: i % 2 === 0 ? 'farmer' : 'agent',
       text: `${longText} ${i}`,
@@ -230,7 +289,10 @@ describe('runTurn session shape', () => {
       phone: '+2348012345678',
       status: 'open',
       state: await (
-        await runTurn({ case: caseData(), query: 'layers dey die' }, makeDeps({ delta: { species: 'layer' }, reply: 'Hear you.' }))
+        await runTurn(
+          { case: caseData(), query: 'layers dey die' },
+          makeDeps({ delta: { species: 'layer' }, reply: 'Hear you.' }),
+        )
       ).state,
       startedAt: '2026-09-25T12:00:00.000Z',
       lastActive: '2026-09-25T12:00:00.000Z',

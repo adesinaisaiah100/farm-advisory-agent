@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { StoreSchema } from '@poultry/schemas';
-import { STORES, coveredLgas, getStores, hasStock, pickReferral, searchByLga } from './index.js';
+import type { AgroStore } from '@poultry/schemas';
+import {
+  STORES,
+  coveredLgas,
+  getStores,
+  hasStock,
+  pickReferral,
+  searchByLga,
+  verifiedStock,
+} from './index.js';
 
 describe('store seed', () => {
   it('every entry matches the shared StoreSchema', () => {
@@ -24,6 +33,12 @@ describe('store seed', () => {
     first.pop();
     expect(getStores().length).toBe(STORES.length);
   });
+
+  it('never carries an unconfirmed stock claim', () => {
+    for (const store of STORES) {
+      if (store.stock !== undefined) expect(store.stockVerifiedAt, store.name).toBeDefined();
+    }
+  });
 });
 
 describe('hasStock', () => {
@@ -39,6 +54,12 @@ describe('hasStock', () => {
 
   it('does not match an empty item', () => {
     expect(hasStock(store, '   ')).toBe(false);
+  });
+
+  it('ignores a stock list nobody confirmed', () => {
+    const unverified: AgroStore = { ...store, stock: ['vitamins'], stockVerifiedAt: undefined };
+    expect(hasStock(unverified, 'vitamins')).toBe(false);
+    expect(verifiedStock(unverified)).toEqual([]);
   });
 });
 
@@ -62,24 +83,23 @@ describe('searchByLga', () => {
 });
 
 describe('pickReferral', () => {
-  it('prefers an open store carrying the item', () => {
+  it('prefers a store whose confirmed stock carries the item', () => {
     const store = pickReferral({ lga: 'Kaduna North', item: 'gumboro vaccine' });
     expect(store?.name).toBe('Sunrise Agro Store');
   });
 
-  it('falls back to the only store even when it is closed', () => {
-    const store = pickReferral({ lga: 'Kaduna North', item: 'vitamin a' });
+  it('still returns the only nearby store when it has not confirmed the item', () => {
+    const store = pickReferral({ lga: 'Kaduna North', item: 'ivermectin pour-on' });
     expect(store?.name).toBe('Sunrise Agro Store');
-    expect(store?.isOpen).toBe(false);
   });
 
-  it('prefers an open store when a closed one carries the item', () => {
+  it('prefers the store that confirmed carrying the item', () => {
     const store = pickReferral({ lga: 'Ojo', item: 'dewormer' });
     expect(store?.name).toBe('GreenField Vet Supplies');
-    expect(store?.isOpen).toBe(true);
+    expect(hasStock(store!, 'dewormer')).toBe(true);
   });
 
-  it('falls back to the LGA store when the item is not stocked anywhere', () => {
+  it('falls back to the LGA store when the item is not confirmed anywhere', () => {
     const store = pickReferral({ lga: 'Enugu North', item: 'ivermectin pour-on' });
     expect(store?.name).toBe('FarmCare Supplies');
   });
@@ -95,7 +115,7 @@ describe('pickReferral', () => {
 
   it('can search across LGAs when no location is given', () => {
     const store = pickReferral({ item: 'dewormer' });
-    expect(store?.stock).toContain('dewormer');
+    expect(verifiedStock(store!)).toContain('dewormer');
   });
 });
 
@@ -104,8 +124,8 @@ describe('coveredLgas', () => {
     const coverage = coveredLgas();
     const keys = coverage.map((c) => `${c.lga}|${c.state}`);
     expect(new Set(keys).size).toBe(coverage.length);
-    const sorted = [...coverage].sort((a, b) =>
-      a.state.localeCompare(b.state) || a.lga.localeCompare(b.lga)
+    const sorted = [...coverage].sort(
+      (a, b) => a.state.localeCompare(b.state) || a.lga.localeCompare(b.lga),
     );
     expect(coverage).toEqual(sorted);
   });

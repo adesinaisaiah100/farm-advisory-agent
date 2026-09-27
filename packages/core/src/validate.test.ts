@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseData } from '@poultry/schemas';
-import { hasReportableSignal, MASS_MORTALITY_PCT, mortalityRate, validateCase } from './validate.js';
+import { MAX_TRIAGE_TURNS } from './triage.js';
+import {
+  hasReportableSignal,
+  MASS_MORTALITY_PCT,
+  mortalityRate,
+  validateCase,
+} from './validate.js';
 
 function baseCase(overrides: Partial<CaseData> = {}): CaseData {
   return {
@@ -24,7 +30,9 @@ describe('mortalityRate', () => {
   });
 
   it('is undefined without count or size', () => {
-    expect(mortalityRate(baseCase({ mortalityCount: undefined, farmSize: undefined }))).toBeUndefined();
+    expect(
+      mortalityRate(baseCase({ mortalityCount: undefined, farmSize: undefined })),
+    ).toBeUndefined();
   });
 
   it('protects against divide by zero', () => {
@@ -47,11 +55,17 @@ describe('hasReportableSignal', () => {
 });
 
 describe('validateCase', () => {
-  it('escalates on a critical symptom', () => {
+  it('escalates on a red flag', () => {
     const d = validateCase(baseCase({ symptoms: ['sudden death'] }), false);
     expect(d.door).toBe('escalate');
     expect(d.caseStatus).toBe('escalated');
-    expect(d.reasons).toContain('critical symptom');
+    expect(d.reasons).toContain('red flag: sudden_death');
+  });
+
+  it('escalates on a red flag the farmer described in Pidgin', () => {
+    const d = validateCase(baseCase({ symptoms: ['neck dey bend'] }), false);
+    expect(d.door).toBe('escalate');
+    expect(d.reasons).toContain('red flag: neck_sign');
   });
 
   it('escalates on suspected avian influenza', () => {
@@ -61,7 +75,10 @@ describe('validateCase', () => {
   });
 
   it('escalates on mass mortality at the threshold', () => {
-    const d = validateCase(baseCase({ mortalityCount: (MASS_MORTALITY_PCT * 500) / 100 + 1 }), false);
+    const d = validateCase(
+      baseCase({ mortalityCount: (MASS_MORTALITY_PCT * 500) / 100 + 1 }),
+      false,
+    );
     expect(d.door).toBe('escalate');
     expect(d.reasons).toContain('mass mortality');
   });
@@ -86,7 +103,44 @@ describe('validateCase', () => {
   });
 
   it('safety is checked before completeness', () => {
-    const d = validateCase(baseCase({ symptoms: ['paralysis'], onsetDays: undefined }), false);
+    const d = validateCase(baseCase({ symptoms: ['bird dey gasp'], onsetDays: undefined }), false);
     expect(d.door).toBe('escalate');
+  });
+
+  it('tries to tell two look-alikes apart instead of resolving a coin flip', () => {
+    const d = validateCase(
+      baseCase({ diseaseHits: ['newcastle', 'infectious_bronchitis'] }),
+      false,
+    );
+    expect(d.door).toBe('triage');
+    expect(d.caseStatus).toBe('in_progress');
+    expect(d.reasons).toContain('cannot separate newcastle from infectious_bronchitis');
+  });
+
+  it('does not sell medicine to a farmer while the diagnosis is open', () => {
+    const d = validateCase(baseCase({ diseaseHits: ['coccidiosis', 'necrotic_enteritis'] }), true);
+    expect(d.door).toBe('triage');
+  });
+
+  it('escalates a case that stayed ambiguous through every discriminating question', () => {
+    const d = validateCase(
+      baseCase({
+        diseaseHits: ['newcastle', 'infectious_bronchitis'],
+        triageTurns: MAX_TRIAGE_TURNS,
+      }),
+      false,
+    );
+    expect(d.door).toBe('escalate');
+    expect(d.reasons).toContain(
+      `still ambiguous after ${MAX_TRIAGE_TURNS} discriminating questions`,
+    );
+  });
+
+  it('keeps textbook coccidiosis out of the escalation queue', () => {
+    const d = validateCase(
+      baseCase({ symptoms: ['blood in droppings'], diseaseHits: ['coccidiosis'] }),
+      true,
+    );
+    expect(d.door).toBe('supply');
   });
 });
