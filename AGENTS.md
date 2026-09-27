@@ -29,9 +29,22 @@ Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). Whe
 | Object storage | Cloudflare R2 |
 | WhatsApp | Baileys bridge on ONE small Node host |
 | Embeddings | Google `text-embedding-004` @ 768 dims (free) |
-| Pidgin transcription | OpenRouter free multimodal + dynamic Pidgin prompt |
-| LLM | OpenAI GPT-4o-mini (chat/tools/vision) |
+| Pidgin transcription | Google `gemini-3.5-transcribe` (free tier) + dynamic Pidgin prompt |
+| LLM | Google `gemini-2.5-flash` (free tier; chat/tools/vision/audio, function calling) |
 | Obs | Langfuse · Sentry · pino · `/health` `/ready` |
+
+**Amendment, Sep 2026 — the MVP is single-provider.** The table above originally specified OpenAI
+GPT-4o-mini for the turn and OpenRouter free multimodal for transcription. Both were dropped: the MVP has no
+API budget, and Google AI Studio's free tier covers the entire surface with no card, which collapses two
+providers and two keys into one. `gemini-2.5-flash` does chat, tool calling, vision *and* audio input at 1M
+context. OpenRouter survives only as an optional 429 fallback, and any model used there must accept audio
+and must not be a reasoning model — reasoning models paraphrase, and farmer speech is evidence that has to
+survive verbatim.
+
+**The privacy cost of free, stated plainly:** Google's free-tier terms allow prompts to be used for product
+improvement; only paid carries a no-training guarantee. Acceptable for a demo, not for real farmers' voice
+notes, which carry identifiable speech and a household's livelihood. Revisit before real user data.
+
 
 ## 3. Repository Rules
 
