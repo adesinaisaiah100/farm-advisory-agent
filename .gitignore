@@ -39,3 +39,4 @@ Thumbs.db
 # --- Neon branch data / local scratch ---
 *.sqlite
 *.db
+.neon
