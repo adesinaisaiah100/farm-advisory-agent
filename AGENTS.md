@@ -9,6 +9,10 @@ This file is the contract for how we write code in this repo. Everything here is
 A conversational AI poultry advisory agent on WhatsApp for Nigerian semi-commercial farmers (200–2,000 birds):
 **four doors** — RESOLVE (guidance) · SUPPLY (referral slip) · ESCALATE (safety rule; real vet is post-MVP) · REPORT (anonymised surveillance signal).
 
+**What it actually is:** a data-collection loop and a veterinary handoff. The unit of value is the *case* — a farmer describes a sick bird in Pidgin, we fill the structured record, we refuse the drug that will not work, we point at the nearest vet, and the record accumulates into the poultry disease surveillance layer the ministry does not have. The farmer's willingness to open the chat tomorrow is the growth metric; a farmer only stays if we answer in their language and visibly move them toward a professional. The **prescriber brief is the growth surface**, because the vet is who sends us the next farmer.
+
+Judge every change against that loop first. A feature that improves retrieval quality but makes the farmer less willing to talk is a regression.
+
 Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). When code and docs disagree, **fix the docs too.**
 
 ## 2. The Locked Stack (no debating, no drift)
