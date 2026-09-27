@@ -1,14 +1,14 @@
-import { z } from 'zod';
+import type { Chunk } from './schema.js';
 
-export const ChunkSchema = z.object({
-  id: z.string(),
-  groupId: z.string(),
-  position: z.number().int().nonnegative(),
-  text: z.string(),
-});
+export * from './schema.js';
+export * from './tokens.js';
+export * from './sentences.js';
+export * from './micro-chunk.js';
+export * from './paginate.js';
+export * from './analyze.js';
+export * from './groups.js';
+export * from './ingest.js';
 
-export type Chunk = z.infer<typeof ChunkSchema>;
-
-export function overlapsChunk(c: Chunk, query: string): boolean {
-  return c.text.toLowerCase().includes(query.toLowerCase());
+export function overlapsChunk(chunk: Chunk, query: string): boolean {
+  return chunk.text.toLowerCase().includes(query.toLowerCase());
 }

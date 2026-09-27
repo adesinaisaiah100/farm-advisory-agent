@@ -172,7 +172,7 @@ Exit: hardcoded ladder gone, no fabricated inventory in the seed, gate proven un
 
 ---
 
-## Phase 4 — RAG ingestion (`@poultry/rag`, ingest half)
+## Phase 4 — RAG ingestion (`@poultry/rag`, ingest half) ✅ shipped (`phase/4-rag-ingestion`)
 
 **Boxes:**
 - Pagination + `[PAGE n]` deterministic page-stamp
@@ -181,9 +181,33 @@ Exit: hardcoded ladder gone, no fabricated inventory in the seed, gate proven un
 - Micro-chunking (800–1000 tok, 10% overlap) → chunks
 - Chunk schema + citations (`chunk_text`, `page`, `doc`)
 
-**Testable alone:** chunking is deterministic pure code — golden docs in, exact chunk boundaries out; the `Analyzer` is a fake returning fixture region maps.
+**Testable alone:** chunking is deterministic pure code - golden docs in, exact chunk boundaries out; the `Analyzer` is a fake returning fixture region maps.
 
 Exit: chunk golden tests green; boundaries never split a sentence; overlap math exact.
+
+**Shipped:** `paginate` / `stampedText` / `locatePage`, `Analyzer` + `analyzeDocument` (validates the map with
+Zod, throws `RegionMapError` on an unusable one, makes exactly one call per document), `buildGroups`, `microChunk`,
+`ChunkSchema` + `citationFor`, and `ingestDocument` tying them together. Regions are typed (`sectionKind`,
+`species[]`, `diseases[]`, `TreatmentSchema`) so a retrieved chunk can fill `ClinicalLadder` without a
+summariser re-reading prose. Citations are denormalised onto the chunk (`source`, `publisher`, `locator`) and
+`citationFor` is typed against `Citation` from `@poultry/core`, so a Phase 5 top-k result needs no second lookup
+and the ingest and gate halves cannot drift apart.
+
+**The decision that matters:** the model is asked what the regions are, never where they are. `locatePage`
+computes the page by searching the paginated text for the region's own opening words, so a hallucinated page
+number cannot place a citation. `pageHint` is cross-checked, and a mismatch warns.
+
+**Honesty boundaries:** a sentence longer than the ceiling is never cut — it becomes its own `oversized` chunk
+plus a warning; an unparseable region map throws rather than indexing half a source; merged regions that
+disagree on product class keep the first and warn. No production corpus and no licensed-vet review yet, so
+nothing here is clinically cleared.
+
+**Tests:** 7 files, 67 tests (repo: 39 files, 373 tests). `pnpm check` exit 0. A test caught that
+`overlapTokens: 0` still repeated a sentence — `overlapStart` stepped back once before comparing the total, so a
+zero overlap degenerated into a one-sentence overlap. Fixed with an early return and pinned by a
+shared-suffix-of-exactly-0 test.
+
+See `phases/PHASE-4-rag-ingestion.md`.
 
 ---
 

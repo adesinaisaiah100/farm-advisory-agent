@@ -309,6 +309,9 @@ importers:
 
   packages/rag:
     dependencies:
+      '@poultry/core':
+        specifier: workspace:*
+        version: link:../core
       '@poultry/schemas':
         specifier: workspace:*
         version: link:../schemas
