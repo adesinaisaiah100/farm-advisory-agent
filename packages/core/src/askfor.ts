@@ -1,13 +1,37 @@
 import type { CaseData, Disease } from '@poultry/schemas';
 import { assessTriage } from './triage.js';
 
-export interface AskFor {
-  product: string;
-  why: string;
-  askTheSeller: string[];
-  refuse: string[];
-  needsVet: boolean;
+export interface Citation {
+  source: string;
+  locator?: string;
 }
+
+export interface LadderEvidence {
+  agreement: number;
+  citations: readonly Citation[];
+}
+
+export interface ClinicalLadder {
+  disease: Disease;
+  productClass: string;
+  why: string;
+  askTheSeller: readonly string[];
+  needsVet: boolean;
+  evidence: LadderEvidence;
+}
+
+export interface ClinicalLadderSource {
+  retrieve(c: CaseData): Promise<ClinicalLadder | undefined>;
+}
+
+export type PrescriberRole =
+  | 'veterinarian'
+  | 'veterinary_paraprofessional'
+  | 'animal_health_technologist';
+
+export const AGREEMENT_FLOOR = 0.6;
+
+export const MIN_CITATIONS = 2;
 
 export const COUNTERFEIT_GUARD: readonly string[] = [
   'anything without a NAFDAC number printed on the pack',
@@ -15,91 +39,74 @@ export const COUNTERFEIT_GUARD: readonly string[] = [
   'a sale with no written receipt, because you cannot trace a bad batch',
 ];
 
-const RESISTANCE_WARNING =
+export const RESISTANCE_WARNING =
   'a general antibiotic "just in case" — resistance is documented in Nigerian poultry, and it does not treat this';
 
-const VACCINE_COLD_CHAIN =
+export const VIRUS_REFUSAL =
+  'an antibiotic sold as a cure for a virus — no antibiotic cures a virus, it only hides secondary infection';
+
+export const UNDOSED_FEED_REFUSAL =
+  'a coccidial or antibiotic mixed into the feed with no stated dose';
+
+export const VACCINE_COLD_CHAIN =
   'a vaccine kept out of the cold chain — a bad vaccine is worse than no vaccine';
 
-const VACCINE_QUESTIONS: readonly string[] = [
-  'is the cold chain intact from that counter to my farm? A vaccine that lost its cold will not work',
-  'who is allowed to administer it — a vet or my own staff?',
-  'what is the batch number, the expiry date, and is it registered with NAFDAC?',
+// Refusing is never harmful, so these stay in code as permanent policy and never depend
+// on retrieval succeeding. Only the treatment ladder itself is retrieved.
+export const POLICY_REFUSALS: readonly string[] = [
+  RESISTANCE_WARNING,
+  VIRUS_REFUSAL,
+  UNDOSED_FEED_REFUSAL,
+  VACCINE_COLD_CHAIN,
+  ...COUNTERFEIT_GUARD,
 ];
 
-const ASK_FOR: Partial<Record<Disease, Omit<AskFor, 'refuse'> & { refuse?: readonly string[] }>> = {
-  coccidiosis: {
-    product: 'an anticoccidial — ask whether it is amprolium or diclazuril, not an antibiotic',
-    why: 'blood-stained droppings in young birds fit coccidiosis, and an anticoccidial is the class that treats it',
-    askTheSeller: [
-      'which one is it, and how much per 100 birds at this weight?',
-      'how many days do I withdraw before I eat the eggs or sell the birds?',
-      'is the batch registered with NAFDAC, and what is the expiry date?',
-    ],
-    refuse: ['a coccidial mixed into the feed with no stated dose'],
-    needsVet: false,
-  },
-  newcastle: {
-    product: 'a Newcastle vaccine — ask which strain, live or killed, and who administers it',
-    why: 'the signs fit Newcastle disease, which is viral, so only vaccination and biosecurity address it',
-    askTheSeller: [
-      'which vaccine strain is it, and is it the strain circulating in this area?',
-      ...VACCINE_QUESTIONS,
-    ],
-    refuse: [
-      'an antibiotic sold as a cure for Newcastle — no antibiotic cures a virus, it only hides secondary infection',
-    ],
-    needsVet: true,
-  },
-  infectious_bronchitis: {
-    product: 'an infectious bronchitis vaccine, plus electrolytes for the air passages',
-    why: 'sneezing and watery eyes with no neck or gut signs fit bronchitis, not Newcastle',
-    askTheSeller: ['which IB vaccine strain, and at what age do I give it?', ...VACCINE_QUESTIONS],
-    refuse: ['an antibiotic sold as a cure for a virus'],
-    needsVet: true,
-  },
-  gumboro: {
-    product: 'a Gumboro (infectious bursal disease) vaccine',
-    why: 'profuse watery droppings in young birds fit Gumboro, which is a virus',
-    askTheSeller: [
-      'which age window is this vaccine for? Gumboro given at the wrong age does not protect the flock',
-      ...VACCINE_QUESTIONS,
-    ],
-    refuse: [VACCINE_COLD_CHAIN],
-    needsVet: true,
-  },
-  fowlpox: {
-    product: 'a fowl pox vaccine',
-    why: 'scabby lesions around the eye and on the comb fit fowl pox',
-    askTheSeller: [
-      'is it given by injection or in the drinking water, and at what age?',
-      ...VACCINE_QUESTIONS,
-    ],
-    refuse: [VACCINE_COLD_CHAIN],
-    needsVet: true,
-  },
-  necrotic_enteritis: {
-    product:
-      'nothing to buy yet — necrotic enteritis needs a vet to confirm, because it looks like coccidiosis',
-    why: 'dark watery droppings with no blood point to necrotic enteritis, and the antibiotic choice for it is a vet decision',
-    askTheSeller: [
-      'which antibiotic would you use for a Clostridium case, and what is the withdrawal period?',
-    ],
-    refuse: [RESISTANCE_WARNING],
-    needsVet: true,
-  },
-};
+export interface LadderGate {
+  permitted: boolean;
+  reasons: readonly string[];
+}
 
-export function askFor(c: CaseData): AskFor | undefined {
-  const { differential } = assessTriage(c);
-  if (differential.includes('avian_influenza')) return undefined;
-  for (const disease of differential) {
-    const entry = ASK_FOR[disease];
-    if (entry === undefined) continue;
-    return {
-      ...entry,
-      refuse: [...(entry.refuse ?? []), RESISTANCE_WARNING, ...COUNTERFEIT_GUARD],
-    };
+const NO_PRODUCT_SAFETY =
+  'this case has a warning sign that needs a vet, so I will not name a product';
+const NO_PRODUCT_AMBIGUOUS =
+  'two diseases need different treatment, so I will not name a product until a vet separates them';
+const NO_PRODUCT_UNRETRIEVED =
+  'I have no verified medicine information for this case yet';
+const NO_PRODUCT_DISAGREEMENT = 'the sources do not agree on the treatment';
+const NO_PRODUCT_UNUSABLE = 'the medicine information I received could not be checked';
+
+function usableAgreement(agreement: number): boolean {
+  return Number.isFinite(agreement) && agreement >= 0 && agreement <= 1;
+}
+
+function independentSources(ladder: ClinicalLadder): number {
+  return new Set(ladder.evidence.citations.map((citation) => citation.source)).size;
+}
+
+export function gateLadder(c: CaseData, ladder: ClinicalLadder | undefined): LadderGate {
+  const triage = assessTriage(c);
+
+  if (triage.band === 'red_flag') {
+    return { permitted: false, reasons: [NO_PRODUCT_SAFETY] };
   }
-  return undefined;
+  if (triage.band === 'ambiguous') {
+    return { permitted: false, reasons: [NO_PRODUCT_AMBIGUOUS] };
+  }
+  if (ladder === undefined) {
+    return { permitted: false, reasons: [NO_PRODUCT_UNRETRIEVED] };
+  }
+
+  const reasons: string[] = [];
+  if (!usableAgreement(ladder.evidence.agreement)) {
+    reasons.push(NO_PRODUCT_UNUSABLE);
+  } else if (ladder.evidence.agreement < AGREEMENT_FLOOR) {
+    reasons.push(NO_PRODUCT_DISAGREEMENT);
+  }
+  const independent = independentSources(ladder);
+  if (independent < MIN_CITATIONS) {
+    reasons.push(
+      `I need ${MIN_CITATIONS} independent sources before naming a medicine, and I have ${independent}`,
+    );
+  }
+  return { permitted: reasons.length === 0, reasons };
 }

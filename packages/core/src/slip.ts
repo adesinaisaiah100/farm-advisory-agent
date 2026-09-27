@@ -1,7 +1,9 @@
-import type { AgroStore, CaseData } from '@poultry/schemas';
+import type { AgroStore, CaseData, Disease } from '@poultry/schemas';
 import type { ReplyLanguage } from './language.js';
 import { mortalityRate } from './validate.js';
-import { askFor, COUNTERFEIT_GUARD } from './askfor.js';
+import type { ClinicalLadder, LadderGate, PrescriberRole } from './askfor.js';
+import { gateLadder, POLICY_REFUSALS } from './askfor.js';
+import { CONFIRM_ACTION, assessTriage } from './triage.js';
 
 export const ESCALATE_SCRIPT =
   'Abeg e no good to delay this one. Dis bird problem serious — you need make we take am serious. ' +
@@ -19,7 +21,11 @@ export function escalationScript(lang: ReplyLanguage): string {
   return lang === 'pidgin' ? ESCALATE_SCRIPT : ESCALATE_SCRIPT_EN;
 }
 
-export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): string {
+export function buildReferralSlip(
+  c: CaseData,
+  store?: AgroStore | undefined,
+  ladder?: ClinicalLadder,
+): string {
   const lines = ['CONTACT THIS AGRO-VET STORE', 'EVERY DAY OF DELAY COST YOU BIRDS.'];
   if (store) {
     lines.push(`Store: ${store.name}`);
@@ -37,7 +43,7 @@ export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): s
   const rate = mortalityRate(c);
   if (rate !== undefined) lines.push(`- Mortality rate: ${rate.toFixed(1)}%`);
   if (c.diseaseText) lines.push(`- Suspected: ${c.diseaseText}`);
-  lines.push('', ...askForBlock(c));
+  lines.push('', ...askForBlock(c, ladder));
 
   const storeHint = store
     ? `Buy only at ${store.name} and keep your receipt.`
@@ -49,6 +55,8 @@ export function buildReferralSlip(c: CaseData, store?: AgroStore | undefined): s
 const ASK_HEADER = 'ASK THEM FOR:';
 const REFUSE_HEADER = 'DO NOT ACCEPT:';
 const UNVERIFIED_STOCK = 'We do not know what they stock today, so ask them.';
+const NO_DRUG_YET =
+  '- The treatment the agro-vet names for the signs above — I will not name a drug without a confirmed diagnosis';
 
 export function verifiedStockNote(store: AgroStore): string {
   if (
@@ -61,23 +69,118 @@ export function verifiedStockNote(store: AgroStore): string {
   return `They confirmed on ${store.stockVerifiedAt.slice(0, 10)} that they stock: ${store.stock.join(', ')}.`;
 }
 
-export function askForBlock(c: CaseData): string[] {
-  const ladder = askFor(c);
-  if (ladder === undefined) {
+export function askForBlock(c: CaseData, ladder?: ClinicalLadder): string[] {
+  const gate = gateLadder(c, ladder);
+  const refusals = POLICY_REFUSALS.map((line) => `- ${line}`);
+
+  if (!gate.permitted || ladder === undefined) {
+    // Sources and agreement scores stay off the farmer slip: a citation list reads to a
+    // farmer as authority the evidence has not earned, and the farmer cannot act on it.
     return [
       ASK_HEADER,
-      '- The treatment the agro-vet names for the signs above — I will not name a drug without a diagnosis',
-      ...COUNTERFEIT_GUARD.map((line) => `- ${line}`),
+      NO_DRUG_YET,
+      ...gate.reasons.map((reason) => `  ${reason}`),
+      '',
+      REFUSE_HEADER,
+      ...refusals,
     ];
   }
+
   return [
     ASK_HEADER,
-    `- ${ladder.product}`,
+    `- ${ladder.productClass}`,
     `  Why: ${ladder.why}`,
     ...ladder.askTheSeller.map((question) => `- Ask: ${question}`),
     '',
     REFUSE_HEADER,
-    ...ladder.refuse.map((line) => `- ${line}`),
+    ...refusals,
     ...(ladder.needsVet ? ['', 'A vet must confirm or administer this one.'] : []),
   ];
+}
+
+export interface RankedDifferential {
+  disease: Disease;
+  agreement: number | undefined;
+}
+
+export interface PrescriberBrief {
+  role: PrescriberRole;
+  caseLine: string;
+  differentials: readonly RankedDifferential[];
+  ladder: ClinicalLadder | undefined;
+  gate: LadderGate;
+}
+
+export const PRESCRIBER_DISCLAIMER =
+  'Decision support from retrieved sources. Not a prescription and not a diagnosis. ' +
+  'Confirm against your own examination before treating, and apply withdrawal periods.';
+
+function caseLine(c: CaseData): string {
+  const parts: string[] = [];
+  if (c.species !== undefined) parts.push(c.species);
+  if (c.birdStage !== undefined) parts.push(c.birdStage);
+  if (c.flockAgeWeeks !== undefined) parts.push(`${c.flockAgeWeeks} weeks old`);
+  if (c.onsetDays !== undefined) parts.push(`${c.onsetDays}d onset`);
+  if (c.mortalityCount !== undefined) parts.push(`${c.mortalityCount} dead`);
+  parts.push(`symptoms: ${(c.symptoms ?? []).join(', ') || 'none recorded'}`);
+  return parts.join(' | ');
+}
+
+export function buildPrescriberBrief(
+  c: CaseData,
+  role: PrescriberRole,
+  ladder?: ClinicalLadder,
+): PrescriberBrief {
+  const triage = assessTriage(c);
+  return {
+    role,
+    caseLine: caseLine(c),
+    differentials: triage.differential.map((disease) => ({
+      disease,
+      agreement: ladder?.disease === disease ? ladder.evidence.agreement : undefined,
+    })),
+    ladder,
+    gate: gateLadder(c, ladder),
+  };
+}
+
+export function renderPrescriberBrief(brief: PrescriberBrief): string {
+  const lines = [
+    'POULTRY CASE BRIEF — DECISION SUPPORT, NOT A PRESCRIPTION',
+    `Prepared for: ${brief.role}`,
+    `Case: ${brief.caseLine}`,
+    '',
+    'DIFFERENTIALS:',
+  ];
+  brief.differentials.forEach((entry, index) => {
+    const score =
+      entry.agreement === undefined
+        ? 'no retrieved evidence'
+        : `sources agree ${entry.agreement.toFixed(2)} (not a diagnosis)`;
+    lines.push(`${index + 1}. ${entry.disease} — ${score}`);
+  });
+
+  lines.push('');
+  if (brief.gate.permitted && brief.ladder !== undefined) {
+    const ladder = brief.ladder;
+    lines.push(
+      'CANDIDATE PRODUCT CLASS:',
+      `- ${ladder.productClass}`,
+      `  Why: ${ladder.why}`,
+    );
+    for (const question of ladder.askTheSeller) lines.push(`- Ask: ${question}`);
+    lines.push('', 'SOURCES:');
+    for (const citation of ladder.evidence.citations) {
+      lines.push(`- ${citation.source}${citation.locator === undefined ? '' : `, ${citation.locator}`}`);
+    }
+  } else {
+    lines.push('CANDIDATE PRODUCT CLASS: withheld');
+    for (const reason of brief.gate.reasons) lines.push(`  - ${reason}`);
+  }
+
+  if (brief.ladder?.needsVet === true) {
+    lines.push('', 'A vet must confirm or administer this.');
+  }
+  lines.push('', 'TO CONFIRM:', `  ${CONFIRM_ACTION.english}`, '', PRESCRIBER_DISCLAIMER);
+  return lines.join('\n');
 }

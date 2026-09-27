@@ -9,6 +9,7 @@ import type { CaseField } from './merge.js';
 import { missing } from './missing.js';
 import type { ChatProvider, CompactProvider, TokenCounter, TurnMessage } from './providers.js';
 import { buildReferralSlip, escalationScript } from './slip.js';
+import type { ClinicalLadder, ClinicalLadderSource } from './askfor.js';
 import { assessTriage, triageReply } from './triage.js';
 import { validateCase } from './validate.js';
 import type { EffectiveDoor } from './validate.js';
@@ -35,6 +36,7 @@ export interface TurnDeps {
   compact: CompactProvider;
   count: TokenCounter;
   now: () => string;
+  ladder?: ClinicalLadderSource;
 }
 
 export interface TurnInput {
@@ -91,7 +93,9 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
     nextCase.triageTurns = (filled.triageTurns ?? 0) + 1;
   }
 
-  const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage);
+  const ladder = await retrieveLadder(decision.door, nextCase, deps.ladder);
+
+  const reply = replyFor(decision.door, parsed.data.reply, nextCase, replyLanguage, ladder);
 
   return {
     state: {
@@ -143,12 +147,30 @@ function stallReply(c: CaseData, lang: ReplyLanguage): string {
   return `${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
 }
 
-function replyFor(door: EffectiveDoor, llmReply: string, c: CaseData, lang: ReplyLanguage): string {
+// Retrieval only ever runs on the supply door, and only after triage has cleared the case.
+// Without a source the slip still renders, naming no product, so a missing index fails closed
+// instead of silently falling back to hardcoded medicine copy.
+async function retrieveLadder(
+  door: EffectiveDoor,
+  c: CaseData,
+  source: ClinicalLadderSource | undefined,
+): Promise<ClinicalLadder | undefined> {
+  if (door !== 'supply' || source === undefined) return undefined;
+  return source.retrieve(c);
+}
+
+function replyFor(
+  door: EffectiveDoor,
+  llmReply: string,
+  c: CaseData,
+  lang: ReplyLanguage,
+  ladder: ClinicalLadder | undefined,
+): string {
   switch (door) {
     case 'escalate':
       return escalationScript(lang);
     case 'supply':
-      return buildReferralSlip(c, undefined);
+      return buildReferralSlip(c, undefined, ladder);
     case 'resolve':
     case 'report':
       return llmReply;

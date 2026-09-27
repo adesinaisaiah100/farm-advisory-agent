@@ -113,17 +113,17 @@ Exit: `pnpm check` green (core 113 tests across 13 files, schemas 101). **Done.*
 
 **Boxes:**
 - Static seed of realistic agro-vet entries (`src/data/stores.ts`, unique UUIDs, E.164 `+234…`, no phone numbers written anywhere else)
-- `searchByLga(lga, state?)` / `hasStock(store, item)` / `pickReferral({ lga?, state?, item? })` referral picking
+- `searchByLga(lga, state?)` / `hasStock(store, item)` / `pickReferral({ lga?, state? })` referral picking
 - `coveredLgas()` so the UI can show which LGAs are covered
 - Fallback when no store matches: `pickReferral` returns `undefined` and the slip degrades to the generic "buy inside a known agro-vet store" guidance already golden-tested in `core/slip.ts`
 
 **Testable alone:** pure function over the typed seed; golden referral output.
 
-Picking rules, in order: filter by location → narrow to stores carrying the item when any do → prefer open → break ties by name. Unlisted LGA returns `undefined` rather than a far-away store.
+Picking rules, in order: filter by location → break ties by name. Unlisted LGA returns `undefined` rather than a far-away store. `isOpen` was dropped, and so was item preference: a shop's opening hours at 2am is not a fact we can hold, and with no confirmed inventory there was nothing for an item preference to select on.
 
-Shipped as 7 seed entries across 6 LGAs (Oyo, Lagos ×2, Kaduna, Enugu, Ogun, Plateau) — the second Lagos entry is deliberately closed so the open-preference rule is testable. `getStores()` hands back a deep-enough copy (fresh objects and stock arrays) so callers cannot mutate the directory.
+Shipped as 7 seed entries across 6 LGAs (Oyo, Lagos ×2, Kaduna, Enugu, Ogun, Plateau). `getStores()` hands back a copy with fresh objects so callers cannot mutate the directory. **Phase 2.6 removed every fabricated `stock` / `stockVerifiedAt` from the seed**, so no store in `STORES` claims any inventory at all, and `verifiedStock` / `hasStock` are now exercised only against a synthetic partner fixture. They remain as the partner opt-in seam: `StoreSchema` rejects a non-empty `stock` without `stockVerifiedAt`.
 
-Exit: 17 stores tests green, typecheck + lint clean. **Done.**
+Exit: 19 stores tests green, typecheck + lint clean. **Done.**
 
 ---
 
@@ -141,12 +141,34 @@ Exit: 17 stores tests green, typecheck + lint clean. **Done.**
   2. `infectious_bronchitis` is missing from `DiseaseSchema` (the #1 ND confusion partner is unrepresentable).
   3. Red flags match exact lowercase literals, so "neck dey bend" misses `twisted neck` — a safety gate cannot depend on the LLM's vocabulary. Needs substring/token matching over farmer text.
   4. `'blood in droppings'` is classified critical, escalating textbook coccidiosis (68.7% prevalence in Nigerian broilers) and burning the door.
-- **Ask-for ladder** (`askFor = { product, why, askTheSeller[], refuse[], needsVet }`), derived from the differential, never from store stock. Replaces the circular "the right medicine or vaccine for the symptoms above" in `buildReferralSlip`. Ships the refusal list: no general antibiotic "just in case", nothing without a NAFDAC number, no loose unlabelled medicine, no receipt.
-- **Strip the fake inventory:** `stock` only for partners that opt in and re-confirm (`verifiedAt`); drop `isOpen`. `searchByLga`/`pickReferral`/`coveredLgas` survive, demoted to "where can I physically go."
+- **Ask-for ladder** (`askFor = { product, why, askTheSeller[], refuse[], needsVet }`), derived from the differential, never from store stock. Replaces the circular "the right medicine or vaccine for the symptoms above" in `buildReferralSlip`. Ships the refusal list: no general antibiotic "just in case", nothing without a NAFDAC number, no loose unlabelled medicine, no receipt. **Superseded by Phase 2.6** — the treatment content was hardcoded here and is now retrieved and gated.
+- **Strip the fake inventory:** `stock` only for partners that opt in and re-confirm (`stockVerifiedAt`); drop `isOpen`. `searchByLga`/`pickReferral`/`coveredLgas` survive, demoted to "where can I physically go." **Completed by Phase 2.6**, which removed the placeholder timestamps from the seed as well.
 
 **Testable alone:** pure functions over a differential; golden slip text per disease signature; the ambiguity and red-flag matrices are pure unit tests.
 
 Exit: confidence-band matrix + ask-for golden slips + the four fixes all green; 292 workspace tests, typecheck + lint clean. **Done.**
+
+---
+
+## Phase 2.6 — Retrieval-grounded ask-for + inventory honesty (`@poultry/core`, `@poultry/stores`)
+
+**Why this jumped the queue:** Phase 2.5 shipped the right shape but shipped unreviewable clinical copy. `askfor.ts` held six diseases' worth of product classes and seller questions with no citations and no confidence, and the store seed carried a fabricated `stockVerifiedAt` on every entry. The user also asked the real question directly: should the ask-for content be decided *after* triage, from retrieved medical knowledge for Nigerian conditions, with a confidence score? Yes — and the answer needed a code gate, not a prompt.
+
+**The decision, in one line:** policy stays in code forever, clinical content is retrieved, and nothing is named unless triage confirmed the case, sources agree ≥ 0.6, and ≥ 2 independent sources back it.
+
+**Boxes:**
+- **Delete the hardcoded clinical table.** `ClinicalLadder` + `ClinicalLadderSource` (an interface, so Phase 4 wires a real index and tests wire a fake), every ladder carrying `evidence.agreement` and `evidence.citations[].source`.
+- **`gateLadder(c, ladder)`** in code, not in a prompt: requires a `confirmable` triage band, agreement ≥ `AGREEMENT_FLOOR`, a score that is actually a number in 0–1, and `MIN_CITATIONS` *distinct* sources. A `red_flag` or `ambiguous` case names no product even when a perfect ladder is handed in — coccidiosis and necrotic enteritis need different drugs, so "the treatment" does not exist yet.
+- **`POLICY_REFUSALS` never depends on retrieval.** If the index is down, the farmer still gets told to refuse a general antibiotic, an antibiotic sold as a virus cure, an undosed feed mix, a broken cold chain, and anything unlabelled or unreceipted. Refusing is never harmful, so it has no reason to need a service.
+- **Two channels.** Farmer slip carries no drug name, no citation, no score. `buildPrescriberBrief` requires a `PrescriberRole` (veterinarian / veterinary paraprofessional / animal health technologist) and carries the differential ranking, the product *class*, sources with locators, `sources agree 0.80 (not a diagnosis)`, and a not-a-prescription disclaimer.
+- **Wire the seam:** `TurnDeps.ladder?`, consulted **only** on the supply door and only after triage cleared. No source wired → the slip renders and names nothing.
+- **Strip the fake inventory for real:** all seed `stock` / `stockVerifiedAt` removed; `ReferralQuery.item` and the stock-preference branch deleted as dead code. `StoreSchema` keeps the fields as the partner seam and still rejects unconfirmed stock.
+
+**Research that shaped it:** the last mile in Nigeria is the veterinary paraprofessional / Animal Health and Husbandry Technologist, not a human pharmacist — FAO's VPP programme exists for exactly that reason, and NADIS already offers a "Vet / Para Vet" VCN login. Evet / Vetable already sells "AI diagnosis + real-time treatment recommendations" with an Agents tier, so retrieval-grounded medication ranking is parity, not a moat; the defensible parts are the fail-closed gate, the refusal list that runs against counter revenue, citing sources, and the lab confirmation loop. RAG can also *reduce* accuracy on irrelevant retrieval (structured chunking 87% vs 50% naive), which is why the score is retrieval agreement rather than a diagnosis probability.
+
+**Testable alone:** the gate is a pure function; the two channels are pure renderers; retrieval is an interface with a fake. No index required.
+
+Exit: hardcoded ladder gone, no fabricated inventory in the seed, gate proven undefeatable by tests, farmer channel proven unable to leak a name or a citation; 308 workspace tests, typecheck + lint clean. **Done.** See `phases/PHASE-2.6-askfor-retrieval.md`.
 
 ---
 
@@ -293,8 +315,9 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
 | 2.4 | Master record contracts + injected context | ✅ |
 | 2.5 | Triage confidence + ask-for ladder | ✅ |
+| 2.6 | Retrieval-grounded ask-for gate + strip fake inventory for real | ✅ |
 | 3 | Store lookup | ✅ |
-| 3.1 | Ask-for ladder + strip fake inventory (folded into 2.5) | ✅ |
+| 3.1 | Ask-for ladder + strip fake inventory (folded into 2.5, completed in 2.6) | ✅ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |
 | 6 | Media pipeline | ⏳ |

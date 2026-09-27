@@ -11,6 +11,17 @@ import {
   verifiedStock,
 } from './index.js';
 
+const PARTNER_STORE: AgroStore = {
+  id: '4b1f0d92-6c3a-4a51-9f77-2d8e5b6c0a13',
+  name: 'Partner Verified Store',
+  phone: '+2348099999999',
+  state: 'Ogun',
+  lga: 'Abeokuta North',
+  stock: ['vitamins', 'dewormer'],
+  stockVerifiedAt: '2026-09-24T00:00:00.000Z',
+  updatedAt: '2026-09-20T00:00:00.000Z',
+};
+
 describe('store seed', () => {
   it('every entry matches the shared StoreSchema', () => {
     for (const store of STORES) {
@@ -34,32 +45,38 @@ describe('store seed', () => {
     expect(getStores().length).toBe(STORES.length);
   });
 
-  it('never carries an unconfirmed stock claim', () => {
+  it('claims no stock at all, because no store has confirmed its inventory with us', () => {
     for (const store of STORES) {
-      if (store.stock !== undefined) expect(store.stockVerifiedAt, store.name).toBeDefined();
+      expect(store.stock, store.name).toBeUndefined();
+      expect(store.stockVerifiedAt, store.name).toBeUndefined();
+      expect(verifiedStock(store), store.name).toEqual([]);
     }
   });
 });
 
 describe('hasStock', () => {
-  const store = STORES[0]!;
-
-  it('matches case-insensitively', () => {
-    expect(hasStock(store, 'Vitamins')).toBe(hasStock(store, 'vitamins'));
+  it('matches a partner-confirmed item case-insensitively', () => {
+    expect(hasStock(PARTNER_STORE, 'Vitamins')).toBe(hasStock(PARTNER_STORE, 'vitamins'));
   });
 
-  it('misses an item the store does not carry', () => {
-    expect(hasStock(store, 'ivermectin pour-on')).toBe(false);
+  it('misses an item the partner did not confirm', () => {
+    expect(hasStock(PARTNER_STORE, 'ivermectin pour-on')).toBe(false);
   });
 
   it('does not match an empty item', () => {
-    expect(hasStock(store, '   ')).toBe(false);
+    expect(hasStock(PARTNER_STORE, '   ')).toBe(false);
   });
 
   it('ignores a stock list nobody confirmed', () => {
-    const unverified: AgroStore = { ...store, stock: ['vitamins'], stockVerifiedAt: undefined };
+    const unverified: AgroStore = { ...PARTNER_STORE, stock: ['vitamins'], stockVerifiedAt: undefined };
     expect(hasStock(unverified, 'vitamins')).toBe(false);
     expect(verifiedStock(unverified)).toEqual([]);
+  });
+
+  it('reports no stock for every seeded store', () => {
+    for (const store of STORES) {
+      expect(hasStock(store, 'vitamins'), store.name).toBe(false);
+    }
   });
 });
 
@@ -83,30 +100,24 @@ describe('searchByLga', () => {
 });
 
 describe('pickReferral', () => {
-  it('prefers a store whose confirmed stock carries the item', () => {
-    const store = pickReferral({ lga: 'Kaduna North', item: 'gumboro vaccine' });
-    expect(store?.name).toBe('Sunrise Agro Store');
+  it('returns the store covering the LGA', () => {
+    expect(pickReferral({ lga: 'Kaduna North' })?.name).toBe('Sunrise Agro Store');
   });
 
-  it('still returns the only nearby store when it has not confirmed the item', () => {
-    const store = pickReferral({ lga: 'Kaduna North', item: 'ivermectin pour-on' });
-    expect(store?.name).toBe('Sunrise Agro Store');
-  });
-
-  it('prefers the store that confirmed carrying the item', () => {
-    const store = pickReferral({ lga: 'Ojo', item: 'dewormer' });
-    expect(store?.name).toBe('GreenField Vet Supplies');
-    expect(hasStock(store!, 'dewormer')).toBe(true);
-  });
-
-  it('falls back to the LGA store when the item is not confirmed anywhere', () => {
-    const store = pickReferral({ lga: 'Enugu North', item: 'ivermectin pour-on' });
-    expect(store?.name).toBe('FarmCare Supplies');
+  it('narrows by state before choosing', () => {
+    expect(pickReferral({ lga: 'Jos North', state: 'Plateau' })?.name).toBe('Hope Agro Vet');
+    expect(pickReferral({ lga: 'Jos North', state: 'Oyo' })).toBeUndefined();
   });
 
   it('breaks ties deterministically by name', () => {
-    const store = pickReferral({ lga: 'Ibadan North' });
-    expect(store?.name).toBe('Adaeze Agro Vet');
+    expect(pickReferral({ lga: 'Ibadan North' })?.name).toBe('Adaeze Agro Vet');
+    expect(pickReferral({ state: 'Lagos' })?.name).toBe('GreenField Vet Supplies');
+  });
+
+  it('chooses on location alone, never on an inventory claim', () => {
+    const store = pickReferral({ lga: 'Enugu North' });
+    expect(store?.name).toBe('FarmCare Supplies');
+    expect(verifiedStock(store!)).toEqual([]);
   });
 
   it('returns undefined when the LGA is not covered', () => {
@@ -114,8 +125,7 @@ describe('pickReferral', () => {
   });
 
   it('can search across LGAs when no location is given', () => {
-    const store = pickReferral({ item: 'dewormer' });
-    expect(verifiedStock(store!)).toContain('dewormer');
+    expect(pickReferral()).toBeDefined();
   });
 });
 

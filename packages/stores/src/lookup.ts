@@ -19,7 +19,6 @@ export function hasStock(store: AgroStore, item: string): boolean {
 export interface ReferralQuery {
   lga?: string;
   state?: string;
-  item?: string;
 }
 
 function matchesLocation(store: AgroStore, query: ReferralQuery): boolean {
@@ -42,18 +41,12 @@ export function searchByLga(lga: string, state?: string): AgroStore[] {
   );
 }
 
+// Nothing in the seed has confirmed stock, so a referral is chosen on location alone.
+// The stock preference returned once a real partner opts in and supplies stockVerifiedAt.
 export function pickReferral(query: ReferralQuery = {}): AgroStore | undefined {
   const candidates = STORES.filter((store) => matchesLocation(store, query));
   if (candidates.length === 0) return undefined;
-
-  let pool = candidates;
-  const item = query.item;
-  if (item !== undefined) {
-    const stocked = pool.filter((store) => hasStock(store, item));
-    if (stocked.length > 0) pool = stocked;
-  }
-
-  return [...pool].sort((a, b) => a.name.localeCompare(b.name))[0];
+  return [...candidates].sort((a, b) => a.name.localeCompare(b.name))[0];
 }
 
 export function coveredLgas(): Array<{ lga: string; state: string }> {

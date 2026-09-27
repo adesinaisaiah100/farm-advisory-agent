@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CaseData, Session } from '@poultry/schemas';
+import { DoorSchema } from '@poultry/schemas';
 import { FALLBACK_REPLY, FALLBACK_REPLY_EN, runTurn, type TurnDeps } from './orchestrator.js';
 import type {
   ChatProvider,
@@ -9,9 +10,44 @@ import type {
   TurnMessage,
 } from './providers.js';
 import { ESCALATE_SCRIPT, ESCALATE_SCRIPT_EN } from './slip.js';
+import type { ClinicalLadder, ClinicalLadderSource } from './askfor.js';
 
 function caseData(overrides: Partial<CaseData> = {}): CaseData {
   return { status: 'in_progress', ...overrides };
+}
+
+const SUPPORTED_LADDER: ClinicalLadder = {
+  disease: 'coccidiosis',
+  productClass: 'an anticoccidial — amprolium or diclazuril, not an antibiotic',
+  why: 'blood-stained droppings in young birds fit coccidiosis',
+  askTheSeller: ['which one is it, and how much per 100 birds at this weight?'],
+  needsVet: false,
+  evidence: {
+    agreement: 0.8,
+    citations: [
+      { source: 'MSD Veterinary Manual', locator: 'Coccidiosis, poultry' },
+      { source: 'Nigerian Journal of Animal Science', locator: '2023 trial' },
+    ],
+  },
+};
+
+function supplyDelta(): Record<string, unknown> {
+  return {
+    delta: {
+      species: 'broiler',
+      symptoms: ['blood in droppings'],
+      onsetDays: 1,
+      mortalityCount: 1,
+      farmSize: 300,
+      diseaseHits: ['coccidiosis'],
+      wantsSupply: true,
+    },
+    reply: 'Take amprolium.',
+  };
+}
+
+function fakeLadder(ladder: ClinicalLadder | undefined): ClinicalLadderSource {
+  return { retrieve: async () => ladder };
 }
 
 const countTokens: TokenCounter = { count: (s) => Math.ceil(s.length / 4) };
@@ -108,6 +144,48 @@ describe('runTurn', () => {
     expect(result.reply).toContain('- Symptoms: diarrhoea');
   });
 
+  it('names no product on the supply door when no medicine index is wired', async () => {
+    const deps = makeDeps(supplyDelta());
+    const result = await runTurn({ case: caseData(), query: 'I wan buy medicine' }, deps);
+    expect(result.door).toBe('supply');
+    expect(result.reply).not.toContain('amprolium');
+    expect(result.reply).toContain('I will not name a drug without a confirmed diagnosis');
+    expect(result.reply).toContain('no verified medicine information');
+  });
+
+  it('includes the retrieved product class when the ladder clears the gate', async () => {
+    const deps: TurnDeps = { ...makeDeps(supplyDelta()), ladder: fakeLadder(SUPPORTED_LADDER) };
+    const result = await runTurn({ case: caseData(), query: 'I wan buy medicine' }, deps);
+    expect(result.reply).toContain('amprolium or diclazuril');
+    expect(result.reply).not.toContain('MSD Veterinary Manual');
+  });
+
+  it('still refuses a retrieved ladder the evidence does not support', async () => {
+    const weak: ClinicalLadder = {
+      ...SUPPORTED_LADDER,
+      evidence: { agreement: 0.2, citations: SUPPORTED_LADDER.evidence.citations },
+    };
+    const deps: TurnDeps = { ...makeDeps(supplyDelta()), ladder: fakeLadder(weak) };
+    const result = await runTurn({ case: caseData(), query: 'I wan buy medicine' }, deps);
+    expect(result.reply).not.toContain('amprolium');
+    expect(result.reply).toContain('the sources do not agree on the treatment');
+  });
+
+  it('never consults the medicine index on a door that is not the supply door', async () => {
+    let calls = 0;
+    const deps: TurnDeps = {
+      ...makeDeps({ delta: { symptoms: ['sudden death'], species: 'broiler' }, reply: 'Try zinc o.' }),
+      ladder: {
+        retrieve: async () => {
+          calls += 1;
+          return SUPPORTED_LADDER;
+        },
+      },
+    };
+    await runTurn({ case: caseData(), query: 'birds dey die sudden' }, deps);
+    expect(calls).toBe(0);
+  });
+
   it('asks a discriminating question instead of resolving an ambiguous case', async () => {
     const deps = makeDeps({
       delta: {
@@ -126,6 +204,24 @@ describe('runTurn', () => {
     expect(result.reply).toContain('post-mortem');
     expect(result.reply).not.toContain('amoxicillin');
     expect(result.state.case.triageTurns).toBe(1);
+  });
+
+  it('routes through a transitional door without recording it as the case outcome', async () => {
+    const deps = makeDeps({
+      delta: {
+        species: 'broiler',
+        symptoms: ['sneezing', 'watery eyes'],
+        onsetDays: 2,
+        mortalityCount: 2,
+        farmSize: 400,
+        diseaseHits: ['newcastle', 'infectious_bronchitis'],
+      },
+      reply: 'Give am amoxicillin.',
+    });
+    const result = await runTurn({ case: caseData(), query: 'my birds dey sneeze' }, deps);
+    expect(result.door).toBe('triage');
+    expect(result.state.case.door).toBeUndefined();
+    expect(DoorSchema.safeParse(result.door).success).toBe(false);
   });
 
   it('discards the model reply on the triage door, where it is least trustworthy', async () => {

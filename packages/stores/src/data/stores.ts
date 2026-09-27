@@ -1,7 +1,9 @@
 import type { AgroStore } from '@poultry/schemas';
 
-const VERIFIED_AT = '2026-09-20T00:00:00.000Z';
+const UPDATED_AT = '2026-09-20T00:00:00.000Z';
 
+// No store in this seed has confirmed its stock with us, so no store carries a stock list.
+// Inventory arrives only when a real partner opts in and supplies stockVerifiedAt.
 export const STORES: AgroStore[] = [
   {
     id: 'e652b23f-7eeb-4828-a5f1-68671f10197c',
@@ -9,9 +11,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348012345678',
     state: 'Oyo',
     lga: 'Ibadan North',
-    stock: ['newcastle vaccine', 'gumboro vaccine', 'vitamins', 'antibiotics'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: 'a08f708f-d883-43c9-bf7b-9738bde3d4dc',
@@ -19,9 +19,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348023456789',
     state: 'Lagos',
     lga: 'Ojo',
-    stock: ['newcastle vaccine', 'fowl pox vaccine', 'dewormer'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: '291e9fc5-8402-4d98-b789-36cfe2396616',
@@ -29,9 +27,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348034567890',
     state: 'Kaduna',
     lga: 'Kaduna North',
-    stock: ['gumboro vaccine', 'vitamins'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: '7f6c4571-3e98-48bf-ae76-d83374662b38',
@@ -39,9 +35,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348045678901',
     state: 'Enugu',
     lga: 'Enugu North',
-    stock: ['antibiotics', 'dewormer'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: 'f5b4f698-0b75-45ea-bdfb-42ec5177c968',
@@ -49,9 +43,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348056789012',
     state: 'Ogun',
     lga: 'Abeokuta North',
-    stock: ['newcastle vaccine', 'gumboro vaccine', 'vitamins'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: '52846ca9-5b29-46e3-8659-b5cf53c963e7',
@@ -59,9 +51,7 @@ export const STORES: AgroStore[] = [
     phone: '+2348067890123',
     state: 'Plateau',
     lga: 'Jos North',
-    stock: ['fowl pox vaccine', 'antibiotics'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
   {
     id: '1b9d8c07-6e3a-4d1f-9e6a-2c4b6d8e0f13',
@@ -69,15 +59,10 @@ export const STORES: AgroStore[] = [
     phone: '+2348078901234',
     state: 'Lagos',
     lga: 'Ojo',
-    stock: ['newcastle vaccine', 'dewormer', 'vitamins'],
-    stockVerifiedAt: VERIFIED_AT,
-    updatedAt: VERIFIED_AT,
+    updatedAt: UPDATED_AT,
   },
 ];
 
 export function getStores(): AgroStore[] {
-  return STORES.map((store) => ({
-    ...store,
-    stock: store.stock === undefined ? undefined : [...store.stock],
-  }));
+  return STORES.map((store) => ({ ...store }));
 }

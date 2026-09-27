@@ -2,6 +2,7 @@
 
 **Branch:** `phase/2.5-triage-confidence`
 **Status:** shipped (code) / `store.is_open` folded into 3.1
+**Superseded in part by Phase 2.6** — the hardcoded ask-for ladder below was deleted and replaced with a retrieved, gated one, and the placeholder `stockVerifiedAt` values were removed from the seed. This document is kept as the record of what 2.5 shipped; where it describes the ladder or the stock seed, Phase 2.6 is authoritative.
 
 ## Why this jumped the queue
 
@@ -55,6 +56,8 @@ Viral diseases get `needsVet` and an explicit "no antibiotic cures a virus" refu
 
 ## What this phase does NOT do
 
-- No drug, dose, or withdrawal period is sourced from RAG yet. The ladder's clinical content is hardcoded and **must be reviewed by a licensed veterinarian before any real farmer sees it.**
-- No partner-confirmed inventory exists yet; every seed entry carries a placeholder `stockVerifiedAt`, which is exactly the thing a real deployment must replace with a partner opt-in flow.
+*(As written at 2.5. Both of the first two were closed by Phase 2.6 — see `PHASE-2.6-askfor-retrieval.md`.)*
+
+- No drug, dose, or withdrawal period is sourced from RAG yet. The ladder's clinical content is hardcoded and **must be reviewed by a licensed veterinarian before any real farmer sees it.** → *Closed: the hardcoded ladder was deleted. Clinical content now arrives from a `ClinicalLadderSource` and `gateLadder` names nothing unless triage confirmed the case, sources agree ≥ 0.6, and ≥ 2 independent sources back it. The corpus itself still needs vet sign-off.*
+- No partner-confirmed inventory exists yet; every seed entry carries a placeholder `stockVerifiedAt`, which is exactly the thing a real deployment must replace with a partner opt-in flow. → *Closed: every placeholder was removed. No seed store carries stock at all; the fields survive only as a machine-enforced partner seam.*
 - No formal Doorcas Africa or NVRI integration. They are named as the counterpart and the confirmatory lab, nothing more.

@@ -1,10 +1,12 @@
-import type { CaseData, CaseStatus } from '@poultry/schemas';
+import type { CaseData, CaseStatus, Door } from '@poultry/schemas';
 import { isComplete, missing } from './missing.js';
 import { assessTriage, MASS_MORTALITY_PCT, MAX_TRIAGE_TURNS } from './triage.js';
 
 export { MASS_MORTALITY_PCT };
 
-export type EffectiveDoor = 'resolve' | 'supply' | 'escalate' | 'report' | 'collect' | 'triage';
+// 'collect' and 'triage' are transitional routing states inside a turn, not outcomes a case
+// reaches, so only the four terminal doors are persisted on CaseData.door.
+export type EffectiveDoor = Door | 'collect' | 'triage';
 
 export interface DoorDecision {
   door: EffectiveDoor;
