@@ -28,18 +28,30 @@ Design authority: `SYSTEM_DESIGN.md` (system) and `STACK.md` (stack/deploy). Whe
 | DB/vector | Postgres + pgvector on Neon, Drizzle ORM |
 | Object storage | Cloudflare R2 |
 | WhatsApp | Baileys bridge on ONE small Node host |
-| Embeddings | Google `text-embedding-004` @ 768 dims (free) |
+| Embeddings | Google `gemini-embedding-001` @ 768 dims via MRL (free tier, L2-normalized in code) |
 | Pidgin transcription | Google `gemini-3.5-transcribe` (free tier) + dynamic Pidgin prompt |
-| LLM | Google `gemini-2.5-flash` (free tier; chat/tools/vision/audio, function calling) |
+| LLM | Google `gemini-3.1-flash-lite` (free tier; chat/tools/vision/audio, function calling) |
 | Obs | Langfuse · Sentry · pino · `/health` `/ready` |
 
 **Amendment, Sep 2026 — the MVP is single-provider.** The table above originally specified OpenAI
-GPT-4o-mini for the turn and OpenRouter free multimodal for transcription. Both were dropped: the MVP has no
-API budget, and Google AI Studio's free tier covers the entire surface with no card, which collapses two
-providers and two keys into one. `gemini-2.5-flash` does chat, tool calling, vision *and* audio input at 1M
-context. OpenRouter survives only as an optional 429 fallback, and any model used there must accept audio
-and must not be a reasoning model — reasoning models paraphrase, and farmer speech is evidence that has to
-survive verbatim.
+GPT-4o-mini for the turn, OpenRouter free multimodal for transcription, and `text-embedding-004` for
+embeddings. All three changed: the MVP has no API budget, and Google AI Studio's free tier covers the entire
+surface with no card, which collapses two providers and two keys into one. `text-embedding-004` is separately
+**deprecated**; `gemini-embedding-001` is the documented text replacement, and 768 dims is retained by
+requesting MRL truncation rather than by model choice. OpenRouter survives only as an optional 429 fallback,
+and any model used there must accept audio and must not be a reasoning model — reasoning models paraphrase,
+and farmer speech is evidence that has to survive verbatim.
+
+**Two models, not one, on purpose.** The farmer turn runs on the cheap Flash-Lite because it is most of the
+traffic. Document ingestion runs on `gemini-2.5-flash` because turning a whole source document into typed
+regions is the one genuinely reasoning-heavy call in the system, and it runs per document rather than per
+turn, so there is nothing to save by degrading it.
+
+**The embedding normalization trap.** `gemini-embedding-001` does not auto-normalize after MRL truncation;
+`gemini-embedding-2` does. pgvector cosine distance requires normalized vectors, so the `gemini-embedding-001`
+path must L2-normalize in our own code. Get it wrong and retrieval still runs — it just quietly returns
+worse matches with no error message. If we ever migrate to `gemini-embedding-2`, remove the manual
+normalization in the same change, or vectors will be double-normalized.
 
 **The privacy cost of free, stated plainly:** Google's free-tier terms allow prompts to be used for product
 improvement; only paid carries a no-training guarantee. Acceptable for a demo, not for real farmers' voice
