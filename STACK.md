@@ -1,6 +1,6 @@
 # Poultry Advisory Agent — Stack & Deployment (Locked)
 
-> Status: fully locked. Last decisions closed: Cloudflare Workers core · Gemini free embeddings @ 768 dims · OpenRouter free Pidgin transcription · single Node bridge for Baileys.
+> Status: fully locked. Last decisions closed: Cloudflare Workers core · single-provider Google free tier (`gemini-3.1-flash-lite` / `gemini-2.5-flash` / `gemini-3.5-transcribe` / `gemini-embedding-001` @ 768 dims) · Neon + pgvector · single Node bridge for Baileys.
 
 ---
 
@@ -39,8 +39,8 @@ poultry-agent/
 | WhatsApp bridge (Baileys) | **ONE Node process** (fly-io/Railway/Render free) | long-lived socket, QR pairing, reconnect, polls outbox |
 | Postgres + pgvector | **Neon** (free tier) | 12 tables, TCP from Worker |
 | Media evidence + uploaded docs | **Cloudflare R2** | `media/{phone}/{date}/{uuid}` keys |
-| Embeddings | **Google AI Studio** `text-embedding-004` @ **768 dims** (free, ~1,500 req/day) | hosted API from Worker |
-| Transcription | **OpenRouter free multimodal router** + dynamic Pidgin prompt | fallback: `openai/whisper-1` w/ `en` hint (~$0.0045/min) |
+| Embeddings | **Google AI Studio** `gemini-embedding-001` @ **768 dims** via MRL (free tier) | hosted API from Worker; L2-normalized in code |
+| Transcription | **Google AI Studio** `gemini-3.5-transcribe` + dynamic Pidgin prompt | single-provider MVP, see §4 |
 | Scheduled jobs | **Workers Cron Triggers** | surveillance digest · outbox liveness |
 
 **Why a Node bridge at all:** Cloudflare Workers are stateless/short-lived. Baileys needs a *persistent* WebSocket + session/QR state, which cannot live on a Worker. The bridge is a ~150-line dumb pipe (has no orchestrator/DB/LLM logic) and is behind the `normalize()` + outbox interface so the official WhatsApp API can replace it later with zero changes to the API core.
@@ -49,11 +49,18 @@ poultry-agent/
 
 | Need | Provider / model | Notes |
 |---|---|---|
-| Chat + tools + vision | OpenAI `GPT-4o-mini` | structured output; used for chat, tool calls, `analyze_image` |
-| Embeddings | Google `text-embedding-004` → **768 dims** | vine: column frozen to 768; model identical at ingest & query |
-| Pidgin transcription | OpenRouter free multimodal + prompt | keeps Pidgin verbatim ("wetin you dey talk" stays as spoken); conf < 0.6 → farmer confirms |
-| Fallback transcription | OpenRouter `openai/whisper-1`, `en` hint | pennies; never auto-translate to formal English as primary |
-| Pipeline: `analyze_document` (ingestion map-call) | OpenAI `GPT-4o-mini` | 1 LLM call per doc; deterministic split after |
+| Chat + tools + vision | Google `gemini-3.1-flash-lite` | structured output; used for chat, tool calls, `analyze_image`; most of the traffic, so the cheapest capable model |
+| Embeddings | Google `gemini-embedding-001` → **768 dims** (MRL) | column frozen to 768; model identical at ingest & query |
+| Pidgin transcription | Google `gemini-3.5-transcribe` + dynamic Pidgin prompt | keeps Pidgin verbatim ("wetin you dey talk" stays as spoken); conf < 0.6 → farmer confirms |
+| Pipeline: `analyze_document` (ingestion map-call) | Google `gemini-2.5-flash` | 1 LLM call per doc; the one genuinely reasoning-heavy call, so it does not run on the chat model; runs per document, not per turn |
+| Optional 429 fallback | OpenRouter free multimodal | **not wired.** If added, the model must accept audio and must not be a reasoning model — reasoning paraphrases, and farmer speech is evidence that must survive verbatim |
+
+**Single-provider amendment (Sep 2026).** This section originally specified OpenAI `GPT-4o-mini` for the
+turn, OpenRouter free multimodal for transcription, and `text-embedding-004` for embeddings. All three
+changed: the MVP has no API budget, and Google's free tier covers the entire surface with no card, which
+collapses two providers and two keys into one. `text-embedding-004` is separately deprecated;
+`gemini-embedding-001` is the documented text replacement, and 768 dims is retained by requesting MRL
+truncation rather than by model choice.
 
 ## 5. Data layer (Postgres + pgvector on Neon) — full schema
 
@@ -156,13 +163,12 @@ erDiagram
 
 ## 7. Environment & secrets (never in repo)
 
-`CLOUDFLARE_R2_*`, `DATABASE_URL` (Neon), `OPENAI_API_KEY`, `GOOGLE_AI_STUDIO_KEY`, `OPENROUTER_API_KEY`, `SENTRY_DSN`, `LANGFUSE_*`, admin `AUTH_SECRET`. Validated at boot with a Zod env-schema.
+`CLOUDFLARE_R2_*`, `DATABASE_URL` (Neon, pooled) + `DATABASE_URL_UNPOOLED` (DDL/migrations), `GEMINI_API_KEY`, `SENTRY_DSN`, `LANGFUSE_*`, admin `AUTH_SECRET`. `OPENAI_API_KEY` and `OPENROUTER_API_KEY` are **no longer required** — the MVP is single-provider. Validated at boot with a Zod env-schema.
 
 ## 8. Free-tier budget check (why this survives a hackathon + demo)
 
-- Neon: ~512 MB storage, thousands of vectors @ 768 dims fits easily, 24h pause/unpause.
-- Gemini embeddings: 1,500 req/day ≫ a demo's needs.
-- OpenRouter free router: $0 for transcription + (optional) models.
+- Neon: ~512 MB storage, thousands of vectors @ 768 dims fits easily. This project's `suspend_timeout_seconds` is `0`, so it does not scale to zero — that choice trades the pause credit for a demo that never cold-starts.
+- Gemini embeddings + chat + transcription: free tier, no card. Exact headroom is **not yet measured**; only the plumbing has been proven against the live API.
 - R2 free: 10 GB objects, 1M class-A ops.
 - Workers free: 100k req/day, 3 Cron Triggers.
 - Bridge: one small free instance on fly-io/Railway.

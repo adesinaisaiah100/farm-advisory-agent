@@ -47,10 +47,14 @@ traffic. Document ingestion runs on `gemini-2.5-flash` because turning a whole s
 regions is the one genuinely reasoning-heavy call in the system, and it runs per document rather than per
 turn, so there is nothing to save by degrading it.
 
-**The embedding normalization trap.** `gemini-embedding-001` does not auto-normalize after MRL truncation;
-`gemini-embedding-2` does. pgvector cosine distance requires normalized vectors, so the `gemini-embedding-001`
-path must L2-normalize in our own code. Get it wrong and retrieval still runs — it just quietly returns
-worse matches with no error message. If we ever migrate to `gemini-embedding-2`, remove the manual
+**The embedding normalization rule.** `gemini-embedding-001` does not auto-normalize after MRL truncation;
+`gemini-embedding-2` does. We L2-normalize in our own code on the `gemini-embedding-001` path. Note the reason
+precisely, because the common version of this claim is wrong: pgvector's cosine distance (`<=>`,
+`vector_cosine_ops`) is **scale-invariant**, so skipping normalization would not corrupt cosine *ranking*.
+We normalize anyway so that (a) the in-memory pgvector double used by unit tests computes the identical
+number the database does, and (b) swapping the HNSW opclass to inner product or L2 later cannot silently
+change results. The failure mode to fear is not "worse matches" — it is tests that pass while the
+production path disagrees with them. If we ever migrate to `gemini-embedding-2`, remove the manual
 normalization in the same change, or vectors will be double-normalized.
 
 **The privacy cost of free, stated plainly:** Google's free-tier terms allow prompts to be used for product
@@ -148,5 +152,6 @@ PHASE 3  Store lookup (@poultry/stores)       ✅ shipped (typed seed, no fabric
 PHASE 2.5 Triage confidence + ask-for ladder   ✅ shipped (3 confidence bands, 5th 'triage' door, 4 safety gaps closed, REFUSAL LIST)
 PHASE 2.6 Retrieval-grounded ask-for + honesty ✅ shipped (hardcoded ladder deleted, ClinicalLadderSource seam, gateLadder fail-closed, farmer vs prescriber channels, all seed stock removed)
 PHASE 4  RAG ingestion (@poultry/rag)         ✅ shipped (paginate + [PAGE n], one Analyzer map-call per doc, page/heading groups, micro-chunk 800-1000 tok 10% overlap, typed regions, citationFor -> core Citation, 67 tests)
-PHASE 5-10  see PHASES.md                   ⏳ not started
+PHASE 5  RAG retrieval + Neon                 🚧 built + verified, not wired (schema on real Neon, Stage A/B/fallback, 154 unit + 5 gated integ tests; corpus still EMPTY and the ladder source is not yet in a turn)
+PHASE 6-10  see PHASES.md                      ⏳ not started
 ```

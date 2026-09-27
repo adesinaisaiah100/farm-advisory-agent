@@ -309,15 +309,15 @@ Full details: see `STACK.md`. Summary of every locked choice:
 | WhatsApp bridge (Baileys) | **ONE Node process** (fly-io/Railway/Render free) |
 | Postgres + pgvector | **Neon** (free tier, 12 tables) |
 | Media evidence + uploaded docs | **Cloudflare R2** |
-| Embeddings | **Google text-embedding-004 @ 768 dims** (free, ~1,500 req/day) |
-| Transcription | **OpenRouter free multimodal** + dynamic Pidgin prompt (fallback: whisper-1, en hint) |
+| Embeddings | **Google `gemini-embedding-001` @ 768 dims** (MRL, free tier) |
+| Transcription | **Google `gemini-3.5-transcribe`** + dynamic Pidgin prompt |
 | Scheduled jobs | **Workers Cron Triggers** (surveillance digest · outbox liveness) |
-| LLM | OpenAI **GPT-4o-mini** (chat · tools · vision) · pnpm monorepo TS strict · Vitest |
+| LLM | Google **`gemini-3.1-flash-lite`** (chat · tools · vision), **`gemini-2.5-flash`** (document analysis) · pnpm monorepo TS strict · Vitest |
 
 Models & key contract numbers:
 
-- **gpv/embed vector:** model identical at ingest & query; column frozen to `vector(768)`.
-- **Pidgin transcription:** LLM-over-multimodal with a language-enforcing prompt keeps audio verbatim in Pidgin ("wetin you dey talk" stays as spoken) — bare Whisper auto-translates to English and is rejected. `conf < 0.6` → ask farmer to confirm.
+- **gpv/embed vector:** model identical at ingest & query; column frozen to `vector(768)`; L2-normalized in code so the in-memory test double and pgvector's `<=>` agree exactly. Cosine distance is scale-invariant, so normalization is a consistency guarantee, not a correctness requirement.
+- **Pidgin transcription:** a transcription model with a language-enforcing prompt keeps audio verbatim in Pidgin ("wetin you dey talk" stays as spoken) — a plain `en` hint auto-translates to English and is rejected. `conf < 0.6` → ask farmer to confirm.
 - **Why a Node bridge exists at all:** Workers are stateless/short-lived; Baileys needs a persistent socket + QR/state, so it runs on a tiny host that only polls the outbox and speaks `normalize()`. Swappable with the official WhatsApp API with zero changes to the core.
 
 ### Database — full ER (13 tables)

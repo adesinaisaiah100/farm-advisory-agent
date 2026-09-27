@@ -225,13 +225,20 @@ See `phases/PHASE-4-rag-ingestion.md`.
 
 Exit: retrieval unit matrix + the Neon integ test green; `/ready` reports postgres + embed.
 
+**Status: 🚧 built and verified, not yet wired into a turn.** What is true today:
+
+- Schema (`documents` / `chunk_groups` / `chunks`, `vector(768)`, cascading FKs, GIN on species/diseases, HNSW `vector_cosine_ops`) is applied on real Neon `fragrant-frost-02738524` and captured in `packages/rag/drizzle/0000_phase5_rag_retrieval.sql`.
+- `PgChunkRepository` + `InMemoryVectorStore` (a pgvector double), `GeminiEmbedder`, Stage A/B/fallback, the diversity cap, `RagClinicalLadderSource`, `renderRetrievalContext`, and `checkReadiness` all exist. 154 unit tests; 5 gated integration tests pass against real Neon + Gemini.
+- **Not done:** the corpus is **empty**. No licensed veterinary source has been ingested, so retrieval has never been scored against real clinical text. `RagClinicalLadderSource` is not wired into the orchestrator, and `checkReadiness` is not yet exposed on `/ready` — both land in the API phase.
+- The generated migration is the record of the live DDL, but the live database was created with `drizzle-kit push`, so its `__drizzle_migrations` table is empty. Re-running `drizzle-kit migrate` against **this** database would attempt to re-apply and fail; a fresh database applies it cleanly. Reconcile the two before the first real deploy.
+
 ---
 
 ## Phase 6 — Media pipeline (`@poultry/media`)
 
 **Boxes:**
 - R2 upload (interface; key `media/{phone}/{date}/{uuid}.{ext}`)
-- Transcript provider (OpenRouter free multimodal + dynamic Pidgin prompt; **fallback** whisper `en` hint) with `confidence`
+- Transcript provider (Google `gemini-3.5-transcribe` + dynamic Pidgin prompt) with `confidence`
 - Vision provider (image → structured observations via LLM)
 - `confidence < 0.6` → ask farmer to confirm/retype (never guess silently)
 
