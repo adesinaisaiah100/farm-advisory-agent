@@ -127,6 +127,29 @@ Exit: 17 stores tests green, typecheck + lint clean. **Done.**
 
 ---
 
+## Phase 2.5 — Triage confidence + the ask-for ladder (`@poultry/core`, `@poultry/schemas`)
+
+**Why this jumped the queue:** the store review showed we were promising a store's inventory we cannot know, and that our door logic had no state for "we're not sure." Uncertainty has to escalate, not resolve. This needs no RAG, so it ships before Phase 4.
+
+**Boxes:**
+- **Confidence ladder** decided in code in `validate.ts`, default escalate:
+  - `RED_FLAG` → escalate + report, no treatment advice. Peracute mass mortality, dark/cyanotic comb, sudden death cluster, suspected HPAI, bird-human illness.
+  - `AMBIGUOUS` (2+ look-alikes) → never name one drug. Ask the discriminating question, request the confirmatory action, re-triage.
+  - `CONFIRMABLE` → resolve with a specific ask-for line.
+- **Fix the four safety gaps found in the review:**
+  1. `diseaseHits` with 2+ entries currently falls through to `resolve` — the array is ignored.
+  2. `infectious_bronchitis` is missing from `DiseaseSchema` (the #1 ND confusion partner is unrepresentable).
+  3. Red flags match exact lowercase literals, so "neck dey bend" misses `twisted neck` — a safety gate cannot depend on the LLM's vocabulary. Needs substring/token matching over farmer text.
+  4. `'blood in droppings'` is classified critical, escalating textbook coccidiosis (68.7% prevalence in Nigerian broilers) and burning the door.
+- **Ask-for ladder** (`askFor = { product, why, askTheSeller[], refuse[], needsVet }`), derived from the differential, never from store stock. Replaces the circular "the right medicine or vaccine for the symptoms above" in `buildReferralSlip`. Ships the refusal list: no general antibiotic "just in case", nothing without a NAFDAC number, no loose unlabelled medicine, no receipt.
+- **Strip the fake inventory:** `stock` only for partners that opt in and re-confirm (`verifiedAt`); drop `isOpen`. `searchByLga`/`pickReferral`/`coveredLgas` survive, demoted to "where can I physically go."
+
+**Testable alone:** pure functions over a differential; golden slip text per disease signature; the ambiguity and red-flag matrices are pure unit tests.
+
+Exit: confidence-band matrix + ask-for golden slips + the four fixes all green; core and schemas typecheck. **In progress.**
+
+---
+
 ## Phase 4 — RAG ingestion (`@poultry/rag`, ingest half)
 
 **Boxes:**
@@ -269,7 +292,9 @@ All binding details in `AGENTS.md` §7. In short: unit tests never touch network
 | 2.2 | Memory model + budget compaction | ✅ |
 | 2.3 | Memory hardening (fail-closed + stall fallback) | ✅ |
 | 2.4 | Master record contracts + injected context | ✅ |
+| 2.5 | Triage confidence + ask-for ladder | ⏳ |
 | 3 | Store lookup | ✅ |
+| 3.1 | Ask-for ladder + strip fake inventory (folded into 2.5) | ⏳ |
 | 4 | RAG ingestion | ⏳ |
 | 5 | RAG retrieval + Neon | ⏳ |
 | 6 | Media pipeline | ⏳ |
