@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { Session } from '@poultry/schemas';
+import type { Session, SessionStatus } from '@poultry/schemas';
 import { inMemorySessionStore } from '@poultry/core';
 import type { ChatProvider, CompactProvider, TurnDeps } from '@poultry/core';
 import { LlmError } from '@poultry/core';
@@ -13,8 +13,33 @@ function newId(): string {
   return '00000000-0000-4000-8000-000000000001';
 }
 
+/**
+ * A real in-memory store that also records every write.
+ *
+ * `openSession` deliberately refuses to return a closed session, because that is
+ * the behaviour production needs. A test asserting what was *persisted* after a
+ * close therefore has to observe the write, and the honest way to do that is a
+ * fake that records — not a store contract loosened to make tests convenient.
+ */
 function makeStore() {
-  return inMemorySessionStore({ now: () => NOW, newId });
+  const base = inMemorySessionStore({ now: () => NOW, newId });
+  const writes: Session[] = [];
+  return {
+    writes,
+    lastWritten: (): Session | undefined => writes.at(-1),
+    openSession: (phone: string) => base.openSession(phone),
+    save: async (session: Session) => {
+      writes.push(session);
+      await base.save(session);
+    },
+    close: async (phone: string, status: SessionStatus) => {
+      await base.close(phone, status);
+      const existing = [...writes].reverse().find((w) => w.phone === phone);
+      if (existing !== undefined) {
+        writes.push({ ...existing, status, lastActive: NOW.toISOString() });
+      }
+    },
+  };
 }
 
 const neverCompact: CompactProvider = { compact: async () => ({ notes: [] }) };
@@ -128,7 +153,7 @@ describe('handleChat', () => {
     const outcome = await handleChat({ farmerPhone: '+2348012345678', text: 'very sick' }, d);
 
     expect(outcome.result.door).toBe('resolve');
-    expect((await d.store.openSession('+2348012345678'))?.status).toBe('completed');
+    expect(d.store.lastWritten()?.status).toBe('completed');
   });
 
   it('voids the session on escalation rather than completing it', async () => {
@@ -147,7 +172,7 @@ describe('handleChat', () => {
     const outcome = await handleChat({ farmerPhone: '+2348012345678', text: 'bird is bleeding' }, d);
 
     expect(outcome.result.door).toBe('escalate');
-    expect((await d.store.openSession('+2348012345678'))?.status).toBe('void');
+    expect(d.store.lastWritten()?.status).toBe('void');
   });
 
   it('reports a coded reply as a fallback rather than pretending the model answered', async () => {
@@ -239,11 +264,14 @@ describe('handleChat', () => {
 
   it('mints a case id, because reports and the dashboard hang off it', async () => {
     const d = deps(answering(RESOLVE));
-    await handleChat({ farmerPhone: '+2348012345678', text: 'very sick' }, d);
+    const outcome = await handleChat({ farmerPhone: '+2348012345678', text: 'very sick' }, d);
 
-    const session: Session | undefined = await d.store.openSession('+2348012345678');
-    expect(session?.caseId).toBe(newId());
-    expect(session?.state.case.id).toBe(newId());
+    // Asserted on the recorded write: the session is closed, so `openSession`
+    // correctly refuses to hand it back.
+    const written = d.store.lastWritten();
+    expect(written?.caseId).toBe(newId());
+    expect(written?.state.case.id).toBe(newId());
+    expect(outcome.result.state.case.id).toBe(newId());
   });
 
   it('keeps the same case id across the turns of one session', async () => {

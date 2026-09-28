@@ -37,11 +37,19 @@ poultry-agent/
 | Hono API · orchestrator · tools · RAG · media ingest · cases · analytics · auth | **Cloudflare Workers** | stateless; handlers + Cron Triggers |
 | Dashboard + web chat UI | **Cloudflare Pages** (static React) | `useChat` streams directly from the API route |
 | WhatsApp bridge (Baileys) | **ONE Node process** (fly-io/Railway/Render free) | long-lived socket, QR pairing, reconnect, polls outbox |
-| Postgres + pgvector | **Neon** (free tier) | 12 tables, TCP from Worker |
+| Postgres + pgvector | **Neon** (free tier) | 12 tables, HTTP (fetch) from Worker |
 | Media evidence + uploaded docs | **Cloudflare R2** | `media/{phone}/{date}/{uuid}.{ext}` keys, phone stored digits-only (`+234...` → `234...`), date is UTC |
 | Embeddings | **Google AI Studio** `gemini-embedding-001` @ **768 dims** via MRL (free tier) | hosted API from Worker; L2-normalized in code |
 | Transcription | **Google AI Studio** `gemini-3.5-transcribe` + dynamic Pidgin prompt | single-provider MVP, see §4 |
 | Scheduled jobs | **Workers Cron Triggers** | surveillance digest · outbox liveness |
+
+**How the Worker reaches Neon:** over HTTP with `fetch`, via `@neondatabase/serverless` +
+`drizzle-orm/neon-http`. A Worker cannot open a raw TCP socket, so the WebSocket
+driver (`neonConfig` + `Pool`) is a Node-only path; the two dialects are
+interchangeable behind Drizzle, so the same queries and schema serve both. The
+Node-side ingest scripts still use `drizzle-orm/node-postgres` for DDL and bulk
+loads, which is why both drivers are in the tree. This line previously said
+"TCP from Worker", which was never possible.
 
 **Why a Node bridge at all:** Cloudflare Workers are stateless/short-lived. Baileys needs a *persistent* WebSocket + session/QR state, which cannot live on a Worker. The bridge is a ~150-line dumb pipe (has no orchestrator/DB/LLM logic) and is behind the `normalize()` + outbox interface so the official WhatsApp API can replace it later with zero changes to the API core.
 

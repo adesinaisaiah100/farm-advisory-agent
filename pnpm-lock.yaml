@@ -165,6 +165,10 @@ settings:
 importers:
 
   .:
+    dependencies:
+      '@neondatabase/serverless':
+        specifier: ^1.1.0
+        version: 1.1.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.12.0
@@ -178,6 +182,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: 2.1.9
         version: 2.1.9(supports-color@7.2.0)(vitest@2.1.9(@types/node@22.20.4)(jsdom@25.0.1(supports-color@7.2.0))(supports-color@7.2.0))
+      drizzle-orm:
+        specifier: ^0.45.3
+        version: 0.45.3(@neondatabase/serverless@1.1.0)(@types/pg@8.23.1)(pg@8.23.0)
       eslint:
         specifier: ^9.12.0
         version: 9.39.5(jiti@2.7.0)(supports-color@7.2.0)
@@ -202,12 +209,18 @@ importers:
 
   apps/api:
     dependencies:
+      '@neondatabase/serverless':
+        specifier: 1.1.0
+        version: 1.1.0
       '@poultry/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@poultry/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      drizzle-orm:
+        specifier: 0.45.3
+        version: 0.45.3(@neondatabase/serverless@1.1.0)(@types/pg@8.23.1)(pg@8.23.0)
       hono:
         specifier: ^4.6.0
         version: 4.13.8
@@ -329,7 +342,7 @@ importers:
         version: link:../schemas
       drizzle-orm:
         specifier: ^0.45.3
-        version: 0.45.3(@types/pg@8.23.1)(pg@8.23.0)
+        version: 0.45.3(@neondatabase/serverless@1.1.0)(@types/pg@8.23.1)(pg@8.23.0)
       pg:
         specifier: ^8.23.0
         version: 8.23.0
@@ -1365,6 +1378,10 @@ packages:
   '@neon/sdk@6.1.2':
     resolution: {integrity: sha512-HiLtvM48xfAJxCy/v6ACIaMcPfv2+dQBOyti4NbxmYrcltfBqaw06qP0spFJctYbKeCEuyBzCM3hzQVNCtZ0Og==}
     engines: {node: '>=20.19.0'}
+
+  '@neondatabase/serverless@1.1.0':
+    resolution: {integrity: sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q==}
+    engines: {node: '>=19.0.0'}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -3701,6 +3718,8 @@ snapshots:
 
   '@neon/sdk@6.1.2': {}
 
+  '@neondatabase/serverless@1.1.0': {}
+
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
@@ -4203,8 +4222,9 @@ snapshots:
       esbuild: 0.25.12
       tsx: 4.23.15
 
-  drizzle-orm@0.45.3(@types/pg@8.23.1)(pg@8.23.0):
+  drizzle-orm@0.45.3(@neondatabase/serverless@1.1.0)(@types/pg@8.23.1)(pg@8.23.0):
     optionalDependencies:
+      '@neondatabase/serverless': 1.1.0
       '@types/pg': 8.23.1
       pg: 8.23.0
 

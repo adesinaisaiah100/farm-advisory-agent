@@ -29,21 +29,32 @@ export interface SessionStoreOptions {
 }
 
 export function inMemorySessionStore(options: SessionStoreOptions): SessionStore {
-  const open = new Map<string, Session>();
+  const stored = new Map<string, Session>();
 
   return {
     async openSession(phone) {
-      return open.get(phone);
+      const session = stored.get(phone);
+      // A closed session is kept, because the dashboard will want the case
+      // history. Returning it here would silently reopen a completed
+      // conversation, and the next turn would build on stale state. The Postgres
+      // store filters on `status = 'open'` for the same reason: the two stores
+      // must not disagree about what "open" means, or dev and production would
+      // behave differently.
+      if (session === undefined || session.status !== 'open') return undefined;
+      return session;
     },
 
     async save(session) {
-      open.set(session.phone, session);
+      stored.set(session.phone, session);
     },
 
     async close(phone, status) {
-      const existing = open.get(phone);
-      if (existing === undefined) return;
-      open.set(phone, { ...existing, status, lastActive: options.now().toISOString() });
+      const existing = stored.get(phone);
+      // Mirrors the Postgres store's `status = 'open'` predicate. A farmer who
+      // already discharged a case must not have it silently relabelled by a
+      // retried close, and the two stores must not disagree about this.
+      if (existing === undefined || existing.status !== 'open') return;
+      stored.set(phone, { ...existing, status, lastActive: options.now().toISOString() });
     },
   };
 }
