@@ -56,6 +56,56 @@ describe('transcribePrompt', () => {
 });
 
 describe('GeminiTranscriber', () => {
+  it('reads the transcript from audioTranscription, the shape the live model returns', async () => {
+    // Captured from the real `gemini-3.5-transcribe` response. It does not use a
+    // normal text part, so a schema that only accepts `text` fails every voice
+    // note in production while passing every fake-based unit test.
+    const { transcriber } = transcriberFor({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                audioTranscription: {
+                  text: 'The birds are sitting down and they are not eating.',
+                },
+              },
+            ],
+            role: 'model',
+          },
+          finishReason: 'STOP',
+          index: 0,
+        },
+      ],
+      modelVersion: 'gemini-3.5-transcribe',
+    });
+
+    const result = await transcriber.transcribe({ audio, mime: 'audio/wav' });
+
+    expect(result.text).toBe('The birds are sitting down and they are not eating.');
+    expect(result.confidence).toBeUndefined();
+  });
+
+  it('also accepts a plain text part, which a general multimodal model returns', async () => {
+    const { transcriber } = transcriberFor({
+      candidates: [{ content: { parts: [{ text: 'my birds dey die' }] } }],
+    });
+
+    const result = await transcriber.transcribe({ audio, mime: 'audio/mpeg' });
+
+    expect(result.text).toBe('my birds dey die');
+  });
+
+  it('names the finish reason when the model returns no transcript', async () => {
+    const { transcriber } = transcriberFor({
+      candidates: [{ content: { parts: [] }, finishReason: 'SAFETY' }],
+    });
+
+    await expect(transcriber.transcribe({ audio, mime: 'audio/wav' })).rejects.toThrow(
+      /finishReason: SAFETY/,
+    );
+  });
+
   it('returns the transcript with no invented confidence', async () => {
     const { transcriber } = transcriberFor({
       candidates: [{ content: { parts: [{ text: '  my birds dey die  ' }] } }],

@@ -5,11 +5,24 @@ import { MediaError } from './key.js';
 const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 const DEFAULT_TRANSCRIBE_MODEL = 'gemini-3.5-transcribe';
 
+/**
+ * `gemini-3.5-transcribe` does not answer with a normal text part. It returns the
+ * transcript under `audioTranscription.text` inside the part, verified against
+ * the live API. A general-purpose multimodal model answers with a plain `text`
+ * part instead, so both are accepted rather than one being assumed.
+ */
+const PartSchema = z.union([
+  z.object({ text: z.string() }).transform((part) => part.text),
+  z.object({ audioTranscription: z.object({ text: z.string() }) }).transform(
+    (part) => part.audioTranscription.text,
+  ),
+]);
+
 const GenerateResponseSchema = z.object({
   candidates: z
     .array(
       z.object({
-        content: z.object({ parts: z.array(z.object({ text: z.string() })) }),
+        content: z.object({ parts: z.array(PartSchema) }),
         finishReason: z.string().optional(),
       }),
     )
@@ -119,15 +132,18 @@ export class GeminiTranscriber implements Transcriber {
     }
 
     const candidate = parsed.data.candidates[0];
-    const text = (candidate?.content.parts ?? [])
-      .map((part) => part.text)
-      .join('')
-      .trim();
+    const text = (candidate?.content.parts ?? []).join('').trim();
 
     if (text.length === 0) {
       // An empty transcript is not a confident "nothing was said". It is a
       // failure to understand, and the caller must confirm with the farmer.
-      throw new MediaError('transcribe_empty', 'the model returned no transcript text');
+      const reason = candidate?.finishReason;
+      throw new MediaError(
+        'transcribe_empty',
+        reason === undefined
+          ? 'the model returned no transcript text'
+          : `the model returned no transcript text (finishReason: ${reason})`,
+      );
     }
 
     return TranscriptSchema.parse({ text });

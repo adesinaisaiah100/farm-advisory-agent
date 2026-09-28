@@ -153,6 +153,6 @@ PHASE 2.5 Triage confidence + ask-for ladder   ✅ shipped (3 confidence bands, 
 PHASE 2.6 Retrieval-grounded ask-for + honesty ✅ shipped (hardcoded ladder deleted, ClinicalLadderSource seam, gateLadder fail-closed, farmer vs prescriber channels, all seed stock removed)
 PHASE 4  RAG ingestion (@poultry/rag)         ✅ shipped (paginate + [PAGE n], one Analyzer map-call per doc, page/heading groups, micro-chunk 800-1000 tok 10% overlap, typed regions, citationFor -> core Citation, 67 tests)
 PHASE 5  RAG retrieval + Neon                 🚧 built + verified, not wired (schema on real Neon, Stage A/B/fallback, 154 unit + 5 gated integ tests; corpus still EMPTY and the ladder source is not yet in a turn)
-PHASE 6  Media pipeline (@poultry/media)     🚧 built + R2 verified, not wired (82 unit tests, 100% line coverage, real R2 round-trip proven; Gemini transcribe/vision UNVERIFIED - no confidence is returned, so every voice note lands on the confirmation gate, and the 3 gated Gemini integ tests need operator-supplied fixtures)
+PHASE 6  Media pipeline (@poultry/media)     🚧 built + live-verified, not wired (85 unit tests, 100% line coverage, 5 gated integ tests green against real R2 and real Gemini with committed fixtures; the live transcribe API returns parts[].audioTranscription.text, which only the real run could have caught. Pidgin input and an unwell-bird photo remain unproven - see packages/media/tests/fixtures/README.md)
 PHASE 6-10  see PHASES.md                      ⏳ not started
 ```

@@ -246,17 +246,30 @@ Exit: retrieval unit matrix + the Neon integ test green; `/ready` reports postgr
 
 Exit: media lifecycle (upload → transcribe/observe → low-conf fallback) green.
 
-**Status: 🚧 built + partially verified (Sep 2026).** 82 unit tests, 100% line
-coverage on every source file. Real R2 round-trip proven against the live bucket
-(key format, content-type metadata, byte fidelity, zero-byte rejection) via 2
-gated integ tests. **The Gemini transcription and vision paths are unverified
-against the real API**: `gemini-3.5-transcribe` returns no confidence, which
-means *every* voice note lands on the confirmation gate, and the 3 gated Gemini
-integ tests need `PIDGIN_FIXTURE_AUDIO` / `PHOTO_FIXTURE_IMAGE` (real recordings
-on the operator's disk, never committed — a synthesised clip is not a Pidgin
-voice note). Not yet wired into a turn or a route.
+**Status: 🚧 built + live-verified against R2 and Gemini (Sep 2026), not wired.**
+85 unit tests, 100% line coverage on every source file. All 5 gated integ tests
+pass with no env vars set, against real media: R2 round-trip (key format,
+content-type metadata, byte fidelity, zero-byte rejection), `gemini-3.5-transcribe`
+returning the fixture's exact spoken words, a real transcript landing on the
+confirmation gate, and `gemini-3.1-flash-lite` returning JSON observations with
+no diagnosis and no drug name.
 
-Two decisions worth recording, because both were safety fixes rather than
+Verification earned its keep immediately: the live transcribe model returns the
+transcript under `parts[].audioTranscription.text`, **not** a plain `text` part.
+The unit suite had been built on the assumed shape and passed cleanly while every
+real voice note would have thrown `transcribe_bad_response`. Only running it
+against the real API found that.
+
+Two gaps remain, deliberately unfaked and documented in
+`packages/media/tests/fixtures/README.md`:
+- The committed voice note is **English**, not Pidgin, so "Pidgin survives
+  transcription verbatim" is still unproven.
+- The committed photo is a **healthy** flock, which proves healthy birds are not
+  diagnosed but not that the prompt holds when a bird looks sick.
+
+Not yet wired into a turn or a route.
+
+Three decisions worth recording, because two were safety fixes rather than
 features:
 - **The kind is derived from the MIME type and is not a caller input.** WhatsApp
   supplies the MIME, so a caller able to assert a kind could file a voice note
@@ -264,6 +277,9 @@ features:
   statement the farmer never made.
 - **Base64 uses `btoa`, not `Buffer`.** The API runs this code on Workers, where
   `Buffer` is undefined; every voice note and photo would have crashed there.
+- **A response shape is only real once the live API has sent it.** The
+  `audioTranscription` bug is the argument for keeping gated integ tests next to
+  the fake-based unit tests rather than trusting the fakes.
 
 ---
 

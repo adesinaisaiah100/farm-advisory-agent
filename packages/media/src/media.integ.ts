@@ -1,5 +1,7 @@
 import { config as loadEnv } from 'dotenv';
 import { afterAll, describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import {
   InMemoryMediaStore,
   R2MediaStore,
@@ -90,18 +92,42 @@ function required(name: string): string {
 }
 
 /**
- * A synthesised clip is not a Pidgin voice note, so this fixture cannot be
- * committed. An operator supplies their own recording; there is no fake.
+ * Committed fixtures are the default so the verification is reproducible. The env
+ * vars exist because the two gaps documented in `tests/fixtures/README.md` need
+ * real recordings and photos that cannot be committed.
  */
-function fixture(name: string, what: string): string {
-  const value = process.env[name];
-  if (value === undefined || value.length === 0) {
-    throw new Error(
-      `${name} is not set. Point it at a real ${what} on disk to exercise this; ` +
-        `the transcription and vision paths cannot be proven without one.`,
-    );
-  }
-  return value;
+const FIXTURES = new URL('../tests/fixtures/', import.meta.url);
+
+function fixturePath(name: string, override: string | undefined, fallback: string): string {
+  return override ?? fileURLToPath(new URL(fallback, FIXTURES));
+}
+
+/**
+ * The mime has to match the real bytes: sending a WAV labelled `audio/mpeg` is
+ * how a transcription request gets rejected for reasons that have nothing to do
+ * with the transcription.
+ */
+function audioMime(path: string): string {
+  const ext = path.slice(path.lastIndexOf('.')).toLowerCase();
+  const mimes: Record<string, string> = {
+    '.wav': 'audio/wav',
+    '.mp3': 'audio/mpeg',
+    '.m4a': 'audio/mp4',
+    '.mp4': 'audio/mp4',
+    '.ogg': 'audio/ogg',
+    '.webm': 'audio/webm',
+  };
+  const mime = mimes[ext];
+  if (mime === undefined) throw new Error(`${ext} is not a transcription format this test knows`);
+  return mime;
+}
+
+function imageMime(path: string): string {
+  const ext = path.slice(path.lastIndexOf('.')).toLowerCase();
+  const mimes: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png' };
+  const mime = mimes[ext];
+  if (mime === undefined) throw new Error(`${ext} is not an image format this test knows`);
+  return mime;
 }
 
 const uploaded: string[] = [];
@@ -160,28 +186,31 @@ describe.sequential('media integ (real R2 + real Gemini)', () => {
 
   it('transcribes a real recording and reports no confidence, so the farmer is asked', async () => {
     if (!RUN_INTEG) return;
-    const audioPath = fixture('PIDGIN_FIXTURE_AUDIO', 'Pidgin voice note (.m4a/.mp3/.wav)');
-    const { readFile } = await import('node:fs/promises');
+    const audioPath = fixturePath('PIDGIN_FIXTURE_AUDIO', process.env.PIDGIN_FIXTURE_AUDIO, 'farmer-voice-note.wav');
     const audio = new Uint8Array(await readFile(audioPath));
     const transcriber = new GeminiTranscriber({ apiKey: required('GEMINI_API_KEY') });
 
-    const result = await transcriber.transcribe({ audio, mime: 'audio/mpeg' });
+    const result = await transcriber.transcribe({ audio, mime: audioMime(audioPath) });
 
-    expect(result.text.length).toBeGreaterThan(0);
+    // Golden: the words actually spoken in `farmer-voice-note.wav`. This pins the
+    // verbatim contract, so a model upgrade that paraphrases the farmer fails
+    // here on purpose rather than silently rewording what a farmer said.
+    expect(result.text).toBe(
+      'The birds are sitting down and they are not eating. The litter is wet and there is blood near the vent.',
+    );
     // The point of the test: Gemini gives no confidence, so the gate stays shut.
     expect(result.confidence).toBeUndefined();
   });
 
   it('sends a real Gemini transcript down the confirmation path', async () => {
     if (!RUN_INTEG) return;
-    const audioPath = fixture('PIDGIN_FIXTURE_AUDIO', 'Pidgin voice note (.m4a/.mp3/.wav)');
-    const { readFile } = await import('node:fs/promises');
+    const audioPath = fixturePath('PIDGIN_FIXTURE_AUDIO', process.env.PIDGIN_FIXTURE_AUDIO, 'farmer-voice-note.wav');
     const audio = new Uint8Array(await readFile(audioPath));
     const transcriber = new GeminiTranscriber({ apiKey: required('GEMINI_API_KEY') });
 
     const result = await ingestMedia(deps({ transcriber }), {
       phone: PHONE,
-      mime: 'audio/mpeg',
+      mime: audioMime(audioPath),
       body: audio,
     });
 
@@ -193,12 +222,11 @@ describe.sequential('media integ (real R2 + real Gemini)', () => {
 
   it('observes a real photo and returns no diagnosis or drug name', async () => {
     if (!RUN_INTEG) return;
-    const imagePath = fixture('PHOTO_FIXTURE_IMAGE', 'poultry photo (.jpg/.png)');
-    const { readFile } = await import('node:fs/promises');
+    const imagePath = fixturePath('PHOTO_FIXTURE_IMAGE', process.env.PHOTO_FIXTURE_IMAGE, 'broiler-chicks.jpg');
     const image = new Uint8Array(await readFile(imagePath));
     const vision = new GeminiVisionProvider({ apiKey: required('GEMINI_API_KEY') });
 
-    const result = await vision.observe({ image, mime: 'image/jpeg' });
+    const result = await vision.observe({ image, mime: imageMime(imagePath) });
 
     expect(result.observations.length).toBeGreaterThan(0);
     const forbidden =
