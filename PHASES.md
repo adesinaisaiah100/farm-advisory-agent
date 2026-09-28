@@ -246,6 +246,25 @@ Exit: retrieval unit matrix + the Neon integ test green; `/ready` reports postgr
 
 Exit: media lifecycle (upload → transcribe/observe → low-conf fallback) green.
 
+**Status: 🚧 built + partially verified (Sep 2026).** 82 unit tests, 100% line
+coverage on every source file. Real R2 round-trip proven against the live bucket
+(key format, content-type metadata, byte fidelity, zero-byte rejection) via 2
+gated integ tests. **The Gemini transcription and vision paths are unverified
+against the real API**: `gemini-3.5-transcribe` returns no confidence, which
+means *every* voice note lands on the confirmation gate, and the 3 gated Gemini
+integ tests need `PIDGIN_FIXTURE_AUDIO` / `PHOTO_FIXTURE_IMAGE` (real recordings
+on the operator's disk, never committed — a synthesised clip is not a Pidgin
+voice note). Not yet wired into a turn or a route.
+
+Two decisions worth recording, because both were safety fixes rather than
+features:
+- **The kind is derived from the MIME type and is not a caller input.** WhatsApp
+  supplies the MIME, so a caller able to assert a kind could file a voice note
+  as a photo, skipping transcription and the confidence gate and recording a
+  statement the farmer never made.
+- **Base64 uses `btoa`, not `Buffer`.** The API runs this code on Workers, where
+  `Buffer` is undefined; every voice note and photo would have crashed there.
+
 ---
 
 ## Phase 7 — WhatsApp bridge (`apps/bridge` on the Node host)

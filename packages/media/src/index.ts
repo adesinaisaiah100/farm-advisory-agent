@@ -1,15 +1,12 @@
-import { z } from 'zod';
+export * from './key.js';
+export * from './store.js';
+export * from './transcribe.js';
+export * from './vision.js';
+export * from './pipeline.js';
 
-export const TranscribeResultSchema = z.object({
-  text: z.string(),
-  confidence: z.number().min(0).max(1),
-  language: z.string().optional(),
-});
-
-export type TranscribeResult = z.infer<typeof TranscribeResultSchema>;
-
-export const CONFIDENCE_THRESHOLD = 0.6;
-
-export function isReliable(result: TranscribeResult): boolean {
-  return result.confidence >= CONFIDENCE_THRESHOLD;
-}
+// `CONFIDENCE_THRESHOLD`, `isReliable` and the `Media` schema are owned by
+// `@poultry/schemas` and re-exported here unchanged. They used to be redefined
+// in this package with a subtly different `isReliable` that could not represent
+// a missing confidence, which is the one case the farmer-confirmation gate cares
+// about most.
+export { CONFIDENCE_THRESHOLD, isReliable, MediaSchema, type Media } from '@poultry/schemas';

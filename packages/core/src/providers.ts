@@ -39,6 +39,16 @@ export interface EmbedProvider {
   embed(texts: string[]): Promise<number[][]>;
 }
 
+/**
+ * @deprecated Superseded by `Transcriber` in `@poultry/media`, which is the
+ * seam the Gemini implementation actually satisfies. Kept so an existing import
+ * does not break; do not build against this.
+ *
+ * `confidence` is optional because `gemini-3.5-transcribe` does not return a
+ * per-utterance confidence. The canonical gate lives in `@poultry/schemas` as
+ * `isReliable`, which treats an absent score as unreliable so the farmer is
+ * asked to confirm rather than the agent guessing.
+ */
 export interface TranscriptProvider {
-  transcribe(r2Key: string): Promise<{ text: string; confidence: number }>;
+  transcribe(r2Key: string): Promise<{ text: string; confidence?: number }>;
 }

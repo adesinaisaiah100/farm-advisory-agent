@@ -38,7 +38,7 @@ poultry-agent/
 | Dashboard + web chat UI | **Cloudflare Pages** (static React) | `useChat` streams directly from the API route |
 | WhatsApp bridge (Baileys) | **ONE Node process** (fly-io/Railway/Render free) | long-lived socket, QR pairing, reconnect, polls outbox |
 | Postgres + pgvector | **Neon** (free tier) | 12 tables, TCP from Worker |
-| Media evidence + uploaded docs | **Cloudflare R2** | `media/{phone}/{date}/{uuid}` keys |
+| Media evidence + uploaded docs | **Cloudflare R2** | `media/{phone}/{date}/{uuid}.{ext}` keys, phone stored digits-only (`+234...` → `234...`), date is UTC |
 | Embeddings | **Google AI Studio** `gemini-embedding-001` @ **768 dims** via MRL (free tier) | hosted API from Worker; L2-normalized in code |
 | Transcription | **Google AI Studio** `gemini-3.5-transcribe` + dynamic Pidgin prompt | single-provider MVP, see §4 |
 | Scheduled jobs | **Workers Cron Triggers** | surveillance digest · outbox liveness |
