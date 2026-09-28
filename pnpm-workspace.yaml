@@ -1,6 +1,7 @@
 packages:
   - 'packages/*'
   - 'apps/*'
+  - '!apps/bridge'
   - 'tests'
 allowBuilds:
   esbuild: true

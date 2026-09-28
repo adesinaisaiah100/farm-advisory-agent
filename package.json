@@ -12,7 +12,9 @@
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:unit": "pnpm -r --workspace-concurrency=1 test:unit",
     "test:integ": "pnpm -r --workspace-concurrency=1 test:integ",
-    "check": "pnpm typecheck && pnpm lint && pnpm test:unit"
+    "bridge": "pnpm --dir apps/bridge start",
+    "bridge:check": "pnpm --dir apps/bridge typecheck && pnpm --dir apps/bridge lint && pnpm --dir apps/bridge test:unit",
+    "check": "pnpm typecheck && pnpm lint && pnpm test:unit && pnpm bridge:check"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
