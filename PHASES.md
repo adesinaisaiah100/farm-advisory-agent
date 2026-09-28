@@ -247,12 +247,24 @@ Exit: retrieval unit matrix + the Neon integ test green; `/ready` reports postgr
 Exit: media lifecycle (upload → transcribe/observe → low-conf fallback) green.
 
 **Status: 🚧 built + live-verified against R2 and Gemini (Sep 2026), not wired.**
-85 unit tests, 100% line coverage on every source file. All 5 gated integ tests
-pass with no env vars set, against real media: R2 round-trip (key format,
-content-type metadata, byte fidelity, zero-byte rejection), `gemini-3.5-transcribe`
-returning the fixture's exact spoken words, a real transcript landing on the
-confirmation gate, and `gemini-3.1-flash-lite` returning JSON observations with
-no diagnosis and no drug name.
+85 unit tests, 100% line coverage on every source file. Gated integ tests run
+against real media: R2 round-trip (key format, content-type metadata, byte
+fidelity, zero-byte rejection), `gemini-3.5-transcribe` returning a fixture's
+exact spoken words, a real transcript landing on the confirmation gate, and
+`gemini-3.1-flash-lite` returning JSON observations with no diagnosis and no drug
+name. Fixtures are committed, so `pnpm test:integ` needs no env vars.
+
+Three claims are now verified against the live models rather than assumed:
+- **Pidgin survives verbatim.** A real Pidgin voice note came back with `I no
+  sabi` and `dey no dey chop` intact and nothing translated or tidied.
+- **A sick bird is not diagnosed.** Given a photo of confirmed Newcastle disease,
+  the model returned only "the bird is positioned in lateral recumbency", "the
+  eyes are closed", "the neck is extended forward", "the feathers appear
+  ruffed" — no disease, no drug, still specific enough for a vet to act on. This
+  is the stronger test precisely *because* the RAG corpus is empty: the prompt
+  has to hold when nothing can ground an answer.
+- **Gemini returns no confidence**, so every voice note lands on the confirmation
+  gate. Verified, not assumed.
 
 Verification earned its keep immediately: the live transcribe model returns the
 transcript under `parts[].audioTranscription.text`, **not** a plain `text` part.
@@ -260,12 +272,12 @@ The unit suite had been built on the assumed shape and passed cleanly while ever
 real voice note would have thrown `transcribe_bad_response`. Only running it
 against the real API found that.
 
-Two gaps remain, deliberately unfaked and documented in
-`packages/media/tests/fixtures/README.md`:
-- The committed voice note is **English**, not Pidgin, so "Pidgin survives
-  transcription verbatim" is still unproven.
-- The committed photo is a **healthy** flock, which proves healthy birds are not
-  diagnosed but not that the prompt holds when a bird looks sick.
+Known limits, recorded in `packages/media/tests/fixtures/README.md`:
+- The free-tier **transcription quota is exhausted by repeated runs** (`429`).
+  Anything calling transcription in a loop needs backoff — the same shape as the
+  Phase 7 outbox requirement.
+- The Pidgin audio fixture is **not committed** (real voice, free-tier terms), so
+  that one test is opt-in via `PIDGIN_FIXTURE_AUDIO`.
 
 Not yet wired into a turn or a route.
 

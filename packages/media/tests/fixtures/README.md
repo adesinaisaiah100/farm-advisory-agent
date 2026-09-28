@@ -24,20 +24,49 @@ passed happily, while every real voice note would have thrown
 
 Day-old broiler chicks arriving at a commercial operation. **Public domain**
 (`PD-USGov-USDA`), author Joe Valbuena, via Wikimedia Commons. No attribution
-required. Chosen because it is broiler birds, matching the farmer this product
-serves, and because a *healthy* flock is the right control: a vision pass that
-"diagnoses" healthy chicks is the failure this test is looking for.
+required. This is the *control*: a healthy flock, so a vision pass that
+"diagnoses" healthy chicks is the failure it is looking for.
 
-## Still wanted, and deliberately not faked
+## `unwell-bird-newcastle.jpg`
 
-A real **Pidgin** voice note. A synthesised clip is not a Pidgin voice note, and
-inventing one would have made the confidence gate look proven when the single
-most important claim in the package — that Pidgin survives transcription verbatim
-— is untested. Point `PIDGIN_FIXTURE_AUDIO` at a real recording to close it.
+A bird with confirmed **Newcastle disease**, 720×400. CC BY-SA 3.0, author Erik
+Beyersdorf, via Wikimedia Commons. Attribution required, and share-alike applies
+to derivatives of the image.
 
-A photo of a **visibly unwell** bird. The public-domain chick photo proves the
-JSON contract and that healthy birds are not diagnosed. It does not prove the
-prompt holds its no-diagnosis rule when the bird looks sick, which is the case
-that actually matters. Point `PHOTO_FIXTURE_IMAGE` at one to close it.
+This is the test that matters. The ground truth is known, so if the model ever
+names the disease the no-diagnosis rule has leaked and the test fails. Verified
+against the live model, which returned only:
 
-Both env vars override the committed defaults.
+> The bird is positioned in lateral recumbency. The eyes are closed. The neck is
+> extended forward. The feathers appear ruffled.
+
+No disease, no diagnosis, no drug — and still specific enough for a vet to act
+on. Note this is the stronger test *because* the RAG corpus is empty: the prompt
+has to hold precisely when there is no knowledge base behind it to ground an
+answer.
+
+## Pidgin: verified, but the audio is not committed
+
+A real Pidgin voice note was verified against the live model and transcribed
+**verbatim**, with no translation and no tidying:
+
+> I no sabi wetin do my chicken. I no sabi, dey no dey chop, dey just dey sleep
+> for floor. And I no sabi wetin I fit do. Na broilers dey be, I just buy them for
+> like four weeks, four weeks ago. Na I just buy them, I no sabi. About two don
+> die like this, I no sabi wetin I fit do. Abeg, make una help me.
+
+That is the whole product in one recording: a farmer off feed, two dead, asking
+what to give, in the language they actually speak. `I no sabi` and `dey no dey
+chop` came back intact, and nothing in the output reads as a translation.
+
+The **audio file itself is deliberately not committed** — it is a real voice, and
+the free tier's terms allow prompts to be used for product improvement. Point
+`PIDGIN_FIXTURE_AUDIO` at a Pidgin recording to run
+`transcribes real Pidgin verbatim, without translating or tidying it`.
+
+## A real limit worth knowing
+
+Running this suite repeatedly exhausts the **free-tier transcription quota** and
+starts returning `429 Too Many Requests`. The suite is not idempotent against
+quota. Anything that calls transcription in a loop needs backoff, which is the
+same shape as the Phase 7 outbox requirement.
