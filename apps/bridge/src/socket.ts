@@ -86,54 +86,76 @@ function toRaw(message: WAMessage): RawWaMessage {
 }
 
 export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
-  const { state, saveCreds } = await useMultiFileAuthState(deps.authDir);
-  const { version } = await fetchLatestBaileysVersion();
   const logger = toBaileysLogger(deps.log);
+  let isClosing = false;
+  let currentSock!: WASocket;
 
-  const sock = makeWASocket({
-    version,
-    auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
-    logger,
-  });
+  async function init(): Promise<void> {
+    const { state, saveCreds } = await useMultiFileAuthState(deps.authDir);
+    const { version } = await fetchLatestBaileysVersion();
 
-  sock.ev.on('creds.update', saveCreds);
+    currentSock = makeWASocket({
+      version,
+      auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
+      logger,
+    });
 
-  sock.ev.on('connection.update', (update) => {
-    if (update.qr) {
-      deps.log.info('scan this QR code in WhatsApp to pair the bridge');
-      qrcode.generate(update.qr, { small: true });
-    }
-    if (update.connection === 'open') {
-      const self = sock.user?.id;
-      if (self) {
-        deps.log.info('bridge connected', { self });
-        // Without this the first inbound message normalizes with an empty selfJid, so a farmer's own
-        // message would be classified as coming from the farmer rather than from us.
-        void deps.onReady(self);
+    currentSock.ev.on('creds.update', saveCreds);
+
+    currentSock.ev.on('connection.update', (update) => {
+      if (update.qr) {
+        deps.log.info('scan this QR code in WhatsApp to pair the bridge');
+        qrcode.generate(update.qr, { small: true });
       }
-    }
-    if (update.connection === 'close') {
-      const status = statusCodeOf(update.lastDisconnect?.error);
-      if (status === DisconnectReason.loggedOut) {
-        deps.log.warn('this WhatsApp account was unlinked; delete the auth dir to pair again');
-      } else {
-        deps.log.warn('bridge disconnected, waiting for WhatsApp to let it back in', { status });
+      if (update.connection === 'open') {
+        const self = currentSock.user?.id;
+        if (self) {
+          deps.log.info('bridge connected', { self });
+          // Without this the first inbound message normalizes with an empty selfJid, so a farmer's own
+          // message would be classified as coming from the farmer rather than from us.
+          void deps.onReady(self);
+        }
       }
-    }
-  });
+      if (update.connection === 'close') {
+        const status = statusCodeOf(update.lastDisconnect?.error);
+        if (status === DisconnectReason.loggedOut) {
+          deps.log.warn('this WhatsApp account was unlinked; delete the auth dir to pair again');
+        } else {
+          deps.log.warn('bridge disconnected, waiting for WhatsApp to let it back in', { status });
+          if (!isClosing) {
+            setTimeout(() => {
+              init().catch((err: unknown) => {
+                deps.log.error('failed to reconnect bridge socket', { error: String(err) });
+                if (!isClosing) {
+                  setTimeout(() => {
+                    void init().catch(() => {});
+                  }, 3000);
+                }
+              });
+            }, 1500);
+          }
+        }
+      }
+    });
 
-  sock.ev.on('messages.upsert', ({ messages }) => {
-    for (const message of messages) {
-      void deps.onMessage(toRaw(message));
-    }
-  });
+    currentSock.ev.on('messages.upsert', ({ messages }) => {
+      for (const message of messages) {
+        void deps.onMessage(toRaw(message));
+      }
+    });
+  }
+
+  await init();
 
   return {
-    sock,
-    selfJid: () => sock.user?.id ?? '',
+    get sock() {
+      return currentSock;
+    },
+    selfJid: () => currentSock.user?.id ?? '',
     close: () => {
-      sock.ev.removeAllListeners('messages.upsert');
-      void sock.end(undefined);
+      isClosing = true;
+      currentSock.ev.removeAllListeners('messages.upsert');
+      void currentSock.end(undefined);
     },
   };
 }
