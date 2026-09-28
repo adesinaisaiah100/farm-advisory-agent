@@ -331,6 +331,25 @@ features:
 
 Exit: normalize/dedup/outbox unit matrix green; README documents `pnpm bridge` QR flow.
 
+**Status (Sep 2026): transport built and green; the live socket is not yet smoke-tested.** Two things
+about this phase are worth knowing before you touch it.
+
+First, `apps/bridge` is **outside the pnpm workspace** and carries its own `pnpm-lock.yaml`. Baileys
+depends on `libsignal` from a git repository, which pnpm's `blockExoticSubdeps` guard refuses, and the
+option of relaxing that guard repo-wide was rejected. So the exception is scoped to the one host that
+needs it. Consequences to keep in mind: `pnpm -r` skips this directory, so `pnpm check` calls
+`pnpm bridge:check` explicitly to avoid it going quietly unverified; and its `@poultry/bridge` /
+`@poultry/schemas` deps use `link:`, so it still compiles against the same source as everything else.
+
+Second, the exit criterion is **not** fully met, and the gap is deliberate. The unit matrix is green
+(66 tests in `@poultry/bridge` plus 20 in the host), and the README documents the `pnpm bridge` QR flow.
+What is missing is the one manual smoke test the phase asks for — pairing a real number and sending a
+message from a second device. That needs a real WhatsApp account, so it cannot be claimed here. Two
+smaller notes: `downloadMediaMessage` in 6.7.24 takes the re-upload context as a fourth argument that
+only the library's own socket can construct, so expired media fails rather than retrying; and the bridge
+is pinned to the stable `6.7.24` rather than the `7.0.0-rc14` on npm `latest`, because Baileys protocol
+breakage has historically landed in RCs.
+
 ---
 
 ## Phase 8 — API (`apps/api`) + wiring
