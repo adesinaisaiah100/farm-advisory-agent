@@ -22,6 +22,7 @@ export interface RawWaMessage {
         remoteJid?: string | undefined;
         fromMe?: boolean | undefined;
         participant?: string | undefined;
+        senderPn?: string | undefined;
       }
     | undefined;
   message?:
@@ -113,7 +114,7 @@ function toE164(jid: string | undefined): string | null {
   if (!jid) return null;
   const at = jid.indexOf('@');
   if (at === -1) return normalizePhone(jid);
-  const user = jid.slice(0, at);
+  const user = jid.slice(0, at).split(':')[0]!;
   if (jid.slice(at) !== USER_JID_SUFFIX) return null;
   if (!/^\d+$/.test(user)) return null;
   return normalizePhone(user);
@@ -178,7 +179,7 @@ export function normalize(raw: RawWaMessage, options: NormalizeOptions): Normali
   const waMsgId = raw.key?.id?.trim();
   if (!waMsgId) return { ok: false, reason: 'no_message_id' };
 
-  const from = toE164(raw.key?.remoteJid);
+  const from = toE164(raw.key?.senderPn ?? raw.key?.remoteJid);
   if (!from)
     return { ok: false, reason: raw.key?.remoteJid ? 'not_a_direct_chat' : 'unroutable_phone' };
 

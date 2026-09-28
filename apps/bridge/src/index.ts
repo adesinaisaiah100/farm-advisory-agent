@@ -62,6 +62,12 @@ async function main(): Promise<void> {
   let selfJid = '';
 
   const handle = async (raw: RawWaMessage): Promise<void> => {
+    log.info('inbound wa message received', {
+      id: raw.key?.id,
+      remoteJid: raw.key?.remoteJid,
+      senderPn: raw.key?.senderPn,
+      fromMe: raw.key?.fromMe,
+    });
     const result = await dispatch(raw, {
       dedup,
       allowed,

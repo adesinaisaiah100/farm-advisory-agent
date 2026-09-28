@@ -72,13 +72,26 @@ function statusCodeOf(error: unknown): number | undefined {
   return typeof output?.statusCode === 'number' ? output.statusCode : undefined;
 }
 
+const lidToPn = new Map<string, string>();
+// Pre-seed with verified pairs so immediate messages resolve before background contact sync completes
+lidToPn.set('16321228075151@lid', '2349155132405@s.whatsapp.net');
+lidToPn.set('16321228075151', '2349155132405@s.whatsapp.net');
+
 function toRaw(message: WAMessage): RawWaMessage {
+  const remote = message.key?.remoteJid;
+  const mappedPn =
+    (message.key as { senderPn?: string })?.senderPn ??
+    (message.key as { participantPn?: string })?.participantPn ??
+    (remote ? lidToPn.get(remote) : undefined) ??
+    (remote ? lidToPn.get(remote.split('@')[0] ?? '') : undefined);
+
   return {
     key: {
       id: message.key?.id ?? undefined,
       remoteJid: message.key?.remoteJid ?? undefined,
       fromMe: message.key?.fromMe ?? undefined,
       participant: message.key?.participant ?? undefined,
+      senderPn: mappedPn ?? undefined,
     },
     message: message.message as RawWaMessage['message'],
     messageTimestamp: message.messageTimestamp as RawWaMessage['messageTimestamp'],
@@ -101,6 +114,36 @@ export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
     });
 
     currentSock.ev.on('creds.update', saveCreds);
+
+    const registerContact = (c: { id?: string; lid?: string; jid?: string }): void => {
+      const pn = c.jid ?? (c.id?.endsWith('@s.whatsapp.net') ? c.id : undefined);
+      const lid = c.lid ?? (c.id?.endsWith('@lid') ? c.id : undefined);
+      if (pn && lid) {
+        lidToPn.set(lid, pn);
+        lidToPn.set(lid.split('@')[0] ?? '', pn);
+      }
+    };
+
+    currentSock.ev.on('contacts.upsert', (contacts) => {
+      for (const c of contacts) registerContact(c);
+    });
+
+    currentSock.ev.on('contacts.update', (updates) => {
+      for (const c of updates) registerContact(c);
+    });
+
+    currentSock.ev.on('messaging-history.set', ({ contacts }) => {
+      if (contacts) {
+        for (const c of contacts) registerContact(c);
+      }
+    });
+
+    currentSock.ev.on('chats.phoneNumberShare', ({ lid, jid }) => {
+      if (lid && jid) {
+        lidToPn.set(lid, jid);
+        lidToPn.set(lid.split('@')[0] ?? '', jid);
+      }
+    });
 
     currentSock.ev.on('connection.update', (update) => {
       if (update.qr) {
