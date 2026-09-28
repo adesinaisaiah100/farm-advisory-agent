@@ -122,7 +122,14 @@ export class OpenRouterChatProvider implements ChatProvider {
           'X-Title': 'BirdVet Poultry Advisory',
         },
         body: JSON.stringify({
-          model: this.#model,
+          models: Array.from(
+            new Set([
+              this.#model,
+              'openrouter/free',
+              'nvidia/nemotron-3.5-lightning:free',
+              'google/gemma-4-31b-it:free',
+            ]),
+          ),
           messages,
           temperature: this.#temperature,
           response_format: { type: 'json_object' },
