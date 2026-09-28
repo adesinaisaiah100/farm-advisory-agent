@@ -29,6 +29,13 @@ export interface TurnResult {
   changed: CaseField[];
   replyLanguage: ReplyLanguage;
   profile: ProfileDelta | undefined;
+  /**
+   * True when the model's answer could not be parsed and the reply was written
+   * in code instead. Set here rather than inferred by a caller, because this is
+   * the only place that knows, and a silent coded fallback is exactly how a
+   * broken model looks like a working product.
+   */
+  fellBack: boolean;
 }
 
 export interface TurnDeps {
@@ -82,6 +89,7 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
       changed: [],
       replyLanguage,
       profile: undefined,
+      fellBack: true,
     };
   }
 
@@ -110,6 +118,7 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
     changed: changedFields(filled, nextCase),
     replyLanguage,
     profile: parsed.data.profile,
+    fellBack: false,
   };
 }
 

@@ -11,6 +11,7 @@ export * from './merge.js';
 export * from './missing.js';
 export * from './orchestrator.js';
 export * from './providers.js';
+export * from './session-store.js';
 export * from './slip.js';
 export * from './triage.js';
 export * from './validate.js';

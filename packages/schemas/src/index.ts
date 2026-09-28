@@ -10,3 +10,4 @@ export * from './media/index.js';
 export * from './report/index.js';
 export * from './store/index.js';
 export * from './outbox/index.js';
+export * from './chat/index.js';
