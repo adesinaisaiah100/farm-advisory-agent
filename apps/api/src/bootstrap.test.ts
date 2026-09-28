@@ -30,6 +30,18 @@ describe('buildApiDeps', () => {
     expect(deps.ready).toBeDefined();
   });
 
+  it('wires FallbackChatProvider when OPENROUTER_API_KEY is present', () => {
+    const env = {
+      ...FULL_ENV,
+      OPENROUTER_API_KEY: 'sk-or-test',
+      OPENROUTER_FALLBACK_MODEL: 'qwen/qwen3.8-27b:free',
+    };
+    const { deps, problem } = buildApiDeps(readRuntimeEnv(env));
+
+    expect(problem).toBeUndefined();
+    expect(deps.chat).toBeDefined();
+  });
+
   it('refuses to boot without DATABASE_URL, naming the variable', () => {
     const { deps, problem } = buildApiDeps(
       readRuntimeEnv({ NODE_ENV: 'test', GEMINI_API_KEY: 'dev-key' }),

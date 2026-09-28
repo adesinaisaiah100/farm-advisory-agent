@@ -242,7 +242,7 @@ function historyToContents(history: readonly TurnMessage[]): GeminiContent[] {
  * Nulls inside arrays are left in place: dropping those would change the list,
  * and a bad list should fail the parse and fall back.
  */
-function dropNullProperties(value: unknown): unknown {
+export function dropNullProperties(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(dropNullProperties);
   if (value === null || typeof value !== 'object') return value;
   const out: Record<string, unknown> = {};
@@ -253,7 +253,7 @@ function dropNullProperties(value: unknown): unknown {
   return out;
 }
 
-function caseSummary(filled: unknown, missingFields: readonly string[]): string {
+export function caseSummary(filled: unknown, missingFields: readonly string[]): string {
   return [
     'Case recorded so far:',
     JSON.stringify(filled),

@@ -1,7 +1,9 @@
 import {
+  FallbackChatProvider,
   GeminiChatProvider,
   GeminiCompactProvider,
   LlmError,
+  OpenRouterChatProvider,
   resolveGeminiApiKey,
 } from '@poultry/core';
 import { createApp, type ApiDeps, type ReadyReport } from './index.js';
@@ -13,6 +15,8 @@ export interface RuntimeEnv {
   readonly databaseUrl?: string;
   readonly geminiApiKey?: string;
   readonly geminiApiKeyProd?: string;
+  readonly openRouterApiKey?: string;
+  readonly openRouterFallbackModel?: string;
 }
 
 /**
@@ -28,6 +32,8 @@ export function readRuntimeEnv(source: Record<string, string | undefined>): Runt
     databaseUrl: source['DATABASE_URL'],
     geminiApiKey: source['GEMINI_API_KEY'],
     geminiApiKeyProd: source['GEMINI_API_KEY_PROD'],
+    openRouterApiKey: source['OPENROUTER_API_KEY'],
+    openRouterFallbackModel: source['OPENROUTER_FALLBACK_MODEL'],
   };
 }
 
@@ -69,13 +75,27 @@ export function buildApiDeps(env: RuntimeEnv): BootstrapResult {
   }
 
   const db = createApiDb(env.databaseUrl);
+  const geminiChat = new GeminiChatProvider({ apiKey });
+  const chatProvider = env.openRouterApiKey
+    ? new FallbackChatProvider({
+        primary: geminiChat,
+        secondary: new OpenRouterChatProvider({
+          apiKey: env.openRouterApiKey,
+          model: env.openRouterFallbackModel ?? 'openrouter/free',
+        }),
+        log: (msg, fields) => {
+          // eslint-disable-next-line no-console
+          console.warn(`[fallback-chat] ${msg} ${JSON.stringify(fields ?? {})}`);
+        },
+      })
+    : geminiChat;
 
   return {
     deps: {
       chat: {
         store: postgresSessionStore(db),
         turn: {
-          chat: new GeminiChatProvider({ apiKey }),
+          chat: chatProvider,
           compact: new GeminiCompactProvider({ apiKey }),
           count: { count: (text) => Math.ceil(text.length / 4) },
           now: () => new Date().toISOString(),

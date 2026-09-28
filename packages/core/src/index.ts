@@ -1,6 +1,7 @@
 export * from './askfor.js';
 export * from './compact.js';
 export * from './compact-recall.js';
+export * from './fallback.js';
 export * from './farmer-context.js';
 export * from './gemini.js';
 export * from './language.js';
@@ -9,6 +10,7 @@ export * from './master-store.js';
 export * from './master-tools.js';
 export * from './merge.js';
 export * from './missing.js';
+export * from './openrouter.js';
 export * from './orchestrator.js';
 export * from './providers.js';
 export * from './session-store.js';
