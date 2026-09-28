@@ -10,8 +10,8 @@ import {
   type Clock,
   type Logger,
   type MediaIntake,
-  type TurnHandler,
 } from './dispatch.js';
+import { createHttpTurnHandler } from './turn.js';
 import { connectSocket, downloadMedia } from './socket.js';
 
 const LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'silent'] as const;
@@ -35,17 +35,6 @@ function consoleLogger(level: (typeof LEVELS)[number]): Logger {
   };
 }
 
-/**
- * Phase 7 ships transport, not the turn. Returning `null` keeps the bridge silent rather than inventing a
- * reply: an improvised "consult a vet" string from the transport layer is still content the product never
- * chose, and Phase 8 is where the orchestrator becomes the only source of farmer-facing words.
- */
-const unhandledTurn: TurnHandler = {
-  async handle() {
-    return null;
-  },
-};
-
 const unconfiguredMediaIntake: MediaIntake = {
   async store({ mime, media }) {
     throw new Error(
@@ -65,6 +54,10 @@ async function main(): Promise<void> {
     log.warn('BRIDGE_ALLOWED_FROM is empty, so the bridge will answer nobody until you set it');
   }
 
+  const turnUrl = env.BRIDGE_TURN_URL ?? 'http://127.0.0.1:3000/chat';
+  const turn = createHttpTurnHandler({ url: turnUrl, log });
+  log.info('turn handler connected', { turnUrl });
+
   const dedup = new Deduplicator(new InMemoryDedupStore());
   let selfJid = '';
 
@@ -79,10 +72,23 @@ async function main(): Promise<void> {
         return bytes ? { bytes, mime: media.mime } : null;
       },
       mediaIntake: unconfiguredMediaIntake,
-      turn: unhandledTurn,
+      turn,
       log,
     });
     log.info('dispatch', { ...result });
+
+    const remoteJid = raw.key?.remoteJid;
+    if (result.outcome === 'replied' && remoteJid) {
+      try {
+        await bridge.sock.sendMessage(remoteJid, { text: result.reply });
+        log.info('sent reply to WhatsApp', { to: remoteJid, waMsgId: result.waMsgId });
+      } catch (error) {
+        log.error('failed to send reply to WhatsApp', {
+          error: String(error),
+          to: remoteJid,
+        });
+      }
+    }
   };
 
   const bridge = await connectSocket({
@@ -95,12 +101,6 @@ async function main(): Promise<void> {
   });
 
   selfJid = bridge.selfJid();
-
-  if (!env.BRIDGE_TURN_URL) {
-    log.warn(
-      'BRIDGE_TURN_URL is unset, so messages are received and acknowledged but no reply is produced yet',
-    );
-  }
 
   log.info('outbox poller not started: no durable outbox table exists yet');
 
