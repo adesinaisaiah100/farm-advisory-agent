@@ -1,27 +1,23 @@
-import { z } from 'zod';
+export * from './normalize.js';
+export * from './dedup.js';
+export * from './outbox.js';
+export * from './greeting.js';
 
-export type MediaKind = 'audio' | 'image' | 'video' | 'document';
-
-export const MediaKindSchema = z.enum(['audio', 'image', 'video', 'document']);
-
-export const InboundMessageSchema = z.object({
-  id: z.string().uuid(),
-  from: z.string(),
-  to: z.string(),
-  text: z.string().optional(),
-  media: z
-    .object({
-      url: z.string().url(),
-      kind: MediaKindSchema,
-      mime: z.string(),
-    })
-    .optional(),
-  receivedAt: z.string().datetime(),
-});
-
-export type InboundMessage = z.infer<typeof InboundMessageSchema>;
-
-export function isGreeting(text: string): boolean {
-  const t = text.trim().replace(/[!?.,]/g, '').toLowerCase();
-  return ['hello', 'hi', 'good morning', 'good afternoon', 'good evening', 'how far', 'hey'].includes(t);
-}
+/**
+ * `InboundMessage` and `MediaKind` are owned by `@poultry/schemas`. This package used to define its own
+ * looser copies — `from: z.string()` instead of a validated phone, no rule requiring text or media — which
+ * would have let the bridge hand `core` a message the core then rejects. Re-exported unchanged.
+ */
+export {
+  InboundMessageSchema,
+  MediaAttachmentSchema,
+  MediaKindSchema,
+  MessageSchema,
+  MessageSenderSchema,
+  normalizeMessage,
+  type InboundMessage,
+  type MediaAttachment,
+  type MediaKind,
+  type Message,
+  type MessageSender,
+} from '@poultry/schemas';
