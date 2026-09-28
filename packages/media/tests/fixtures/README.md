@@ -70,3 +70,13 @@ Running this suite repeatedly exhausts the **free-tier transcription quota** and
 starts returning `429 Too Many Requests`. The suite is not idempotent against
 quota. Anything that calls transcription in a loop needs backoff, which is the
 same shape as the Phase 7 outbox requirement.
+
+The fix is not a new key. Google applies rate limits **per project, not per
+key**, so rotating the key on the same project rotates nothing. Requests-per-day
+resets at midnight Pacific; the durable fix is a separate Google Cloud project
+for the product, so a heavy dev session cannot starve farmer voice notes of
+quota. Groq scopes its limits the same way — per organisation, not per key.
+
+This is also why cost was the wrong thing to worry about. At a realistic pilot
+volume (50 farmers, 5 notes a day, ~83 audio minutes) paid Whisper is roughly
+$1–2 a month. The exposure is a single fragile quota pool, not money.
