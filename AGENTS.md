@@ -61,6 +61,31 @@ normalization in the same change, or vectors will be double-normalized.
 improvement; only paid carries a no-training guarantee. Acceptable for a demo, not for real farmers' voice
 notes, which carry identifiable speech and a household's livelihood. Revisit before real user data.
 
+**Amendment, Sep 2026 — the transcriber choice is measured, not preferred.** `gemini-3.5-transcribe` is
+locked in on evidence, after a cheaper alternative was bought and measured. Groq's free tier is ~100x the
+audio allowance, so swapping looked like the obvious fix for the quota exhaustion. On the real Pidgin
+fixture, in the same session, against the transcript Gemini had already proved verbatim:
+
+| transcriber | WER | meaning-bearing phrases intact |
+|---|---|---|
+| `gemini-3.5-transcribe` | 0.0% | 7/7 |
+| Groq `whisper-large-v3` | 33.3% | 1/7 |
+| Groq `whisper-large-v3-turbo` | 56.5% | 1/7 |
+
+The disqualifier is not the WER spread. Generic Whisper **inverts the negation** in the sentence that
+carries the farmer's uncertainty: `I no sabi wetin do my chicken` ("I don't know what's wrong") returns as
+*"I know Sabi waiting do my chicken"*, which reads as confidence, and `Abeg, make una help me` ("please,
+you all, help me") returns as *"I beg. They couldna help me"* — help declined rather than requested. A
+triage system that hears confidence where the farmer said doubt will not escalate. 33% WER scores that as a
+mild miss, which is the trap: **a word-error-rate is the wrong gate for Pidgin.** Assert the phrases.
+Full evidence in `packages/media/tests/fixtures/README.md`.
+
+Two consequences for anyone touching transcription. First, do not "optimise" the transcriber to a cheaper
+model on a WER or cost argument without running the Pidgin phrase test — that is precisely the swap this
+measurement exists to prevent. Second, quota is now handled by **two Google Cloud projects** (dev and
+product), because Google scopes rate limits per project, not per key; rotating a key on an exhausted project
+rotates nothing. Groq scopes its limits per organisation, so the same trick fails there.
+
 
 ## 3. Repository Rules
 
@@ -153,6 +178,6 @@ PHASE 2.5 Triage confidence + ask-for ladder   ✅ shipped (3 confidence bands, 
 PHASE 2.6 Retrieval-grounded ask-for + honesty ✅ shipped (hardcoded ladder deleted, ClinicalLadderSource seam, gateLadder fail-closed, farmer vs prescriber channels, all seed stock removed)
 PHASE 4  RAG ingestion (@poultry/rag)         ✅ shipped (paginate + [PAGE n], one Analyzer map-call per doc, page/heading groups, micro-chunk 800-1000 tok 10% overlap, typed regions, citationFor -> core Citation, 67 tests)
 PHASE 5  RAG retrieval + Neon                 🚧 built + verified, not wired (schema on real Neon, Stage A/B/fallback, 154 unit + 5 gated integ tests; corpus still EMPTY and the ladder source is not yet in a turn)
-PHASE 6  Media pipeline (@poultry/media)     🚧 built + live-verified, not wired (85 unit tests, 100% line coverage, 5 gated integ tests green against real R2 and real Gemini with committed fixtures; the live transcribe API returns parts[].audioTranscription.text, which only the real run could have caught. Pidgin input and an unwell-bird photo remain unproven - see packages/media/tests/fixtures/README.md)
+PHASE 6  Media pipeline (@poultry/media)     🚧 built + live-verified, not wired (85 unit tests, 100% line coverage, 7 gated integ tests green against real R2 and real Gemini; real Pidgin transcribes verbatim and a confirmed-sick bird is never diagnosed. The live API returns parts[].audioTranscription.text, which only the real run could have caught, and the transcriber was locked in by measurement - see packages/media/tests/fixtures/README.md)
 PHASE 6-10  see PHASES.md                      ⏳ not started
 ```

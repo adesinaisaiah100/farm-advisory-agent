@@ -247,12 +247,13 @@ Exit: retrieval unit matrix + the Neon integ test green; `/ready` reports postgr
 Exit: media lifecycle (upload → transcribe/observe → low-conf fallback) green.
 
 **Status: 🚧 built + live-verified against R2 and Gemini (Sep 2026), not wired.**
-85 unit tests, 100% line coverage on every source file. Gated integ tests run
+85 unit tests, 100% line coverage on every source file. 7 gated integ tests run
 against real media: R2 round-trip (key format, content-type metadata, byte
 fidelity, zero-byte rejection), `gemini-3.5-transcribe` returning a fixture's
 exact spoken words, a real transcript landing on the confirmation gate, and
 `gemini-3.1-flash-lite` returning JSON observations with no diagnosis and no drug
-name. Fixtures are committed, so `pnpm test:integ` needs no env vars.
+name. Fixtures are committed, so `pnpm test:integ` needs no env vars except the
+Pidgin audio, which is operator-supplied.
 
 Three claims are now verified against the live models rather than assumed:
 - **Pidgin survives verbatim.** A real Pidgin voice note came back with `I no
@@ -266,16 +267,38 @@ Three claims are now verified against the live models rather than assumed:
 - **Gemini returns no confidence**, so every voice note lands on the confirmation
   gate. Verified, not assumed.
 
-Verification earned its keep immediately: the live transcribe model returns the
+**The transcriber is locked in by measurement, not preference.** Gemini's
+free-tier pool is small and quota exhaustion was real, so the cheaper, far
+larger alternative was bought and measured rather than assumed either way. Groq's
+`whisper-large-v3` scored 33.3% WER and `whisper-large-v3-turbo` 56.5%, against
+Gemini's 0.0% on the same audio, keeping 1/7 meaning-bearing phrases instead of
+7/7. The WER spread is not the finding: generic Whisper **inverts the negation**
+in the sentence carrying the farmer's doubt — `I no sabi wetin do my chicken`
+("I don't know what's wrong") returns as *"I know Sabi waiting do my chicken"*,
+which reads as confidence, and `Abeg, make una help me` returns as *"They couldna
+help me"*. A triage system that hears confidence where the farmer said doubt will
+not escalate. Full table in `packages/media/tests/fixtures/README.md`.
+
+**Why this changes how the suite is written.** A word-error-rate would have
+passed both Groq models as "degraded but usable" — 33% is not a catastrophic
+number in isolation. The failure lands entirely on the negation axis, which is
+the axis that makes the answer dangerous. So the Pidgin test asserts *phrases*,
+not similarity. That is the general lesson, and it applies to every future
+multimodal check: assert the fact that would be dangerous to lose, not the score
+that would make it look acceptable.
+
+Verification earned its keep twice. The live transcribe model returns the
 transcript under `parts[].audioTranscription.text`, **not** a plain `text` part.
 The unit suite had been built on the assumed shape and passed cleanly while every
 real voice note would have thrown `transcribe_bad_response`. Only running it
-against the real API found that.
+against the real API found that. The second time, the assumed answer looked
+*worse* than the rejected one and only measurement settled it.
 
 Known limits, recorded in `packages/media/tests/fixtures/README.md`:
-- The free-tier **transcription quota is exhausted by repeated runs** (`429`).
-  Anything calling transcription in a loop needs backoff — the same shape as the
-  Phase 7 outbox requirement.
+- Quota is handled with **two Google Cloud projects** (dev and product), because
+  Google applies rate limits per project, not per key. Rotating a key on an
+  exhausted project rotates nothing. Anything calling transcription in a loop
+  also needs backoff — the same shape as the Phase 7 outbox requirement.
 - The Pidgin audio fixture is **not committed** (real voice, free-tier terms), so
   that one test is opt-in via `PIDGIN_FIXTURE_AUDIO`.
 

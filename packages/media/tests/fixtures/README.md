@@ -64,6 +64,45 @@ the free tier's terms allow prompts to be used for product improvement. Point
 `PIDGIN_FIXTURE_AUDIO` at a Pidgin recording to run
 `transcribes real Pidgin verbatim, without translating or tidying it`.
 
+## Why the transcriber is not interchangeable
+
+Groq's free tier is 2,000 requests/day and ~8 hours of audio/day, against
+Gemini's much smaller pool, so swapping would look like the obvious cost fix.
+Measured on this same file, against the transcript Gemini had already proved
+verbatim:
+
+| transcriber | WER | meaning-bearing phrases intact |
+|---|---|---|
+| `gemini-3.5-transcribe` | 0.0% | 7/7 |
+| Groq `whisper-large-v3` | 33.3% | 1/7 |
+| Groq `whisper-large-v3-turbo` | 56.5% | 1/7 |
+
+The phrases checked are `i no sabi`, `dey no dey chop`, `abeg`,
+`make una help me`, `broiler`, `wetin`, `fit do`.
+
+**The WER spread is not the finding.** What disqualifies generic Whisper is that
+it inverts the negation in the one sentence carrying the farmer's uncertainty:
+
+- `I no sabi wetin do my chicken` → *"I know Sabi waiting do my chicken"*
+- `Abeg, make una help me` → *"I beg. They couldna help me"*
+
+The first turns *"I don't know what's wrong"* into something that reads as
+confidence. The second turns a request for help into help declined. In a triage
+system that hears confidence where the farmer said doubt, it does not escalate —
+and 33% WER scores that as a mild miss. **That is why this suite asserts phrases
+and not similarity.** A word-error-rate would have passed this as a degraded but
+usable transcript, and the degradation happens to be exactly the axis that makes
+the answer dangerous.
+
+Groq also lost `broilers` to `brela` on the turbo model. Broilers are meat birds;
+a farmer describing a layer flock and one describing broilers are different
+clinical problems, so a single mangled species word is a mis-triage, not a typo.
+
+Two free-tier Whisper models both failed the same test on the same day, which
+matches the published picture: generic Whisper needs fine-tuning to be usable on
+low-resource African speech, and 8.6 hours of read-style BBC Pidgin is not
+enough to cover casual farm conversation.
+
 ## A real limit worth knowing
 
 Running this suite repeatedly exhausts the **free-tier transcription quota** and
