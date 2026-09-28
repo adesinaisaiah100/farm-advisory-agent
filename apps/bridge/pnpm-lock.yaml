@@ -11,6 +11,9 @@ importers:
       '@poultry/bridge':
         specifier: link:../../packages/bridge
         version: link:../../packages/bridge
+      '@poultry/media':
+        specifier: link:../../packages/media
+        version: link:../../packages/media
       '@poultry/schemas':
         specifier: link:../../packages/schemas
         version: link:../../packages/schemas

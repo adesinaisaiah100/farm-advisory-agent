@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@poultry/bridge": "link:../../packages/bridge",
+    "@poultry/media": "link:../../packages/media",
     "@poultry/schemas": "link:../../packages/schemas",
     "@whiskeysockets/baileys": "6.7.24",
     "qrcode-terminal": "^0.12.0",

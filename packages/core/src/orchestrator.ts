@@ -1,5 +1,5 @@
 import type { CaseData, SessionState } from '@poultry/schemas';
-import { classifyLanguage, replyLanguageFor } from './language.js';
+import { stickyLanguage } from './language.js';
 import type { ReplyLanguage } from './language.js';
 import { compactHistory, DEFAULT_BUDGET_TOKENS } from './compact.js';
 import { LlmReplySchema } from './llm.js';
@@ -53,12 +53,14 @@ export interface TurnInput {
   farmerContext?: string;
   query: string;
   history?: readonly TurnMessage[];
+  /** Language detected on the previous turn — keeps Pidgin sessions in Pidgin. */
+  priorLanguage?: ReplyLanguage;
 }
 
 export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnResult> {
   const filled = input.case;
   const missingFields = missing(filled);
-  const replyLanguage = replyLanguageFor(classifyLanguage(input.query));
+  const replyLanguage = stickyLanguage(input.query, input.priorLanguage);
   const history = input.history ?? [];
 
   const compacted = await compactHistory(
@@ -187,12 +189,10 @@ function replyFor(
       // The model's own text is discarded on this door: it is the turn where the model
       // is least sure, and a confident-sounding reply is exactly what must not reach a farmer.
       return triageReply(assessTriage(c), lang);
-    case 'collect': {
-      const asks = missing(c)
-        .map((f) => COLLECT_PROMPT[lang][f] ?? f)
-        .filter(Boolean);
-      return `${llmReply}\n\n${COLLECT_INTRO[lang]} ${asks.join(' ')}`;
-    }
+    case 'collect':
+      // Trust the model's own reply — the system prompt now instructs it to ask
+      // one natural question at a time rather than emitting a bulleted list.
+      return llmReply;
   }
 }
 

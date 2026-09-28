@@ -2,37 +2,61 @@ export type ReplyLanguage = 'pidgin' | 'english';
 export type DetectedLanguage = ReplyLanguage | 'unknown';
 
 const PIDGIN_MARKERS: readonly string[] = [
+  // Core lexical markers
   'dey',
   'abeg',
-  'na ',
-  'na be',
-  'shey',
-  'abi',
   'wetin',
   'wey',
+  'shey',
+  'abi',
+  'oga',
+  'nawa',
+  'sef',
+  // Pronouns / determiners
   'dem',
   'una',
   'wuna',
-  'sef',
-  'nawa',
-  'oga',
-  'chop',
-  'plenty',
-  'how far',
-  'which one',
+  // Verb phrases
+  'na ',
+  'na be',
+  'no be',
+  'na so',
   'make i',
   'make we',
-  'na so',
-  'no be',
   'i don',
   'e don',
   'e dey',
   'i dey',
-  'wan buy',
   'don die',
   'don dey',
+  'wan buy',
+  // Common nouns / informal
+  'chop',
+  'plenty',
+  'how far',
+  'which one',
   'boro',
   'folan',
+  // Extra Nigerian informal markers
+  'ehn',
+  'ehen',
+  'nah',
+  'sabi',
+  'comot',
+  'wahala',
+  'naija',
+  'gist',
+  'kukuma',
+  'oya',
+  'jare',
+  'kuku',
+  'ehen',
+  'tey',
+  'naso',
+  'person',
+  'for here',
+  'no well',
+  'doh',
 ];
 
 const ENGLISH_MARKERS: readonly string[] = [
@@ -80,4 +104,25 @@ export function classifyLanguage(text: string): DetectedLanguage {
 
 export function replyLanguageFor(detected: DetectedLanguage): ReplyLanguage {
   return detected === 'pidgin' ? 'pidgin' : 'english';
+}
+
+/**
+ * Session-level language carry-over.
+ *
+ * A single short WhatsApp message is often too ambiguous to classify reliably —
+ * "Uhm" and "okay" score unknown. Once a session has a settled language,
+ * ambiguous turns should stay in that language rather than flip back to English.
+ *
+ * Rules:
+ * - If the current turn detects a definitive language, use it and update `prior`.
+ * - If the current turn is `unknown` and we have a `prior`, keep `prior`.
+ * - If both are `unknown`, default to English (safe fallback).
+ */
+export function stickyLanguage(
+  currentText: string,
+  prior: ReplyLanguage | undefined,
+): ReplyLanguage {
+  const detected = classifyLanguage(currentText);
+  if (detected !== 'unknown') return replyLanguageFor(detected);
+  return prior ?? 'english';
 }
