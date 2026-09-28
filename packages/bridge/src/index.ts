@@ -2,6 +2,7 @@ export * from './normalize.js';
 export * from './dedup.js';
 export * from './outbox.js';
 export * from './greeting.js';
+export * from './allowlist.js';
 
 /**
  * `InboundMessage` and `MediaKind` are owned by `@poultry/schemas`. This package used to define its own
