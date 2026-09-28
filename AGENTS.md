@@ -181,5 +181,6 @@ PHASE 5  RAG retrieval + Neon                 🚧 built + verified, not wired (
 PHASE 6  Media pipeline (@poultry/media)     🚧 built + live-verified, not wired (85 unit tests, 100% line coverage, 7 gated integ tests green against real R2 and real Gemini; real Pidgin transcribes verbatim and a confirmed-sick bird is never diagnosed. The live API returns parts[].audioTranscription.text, which only the real run could have caught, and the transcriber was locked in by measurement - see packages/media/tests/fixtures/README.md)
 PHASE 7  WhatsApp bridge (@poultry/bridge +
          apps/bridge)                        🚧 transport shipped, not wired (86 unit tests: normalize/dedup/outbox/allowlist plus the host's env + dispatch; the host receives and normalizes but replies nothing, because the turn handler returns null and media intake throws until Phase 8. apps/bridge sits OUTSIDE the pnpm workspace with its own lockfile, because Baileys pulls libsignal from git and the workspace supply-chain guard refuses it; `pnpm bridge:check` runs it and `pnpm check` calls it. Live QR pairing is still smoke-tested by hand)
-PHASE 6-10  see PHASES.md                      ⏳ not started
+PHASE 8  API + wiring (apps/api)                🚧 first slice landed (the LLM the turn runs on, and the dev/prod key split; see PHASES.md)
+PHASE 6-10  see PHASES.md                      ⏳ rest not started
 ```

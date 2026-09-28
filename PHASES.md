@@ -366,6 +366,44 @@ breakage has historically landed in RCs.
 
 Exit: every route tested; a fake-driven chat turn produces a valid four-door answer.
 
+**Status: 🚧 first slice landed.** `packages/core/src/gemini.ts` — the model the
+turn actually runs on, and the dev/prod key split. 31 tests, no network, no key.
+
+- `GeminiChatProvider` satisfies the existing `ChatProvider` seam, so `runTurn`
+  is unchanged and every orchestrator test still passes against a fake.
+- `GeminiCompactProvider` satisfies `CompactProvider` the same way.
+- Raw `fetch` against `generateContent`, matching `packages/rag`'s embedder and
+  `packages/media`'s transcriber. No AI SDK dependency in `core`, and none added
+  to the lockfile.
+- `responseSchema` is derived from `CaseDeltaSchema.shape` so a new delta field
+  cannot reach the model unconstrained, and enums are imported from
+  `@poultry/schemas` so the model is held to the same vocabulary the merge accepts.
+  A new field with no declared kind throws rather than being sent unconstrained.
+- `resolveGeminiApiKey` reads `GEMINI_API_KEY_PROD` when `NODE_ENV=production`
+  and `GEMINI_API_KEY` otherwise, and **never falls back across projects**.
+  Google rate-limits per project, so a dev key silently serving production is the
+  quota exhaustion the two-key split exists to prevent. `.env.example` documents
+  the rule. This closes the documented-but-unimplemented `_PROD` key.
+- Safety rules live in the prompt, and are asserted as such in tests rather than
+  assumed present: never name a drug/vaccine/brand/dose, never state a diagnosis
+  as certain, stop and send the farmer to a vet on a red-flag sign, never invent
+  a number. This is a guard, not the control — `gateLadder`, `POLICY_REFUSALS`
+  and the triage bands remain in code and still decide the door.
+- Nulls are dropped from object properties before the strict `LlmReplySchema`
+  parse. Gemini marks an absent non-required field `null`, and `.optional()` does
+  not accept `null`, so without this every partial delta would fail closed into
+  the coded fallback reply. Nulls inside arrays are left in place on purpose.
+- A blocked request returns no candidates at all, so `candidates` is optional in
+  the response schema and the `blockReason` is checked *before* candidate
+  presence. Requiring candidates at parse time reported safety refusals as
+  malformed responses, losing the one fact that mattered.
+
+**Still to build in this phase:** session persistence (nothing stores a
+`SessionState` between messages, so a farmer's second message starts from a blank
+case), the `/chat` route and the rest of the route map, the tool registry,
+`/ready` checks, auth scaffold, and the bridge-side wiring that replaces the
+`TurnHandler` returning `null`.
+
 ---
 
 ## Phase 9 — Dashboard + web chat (`apps/web`)
