@@ -22,7 +22,7 @@ function consoleLogger(level: (typeof LEVELS)[number]): Logger {
   const emit =
     (name: 'debug' | 'info' | 'warn' | 'error', min: number) =>
     (message: string, fields?: Record<string, unknown>): void => {
-      if (rank < min || rank === LEVELS.length - 1) return;
+      if (min < rank || rank === LEVELS.length - 1) return;
       const line = JSON.stringify({ level: name, message, ...fields });
       if (name === 'error') console.error(line);
       else if (name === 'warn') console.warn(line);
