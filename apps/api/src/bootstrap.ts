@@ -10,6 +10,7 @@ import { createApp, type ApiDeps, type ReadyReport } from './index.js';
 import { createApiDb } from './db/client.js';
 import { postgresSessionStore } from './db/session-store.js';
 import { postgresFarmerStore } from './db/farmer-store.js';
+import { postgresDashboardStore } from './db/dashboard-store.js';
 
 export interface RuntimeEnv {
   readonly nodeEnv: string;
@@ -105,6 +106,7 @@ export function buildApiDeps(env: RuntimeEnv): BootstrapResult {
         newId: () => crypto.randomUUID(),
         now: () => new Date(),
       },
+      dashboard: postgresDashboardStore(db),
       ready: async (): Promise<ReadyReport> => pingReadiness(db),
     },
   };

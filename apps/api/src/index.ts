@@ -2,12 +2,15 @@ import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { ChatResponse } from '@poultry/schemas';
 import { ChatResponseSchema } from '@poultry/schemas';
+import { getStores, searchByLga } from '@poultry/stores';
 import { handleChat, RequestError } from './turn.js';
 import type { RequestStatus, TurnServiceDeps } from './turn.js';
+import type { DashboardStore } from './db/dashboard-store.js';
 
 export interface ApiDeps {
   readonly chat?: TurnServiceDeps;
   readonly ready?: () => Promise<ReadyReport>;
+  readonly dashboard?: DashboardStore;
 }
 
 export interface ReadyReport {
@@ -77,6 +80,108 @@ export function createApp(deps: ApiDeps = {}) {
     }
   });
 
+  // ─── Phase 9 – Read endpoints ──────────────────────────────────────────────
+
+  /**
+   * GET /cases
+   *
+   * Returns a paginated list of clinical consultation sessions.
+   * All filtering is done server-side; the dashboard never receives raw session
+   * state with embedded phone numbers in a list context.
+   *
+   * Query params:
+   *   status   – e.g. "in_progress", "complete", "escalated"
+   *   state    – Nigerian state name, e.g. "Oyo"
+   *   lga      – LGA name, e.g. "Ibadan North"
+   *   species  – e.g. "broiler", "layer"
+   *   limit    – max rows per page (1–100, default 50)
+   *   offset   – zero-based row offset (default 0)
+   */
+  app.get('/cases', async (c) => {
+    if (deps.dashboard === undefined) {
+      return c.json(error('not_configured', 'no dashboard store configured'), 503);
+    }
+    const q = c.req.query();
+    const result = await deps.dashboard.listCases({
+      status: q['status'],
+      state: q['state'],
+      lga: q['lga'],
+      species: q['species'],
+      limit: q['limit'] !== undefined ? parseInt(q['limit'], 10) : undefined,
+      offset: q['offset'] !== undefined ? parseInt(q['offset'], 10) : undefined,
+    });
+    return c.json(result, 200);
+  });
+
+  /**
+   * GET /cases/:id
+   *
+   * Returns a full case detail record by session ID or case ID.
+   * Includes the conversation history, clinical case data, and the associated
+   * farmer profile (from the `farmers` table) for the dashboard drawer view.
+   */
+  app.get('/cases/:id', async (c) => {
+    if (deps.dashboard === undefined) {
+      return c.json(error('not_configured', 'no dashboard store configured'), 503);
+    }
+    const id = c.req.param('id');
+    const detail = await deps.dashboard.getCase(id);
+    if (detail === undefined) {
+      return c.json(error('not_found', `case ${id} not found`), 404);
+    }
+    return c.json(detail, 200);
+  });
+
+  /**
+   * GET /reports
+   *
+   * Returns anonymised surveillance signals — case data with farmer phone
+   * stripped. Used by the epidemiology feed and the heatmap.
+   *
+   * Query params:
+   *   state    – Nigerian state
+   *   lga      – LGA
+   *   disease  – disease code e.g. "coccidiosis", "newcastle"
+   *   limit    – default 50, max 100
+   *   offset   – default 0
+   */
+  app.get('/reports', async (c) => {
+    if (deps.dashboard === undefined) {
+      return c.json(error('not_configured', 'no dashboard store configured'), 503);
+    }
+    const q = c.req.query();
+    const result = await deps.dashboard.listReports({
+      state: q['state'],
+      lga: q['lga'],
+      disease: q['disease'],
+      limit: q['limit'] !== undefined ? parseInt(q['limit'], 10) : undefined,
+      offset: q['offset'] !== undefined ? parseInt(q['offset'], 10) : undefined,
+    });
+    return c.json(result, 200);
+  });
+
+  /**
+   * GET /stores
+   *
+   * Returns the agro-vet partner directory from the static @poultry/stores
+   * seed. Optionally filters by LGA and/or state for the referral map.
+   *
+   * Query params:
+   *   lga    – LGA name (exact match, case-insensitive)
+   *   state  – Nigerian state (exact match, case-insensitive)
+   */
+  app.get('/stores', (c) => {
+    const q = c.req.query();
+    const lga = q['lga'];
+    const state = q['state'];
+
+    const stores = lga !== undefined && lga.trim().length > 0
+      ? searchByLga(lga, state)
+      : getStores();
+
+    return c.json({ stores, total: stores.length }, 200);
+  });
+
   return app;
 }
 
@@ -89,3 +194,4 @@ function jsonError(c: Context, status: RequestStatus, code: string, message: str
 }
 
 export const app = createApp();
+
