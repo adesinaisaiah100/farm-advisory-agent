@@ -112,6 +112,18 @@ describe('triageReply', () => {
     expect(reply).toContain('blood');
     expect(reply).toContain('post-mortem');
   });
+
+  it('does not re-ask if droppings have blood when blood was already reported', () => {
+    const t = assessTriage(
+      baseCase({
+        symptoms: ['blood in droppings'],
+        diseaseHits: ['coccidiosis', 'necrotic_enteritis'],
+      }),
+    );
+    const reply = triageReply(t, 'pidgin');
+    expect(reply).toContain('Since blood already dey the shit');
+    expect(reply).not.toContain('Di droppings get blood, or na dark');
+  });
 });
 
 describe('MAX_TRIAGE_TURNS', () => {

@@ -200,7 +200,7 @@ describe('runTurn', () => {
     });
     const result = await runTurn({ case: caseData(), query: 'my birds dey sneeze' }, deps);
     expect(result.door).toBe('triage');
-    expect(result.reply).toContain('not 100% sure');
+    expect(result.reply).toContain('I no go lie for you or guess');
     expect(result.reply).toContain('post-mortem');
     expect(result.reply).not.toContain('amoxicillin');
     expect(result.state.case.triageTurns).toBe(1);

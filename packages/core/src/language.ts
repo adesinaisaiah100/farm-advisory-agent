@@ -57,6 +57,19 @@ const PIDGIN_MARKERS: readonly string[] = [
   'for here',
   'no well',
   'doh',
+  // Colloquial Nigerian poultry & health markers
+  'shit blood',
+  'no dey chop',
+  'dem dey',
+  'dey die',
+  'don reach',
+  'be like',
+  'fit',
+  'no fit',
+  'which kind',
+  'wetin dey',
+  'wetin be',
+  'fowls',
 ];
 
 const ENGLISH_MARKERS: readonly string[] = [

@@ -69,6 +69,11 @@ const GENERIC_DISCRIMINATOR: Bilingual = {
     'Before I name any treatment, I need separate di possibilities: na one problem be di problem or many? Tell me if di birds still dey eat and drink normal, and if di droppings change. Then I fit tell you if am safe for counter or e need vet.',
 };
 
+export const TRIAGE_PREAMBLE: Bilingual = {
+  english: 'I am not 100% sure what is causing this yet, and I will not guess with your flock.',
+  pidgin: 'I no go lie for you or guess with your fowls. Make we check wetin dey happen well well.',
+};
+
 export const CONFIRM_ACTION: Bilingual = {
   english:
     'To settle it, do a post-mortem on the bird that died most recently and keep the body cool, or send a photo of fresh droppings on white paper. A vet, or the NVRI laboratory in Vom, can confirm from that.',
@@ -117,14 +122,29 @@ export function assessTriage(c: CaseData): Triage {
   const uncertain = differential.length >= 2 || (c.needsConfirmation?.length ?? 0) > 0;
 
   if (pairedWith !== undefined || uncertain) {
+    const primary = differential[0];
+    let discriminator: Bilingual | undefined = primary !== undefined ? DISCRIMINATOR[primary] : undefined;
+
+    // Context-aware discriminator: if coccidiosis is suspected and blood is ALREADY reported,
+    // ask about color/consistency of blood and water intake instead of repeating "do droppings get blood?"
+    if (primary === 'coccidiosis' || pairedWith === 'coccidiosis') {
+      const alreadyHasBlood = matchesConcepts(c.symptoms, COCCIDIOSIS_SIGNATURE);
+      if (alreadyHasBlood) {
+        discriminator = {
+          english:
+            'Since there is already blood in the droppings, is the blood fresh bright red or dark brown like coffee? Are the birds still drinking water normally?',
+          pidgin:
+            'Since blood already dey the shit, the blood fresh red or e dark like coffee ground? And dem still dey drink water at all?',
+        };
+      }
+    }
+
     return {
       band: 'ambiguous',
       redFlags,
       differential,
       pairedWith,
-      discriminator:
-        (differential[0] !== undefined ? DISCRIMINATOR[differential[0]] : undefined) ??
-        GENERIC_DISCRIMINATOR,
+      discriminator: discriminator ?? GENERIC_DISCRIMINATOR,
       confirmAction: CONFIRM_ACTION,
     };
   }
@@ -141,5 +161,5 @@ export function assessTriage(c: CaseData): Triage {
 
 export function triageReply(triage: Triage, lang: 'english' | 'pidgin'): string {
   const question = triage.discriminator ?? GENERIC_DISCRIMINATOR;
-  return `I am not 100% sure what is causing this yet, and I will not guess with your flock.\n\n${question[lang]}\n\n${triage.confirmAction[lang]}`;
+  return `${TRIAGE_PREAMBLE[lang]}\n\n${question[lang]}\n\n${triage.confirmAction[lang]}`;
 }
