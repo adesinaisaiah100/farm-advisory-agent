@@ -13,7 +13,7 @@ import {
 } from './dispatch.js';
 import { createHttpTurnHandler } from './turn.js';
 import { connectSocket, downloadMedia } from './socket.js';
-import { R2MediaStore, GeminiTranscriber, ingestMedia } from '@poultry/media';
+import { R2MediaStore, GeminiTranscriber, GeminiVisionProvider, ingestMedia } from '@poultry/media';
 
 const LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'silent'] as const;
 
@@ -88,15 +88,25 @@ function buildMediaIntake(
 
   const store = new R2MediaStore(bucket);
   const transcriber = new GeminiTranscriber({ apiKey: GEMINI_API_KEY, model: GEMINI_TRANSCRIBE_MODEL });
+  const vision = new GeminiVisionProvider({ apiKey: GEMINI_API_KEY });
 
   return {
     async store({ bytes, mime, phone, media: _media }) {
       const result = await ingestMedia(
-        { store, transcriber, now: () => new Date(), newId: () => crypto.randomUUID() },
+        { store, transcriber, vision, now: () => new Date(), newId: () => crypto.randomUUID() },
         { phone, mime, body: bytes },
       );
-      // Return the R2 key as the mediaUrl so the turn handler can pass it to the core
-      return result.media.r2Key;
+      return {
+        mediaUrl: result.media.r2Key,
+        text:
+          result.kind === 'needs_confirmation'
+            ? undefined
+            : (result.media.transcript ??
+              (result.media.observations && result.media.observations.length > 0
+                ? `[Photo Observation: ${result.media.observations.join('. ')}]`
+                : undefined)),
+        confirmQuestion: result.kind === 'needs_confirmation' ? result.question : undefined,
+      };
     },
   };
 }

@@ -29,13 +29,19 @@ export interface DownloadedMedia {
  * the bridge's job. Turning those bytes into a `url` the core can read is `@poultry/media`'s job, which is
  * why this is a port: Phase 6's R2 pipeline plugs in here rather than the bridge reimplementing storage.
  */
+export interface StoredMediaResult {
+  readonly mediaUrl: string;
+  readonly text?: string;
+  readonly confirmQuestion?: string;
+}
+
 export interface MediaIntake {
   store(input: {
     bytes: Uint8Array;
     mime: string;
     phone: string;
     media: NormalizedMedia;
-  }): Promise<string>;
+  }): Promise<string | StoredMediaResult>;
 }
 
 export interface TurnHandler {
@@ -76,27 +82,44 @@ export async function dispatch(raw: RawWaMessage, deps: DispatchDeps): Promise<D
   if (!claim.accepted) return { outcome: 'duplicate', waMsgId: inbound.waMsgId };
 
   let mediaUrl: string | undefined;
+  let mediaText: string | undefined;
+  let confirmQuestion: string | undefined;
+
   if (inbound.media) {
     const downloaded = await deps.download(raw, inbound.media);
     if (!downloaded) {
       return { outcome: 'failed', waMsgId: inbound.waMsgId, reason: 'media_download_failed' };
     }
     try {
-      mediaUrl = await deps.mediaIntake.store({
+      const stored = await deps.mediaIntake.store({
         bytes: downloaded.bytes,
         mime: downloaded.mime,
         phone: inbound.from,
         media: inbound.media,
       });
+      if (typeof stored === 'string') {
+        mediaUrl = stored;
+      } else {
+        mediaUrl = stored.mediaUrl;
+        mediaText = stored.text;
+        confirmQuestion = stored.confirmQuestion;
+      }
     } catch (error) {
       deps.log.error('media intake failed', { waMsgId: inbound.waMsgId, error: String(error) });
       return { outcome: 'failed', waMsgId: inbound.waMsgId, reason: 'media_intake_failed' };
     }
   }
 
+  if (confirmQuestion) {
+    return { outcome: 'replied', waMsgId: inbound.waMsgId, reply: confirmQuestion };
+  }
+
+  const combinedText = [inbound.text, mediaText].filter(Boolean).join('\n');
+  const enrichedInbound = { ...inbound, text: combinedText.length > 0 ? combinedText : undefined };
+
   let message: InboundMessage;
   try {
-    message = toInboundMessage(inbound, { id: crypto.randomUUID(), mediaUrl });
+    message = toInboundMessage(enrichedInbound, { id: crypto.randomUUID(), mediaUrl });
   } catch (error) {
     deps.log.error('rejected an inbound message that failed the shared contract', {
       waMsgId: inbound.waMsgId,

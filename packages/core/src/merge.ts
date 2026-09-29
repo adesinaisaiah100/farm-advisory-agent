@@ -4,6 +4,9 @@ import type { CaseDelta } from './llm.js';
 export type CaseField = keyof CaseData;
 
 const SCALAR_FIELDS: readonly CaseField[] = [
+  'farmerName',
+  'lga',
+  'state',
   'species',
   'breed',
   'birdStage',
@@ -14,6 +17,7 @@ const SCALAR_FIELDS: readonly CaseField[] = [
   'mortalityRatePct',
   'diseaseText',
   'needsConfirmation',
+  'farmerRelieved',
 ];
 
 const ARRAY_FIELDS: readonly CaseField[] = ['symptoms', 'diseaseHits'];
@@ -25,7 +29,13 @@ export function mergeDelta(caseData: CaseData, delta: CaseDelta): CaseData {
   for (const field of CASE_KEYS) {
     const value: unknown = delta[field as keyof CaseDelta];
     if (value === undefined) continue;
-    if (Array.isArray(value)) {
+    if (field === 'symptoms' && Array.isArray(value)) {
+      const existing = (caseData.symptoms ?? []).map((s) => s.toLowerCase().trim());
+      const additions = (value as string[]).filter(
+        (s) => typeof s === 'string' && s.trim().length > 0 && !existing.includes(s.toLowerCase().trim()),
+      );
+      next.symptoms = [...(caseData.symptoms ?? []), ...additions];
+    } else if (Array.isArray(value)) {
       if (value.length > 0) (next as Record<string, unknown>)[field] = value;
     } else {
       (next as Record<string, unknown>)[field] = value;

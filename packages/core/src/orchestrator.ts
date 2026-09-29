@@ -96,6 +96,15 @@ export async function runTurn(input: TurnInput, deps: TurnDeps): Promise<TurnRes
   }
 
   const nextCase = mergeDelta(filled, parsed.data.delta);
+  if (parsed.data.profile?.name && !nextCase.farmerName) {
+    nextCase.farmerName = parsed.data.profile.name;
+  }
+  if (parsed.data.profile?.lga && !nextCase.lga) {
+    nextCase.lga = parsed.data.profile.lga;
+  }
+  if (parsed.data.profile?.state && !nextCase.state) {
+    nextCase.state = parsed.data.profile.state;
+  }
   const decision = validateCase(nextCase, parsed.data.delta.wantsSupply ?? false);
   nextCase.status = decision.caseStatus;
   nextCase.editedAt = deps.now();

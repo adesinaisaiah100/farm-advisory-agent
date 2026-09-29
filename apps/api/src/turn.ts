@@ -47,6 +47,7 @@ export async function handleChat(
   const caseData = stored?.case ?? request.case ?? { status: 'in_progress' };
   const notes = stored?.notes ?? request.notes;
   const stallCount = stored?.stallCount ?? request.stallCount;
+  const history = stored?.history && stored.history.length > 0 ? stored.history : (request.history ?? []);
 
   let result: TurnResult;
   try {
@@ -57,7 +58,7 @@ export async function handleChat(
         stallCount,
         farmerContext: request.farmerContext,
         query: request.text,
-        history: request.history,
+        history,
       },
       deps.turn,
     );
@@ -77,7 +78,19 @@ export async function handleChat(
   // off it, so the turn is where identity is assigned rather than in a store the
   // case is never written to.
   const caseId = result.state.case.id ?? deps.newId();
-  const state: SessionState = { ...result.state, case: { ...result.state.case, id: caseId } };
+
+  // Accumulate rolling history (preserve last 12 messages = 6 turns)
+  const updatedHistory = [
+    ...history,
+    { role: 'farmer' as const, text: request.text },
+    { role: 'agent' as const, text: result.reply },
+  ].slice(-12);
+
+  const state: SessionState = {
+    ...result.state,
+    history: updatedHistory,
+    case: { ...result.state.case, id: caseId },
+  };
 
   const session = existing ?? newSession(request.farmerPhone, state, {
     now: deps.now,
@@ -86,8 +99,12 @@ export async function handleChat(
 
   await deps.store.save({ ...session, state, lastActive: deps.now().toISOString(), caseId });
 
+  // Do not abruptly close on status === 'complete'! The farmer may have follow-ups,
+  // additional symptoms, or questions. Close only when the farmer explicitly expresses
+  // relief/closure or when the case is escalated/void.
+  const isRelieved = result.state.case.farmerRelieved === true;
   const status = result.state.case.status;
-  if (status === 'complete') {
+  if (isRelieved) {
     await deps.store.close(request.farmerPhone, 'completed');
   } else if (status === 'escalated' || status === 'void') {
     await deps.store.close(request.farmerPhone, 'void');

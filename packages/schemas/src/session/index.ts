@@ -6,11 +6,19 @@ export const SessionStatusSchema = z.enum(['open', 'completed', 'void']);
 
 export type SessionStatus = z.infer<typeof SessionStatusSchema>;
 
+export const TurnMessageSchema = z.object({
+  role: z.enum(['farmer', 'agent']),
+  text: z.string().min(1).max(4000),
+});
+
+export type TurnMessage = z.infer<typeof TurnMessageSchema>;
+
 export const SessionStateSchema = z.object({
   case: CaseSchema,
   missing: z.array(z.string()).default([]),
   notes: z.array(z.string()).default([]),
   stallCount: z.number().int().min(0).default(0),
+  history: z.array(TurnMessageSchema).default([]),
   updatedAt: DateTimeSchema,
 });
 

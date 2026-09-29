@@ -117,16 +117,26 @@ export async function ingestMedia(
     if (deps.transcriber === undefined) {
       throw new MediaError('missing_transcriber', 'audio media needs a transcriber');
     }
-    const transcript = await deps.transcriber.transcribe({
-      audio: input.body,
-      mime: input.mime,
-    });
+    let transcriptText = '';
+    let confidence: number | undefined;
+    try {
+      const transcript = await deps.transcriber.transcribe({
+        audio: input.body,
+        mime: input.mime,
+      });
+      transcriptText = transcript.text;
+      confidence = transcript.confidence;
+    } catch (err) {
+      if (err instanceof MediaError && (err.code === 'transcribe_empty' || err.code === 'transcribe_bad_response')) {
+        const media = MediaSchema.parse({ ...base, transcript: '' });
+        return confirmationFor(media);
+      }
+      throw err;
+    }
     const media = MediaSchema.parse({
       ...base,
-      transcript: transcript.text,
-      ...(transcript.confidence === undefined
-        ? {}
-        : { transcriptConfidence: transcript.confidence }),
+      transcript: transcriptText,
+      ...(confidence === undefined ? {} : { transcriptConfidence: confidence }),
     });
     return isReliable(media.transcriptConfidence) ? { kind: 'ready', media } : confirmationFor(media);
   }

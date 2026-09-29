@@ -3,6 +3,9 @@ import { BirdStageSchema, DiseaseSchema, SpeciesSchema } from '@poultry/schemas'
 
 export const CaseDeltaSchema = z
   .object({
+    farmerName: z.string().min(1).max(80).optional(),
+    lga: z.string().min(1).max(80).optional(),
+    state: z.string().min(1).max(80).optional(),
     species: SpeciesSchema.optional(),
     breed: z.string().min(1).max(80).optional(),
     birdStage: BirdStageSchema.optional(),
@@ -16,6 +19,7 @@ export const CaseDeltaSchema = z
     diseaseHits: z.array(DiseaseSchema).optional(),
     needsConfirmation: z.array(z.string()).optional(),
     wantsSupply: z.boolean().optional(),
+    farmerRelieved: z.boolean().optional(),
   })
   .strict();
 
@@ -24,6 +28,8 @@ export type CaseDelta = z.infer<typeof CaseDeltaSchema>;
 export const ProfileDeltaSchema = z
   .object({
     name: z.string().min(1).max(80).optional(),
+    lga: z.string().min(1).max(80).optional(),
+    state: z.string().min(1).max(80).optional(),
   })
   .strict();
 

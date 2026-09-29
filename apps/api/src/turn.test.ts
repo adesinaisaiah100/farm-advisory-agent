@@ -148,9 +148,21 @@ describe('handleChat', () => {
     expect((await d.store.openSession('+2348012345678'))?.state.case.species).toBe('layer');
   });
 
-  it('closes the session when the case completes', async () => {
+  it('keeps the session open after resolve door so the farmer can ask follow-ups', async () => {
     const d = deps(answering(RESOLVE));
     const outcome = await handleChat({ farmerPhone: '+2348012345678', text: 'very sick' }, d);
+
+    expect(outcome.result.door).toBe('resolve');
+    expect(d.store.lastWritten()?.status).toBe('open');
+  });
+
+  it('closes the session when the farmer expresses relief', async () => {
+    const relieved = {
+      ...RESOLVE,
+      delta: { ...RESOLVE.delta, farmerRelieved: true },
+    };
+    const d = deps(answering(relieved));
+    const outcome = await handleChat({ farmerPhone: '+2348012345678', text: 'thank you doctor' }, d);
 
     expect(outcome.result.door).toBe('resolve');
     expect(d.store.lastWritten()?.status).toBe('completed');

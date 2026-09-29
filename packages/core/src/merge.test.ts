@@ -23,9 +23,9 @@ describe('mergeDelta', () => {
     expect(next.symptoms).toEqual(['diarrhoea']);
   });
 
-  it('replaces a non-empty array', () => {
+  it('accumulates symptoms rather than replacing them', () => {
     const next = mergeDelta(baseCase(), { symptoms: ['coughing'] });
-    expect(next.symptoms).toEqual(['coughing']);
+    expect(next.symptoms).toEqual(['diarrhoea', 'coughing']);
   });
 
   it('does not touch fields absent from the delta', () => {

@@ -29,6 +29,9 @@ export const CaseSchema = z.object({
   id: UuidSchema.optional(),
   farmId: UuidSchema.optional(),
   sessionId: UuidSchema.optional(),
+  farmerName: z.string().min(1).max(80).optional(),
+  lga: z.string().min(1).max(80).optional(),
+  state: z.string().min(1).max(80).optional(),
   species: SpeciesSchema.optional(),
   breed: z.string().min(1).max(80).optional(),
   birdStage: BirdStageSchema.optional(),
@@ -44,6 +47,7 @@ export const CaseSchema = z.object({
   status: CaseStatusSchema,
   door: DoorSchema.optional(),
   triageTurns: z.number().int().min(0).optional(),
+  farmerRelieved: z.boolean().optional(),
   editedAt: DateTimeSchema.optional(),
 });
 
