@@ -28,6 +28,7 @@ function makeStore() {
     writes,
     lastWritten: (): Session | undefined => writes.at(-1),
     openSession: (phone: string) => base.openSession(phone),
+    latestSession: async (phone: string) => [...writes].reverse().find((w) => w.phone === phone),
     save: async (session: Session) => {
       writes.push(session);
       await base.save(session);
@@ -166,6 +167,66 @@ describe('handleChat', () => {
 
     expect(outcome.result.door).toBe('resolve');
     expect(d.store.lastWritten()?.status).toBe('completed');
+  });
+
+  it('reopens a completed session within 4 hours so follow-ups keep conversation context', async () => {
+    const relieved = {
+      ...RESOLVE,
+      delta: { ...RESOLVE.delta, farmerRelieved: true },
+    };
+    const d = deps(answering(relieved));
+    const first = await handleChat({ farmerPhone: '+2348012345678', text: 'thank you doctor' }, d);
+    expect(d.store.lastWritten()?.status).toBe('completed');
+
+    // Follow up 10 minutes later:
+    const followUpDeps = {
+      ...d,
+      now: () => new Date(NOW.getTime() + 10 * 60 * 1000),
+    };
+    const followUp = await handleChat(
+      { farmerPhone: '+2348012345678', text: 'would you like to see a pic' },
+      followUpDeps,
+    );
+
+    expect(followUp.sessionId).toBe(first.sessionId);
+    expect(followUp.result.state.case.species).toBe('broiler');
+  });
+
+  it('inherits farmer profile but starts fresh case after 4 hours', async () => {
+    let idCounter = 1;
+    const genId = () => `00000000-0000-4000-8000-${String(idCounter++).padStart(12, '0')}`;
+    const relieved = {
+      ...RESOLVE,
+      delta: { ...RESOLVE.delta, farmerName: 'Biola', lga: 'Ibadan North', farmerRelieved: true },
+    };
+    let calls = 0;
+    const answer = async () => {
+      calls++;
+      if (calls === 1) return relieved;
+      return { delta: {}, reply: 'Hello Biola, how are your birds today?' };
+    };
+    const store = makeStore();
+    const d = {
+      ...deps(answer, store),
+      newId: genId,
+    };
+    const first = await handleChat({ farmerPhone: '+2348012345678', text: 'thank you doctor' }, d);
+    expect(d.store.lastWritten()?.status).toBe('completed');
+
+    // Message arrives 5 hours later (beyond 4h continuity window):
+    const laterDeps = {
+      ...d,
+      now: () => new Date(NOW.getTime() + 5 * 60 * 60 * 1000),
+    };
+    const later = await handleChat({ farmerPhone: '+2348012345678', text: 'hello again' }, laterDeps);
+
+    expect(later.sessionId).not.toBe(first.sessionId);
+    // Profile inherited:
+    expect(later.result.state.case.farmerName).toBe('Biola');
+    expect(later.result.state.case.lga).toBe('Ibadan North');
+    expect(later.result.state.case.species).toBe('broiler');
+    // Symptoms reset for new consultation:
+    expect(later.result.state.case.symptoms).toBeUndefined();
   });
 
   it('voids the session on escalation rather than completing it', async () => {

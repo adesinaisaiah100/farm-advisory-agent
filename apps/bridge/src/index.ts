@@ -252,6 +252,30 @@ async function main(): Promise<void> {
           to: remoteJid,
         });
       }
+    } else if (result.outcome === 'failed' && remoteJid) {
+      let failureReply: string | undefined;
+      if (result.reason === 'media_download_failed') {
+        failureReply = "I saw that you sent a photo or audio, but WhatsApp couldn't download the file. Could you please try sending it again or describe what you see?";
+      } else if (result.reason === 'media_intake_failed') {
+        failureReply = "I received your photo, but our analysis service had a temporary issue processing it. Could you please describe what you are seeing in your birds while I check this?";
+      } else if (result.reason === 'turn_failed') {
+        failureReply = "I am having a slight network issue connecting to the clinic server. Please send your message again in just a moment.";
+      }
+      if (failureReply) {
+        try {
+          await bridge.sock.sendMessage(remoteJid, { text: failureReply });
+          log.info('sent failure notice reply to WhatsApp', {
+            to: remoteJid,
+            waMsgId: result.waMsgId,
+            reason: result.reason,
+          });
+        } catch (error) {
+          log.error('failed to send failure notice to WhatsApp', {
+            error: String(error),
+            to: remoteJid,
+          });
+        }
+      }
     }
   };
 

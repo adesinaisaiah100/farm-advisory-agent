@@ -1,5 +1,6 @@
 import makeWASocket, {
   DisconnectReason,
+  downloadContentFromMessage,
   downloadMediaMessage,
   fetchLatestBaileysVersion,
   makeCacheableSignalKeyStore,
@@ -203,6 +204,29 @@ export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
   };
 }
 
+function getInnerMedia(msg: unknown): { content: any; type: string } | null {
+  let curr: any = msg;
+  for (let i = 0; i < 5; i++) {
+    if (!curr || typeof curr !== 'object') break;
+    const inner =
+      curr.ephemeralMessage?.message ||
+      curr.viewOnceMessage?.message ||
+      curr.viewOnceMessageV2?.message ||
+      curr.viewOnceMessageV2Extension?.message ||
+      curr.documentWithCaptionMessage?.message ||
+      curr.editedMessage?.message?.protocolMessage?.editedMessage;
+    if (!inner) break;
+    curr = inner;
+  }
+  if (!curr || typeof curr !== 'object') return null;
+  if (curr.imageMessage) return { content: curr.imageMessage, type: 'image' };
+  if (curr.audioMessage) return { content: curr.audioMessage, type: 'audio' };
+  if (curr.videoMessage) return { content: curr.videoMessage, type: 'video' };
+  if (curr.documentMessage) return { content: curr.documentMessage, type: 'document' };
+  if (curr.stickerMessage) return { content: curr.stickerMessage, type: 'sticker' };
+  return null;
+}
+
 export async function downloadMedia(
   _sock: WASocket,
   raw: RawWaMessage,
@@ -210,13 +234,30 @@ export async function downloadMedia(
 ): Promise<Uint8Array | null> {
   const message = raw as unknown as WAMessage;
   if (!message.message) return null;
+
+  // 1. Try Baileys' high-level downloadMediaMessage
   try {
-    // 6.7.24 takes the download context as a fourth argument and only the host protocol can build it, so
-    // there is no re-upload retry here: media WhatsApp has already expired fails instead of retrying.
     const buffer = await downloadMediaMessage(message, 'buffer', {});
-    if (!buffer) return null;
-    return new Uint8Array(buffer);
+    if (buffer) return new Uint8Array(buffer);
   } catch {
-    return null;
+    // If high-level download fails (e.g. nested view-once structure or missing context), fall through to stream
   }
+
+  // 2. Direct fallback via downloadContentFromMessage on unwrapped media
+  try {
+    const inner = getInnerMedia(message.message);
+    if (inner && (inner.content.url || inner.content.directPath)) {
+      const stream = await downloadContentFromMessage(inner.content, inner.type as any);
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(chunk as Buffer);
+      }
+      const combined = Buffer.concat(chunks);
+      if (combined.length > 0) return new Uint8Array(combined);
+    }
+  } catch (fallbackErr) {
+    console.error('[bridge] downloadContentFromMessage fallback failed:', fallbackErr);
+  }
+
+  return null;
 }

@@ -28,6 +28,8 @@ export interface TurnOutcome {
   readonly fellBack: boolean;
 }
 
+export const CONTINUITY_WINDOW_MS = 4 * 60 * 60 * 1000; // 4 hours
+
 export async function handleChat(
   body: unknown,
   deps: TurnServiceDeps,
@@ -38,13 +40,46 @@ export async function handleChat(
   }
   const request: ChatRequest = parsed.data;
 
-  const existing = await deps.store.openSession(request.farmerPhone);
+  let existing = await deps.store.openSession(request.farmerPhone);
+  let inheritedCase: Partial<CaseData> = {};
+
+  if (!existing && deps.store.latestSession) {
+    const latest = await deps.store.latestSession(request.farmerPhone);
+    if (latest) {
+      const lastActiveMs = new Date(latest.lastActive).getTime();
+      const nowMs = deps.now().getTime();
+      const elapsedMs = nowMs - lastActiveMs;
+
+      if (elapsedMs <= CONTINUITY_WINDOW_MS && latest.status !== 'void') {
+        // Within 4-hour window: Reopen this exact consultation!
+        existing = {
+          ...latest,
+          status: 'open',
+          lastActive: deps.now().toISOString(),
+        };
+      } else {
+        // Outside 4-hour window: Start a fresh case, but inherit farmer identity & farm facts!
+        const prevCase = latest.state.case;
+        inheritedCase = {
+          farmerName: prevCase.farmerName,
+          lga: prevCase.lga,
+          state: prevCase.state,
+          farmSize: prevCase.farmSize,
+          species: prevCase.species,
+        };
+      }
+    }
+  }
 
   // A stored case always wins over a client-sent one. The bridge holds a
   // snapshot it may have read before another turn landed, and silently letting a
   // stale client overwrite a farmer's recorded case is data loss, not a merge.
   const stored = existing?.state;
-  const caseData = stored?.case ?? request.case ?? { status: 'in_progress' };
+  const caseData = stored?.case ?? {
+    ...inheritedCase,
+    ...(request.case ?? {}),
+    status: 'in_progress',
+  };
   const notes = stored?.notes ?? request.notes;
   const stallCount = stored?.stallCount ?? request.stallCount;
   const history = stored?.history && stored.history.length > 0 ? stored.history : (request.history ?? []);

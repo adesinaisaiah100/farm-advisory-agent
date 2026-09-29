@@ -19,6 +19,7 @@ import type { Session, SessionState, SessionStatus } from '@poultry/schemas';
  */
 export interface SessionStore {
   openSession(phone: string): Promise<Session | undefined>;
+  latestSession?(phone: string): Promise<Session | undefined>;
   save(session: Session): Promise<void>;
   close(phone: string, status: SessionStatus): Promise<void>;
 }
@@ -34,14 +35,12 @@ export function inMemorySessionStore(options: SessionStoreOptions): SessionStore
   return {
     async openSession(phone) {
       const session = stored.get(phone);
-      // A closed session is kept, because the dashboard will want the case
-      // history. Returning it here would silently reopen a completed
-      // conversation, and the next turn would build on stale state. The Postgres
-      // store filters on `status = 'open'` for the same reason: the two stores
-      // must not disagree about what "open" means, or dev and production would
-      // behave differently.
       if (session === undefined || session.status !== 'open') return undefined;
       return session;
+    },
+
+    async latestSession(phone) {
+      return stored.get(phone);
     },
 
     async save(session) {

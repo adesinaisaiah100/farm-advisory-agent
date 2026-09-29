@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { SessionSchema } from '@poultry/schemas';
 import type { SessionStore } from '@poultry/core';
 import type { ApiDatabase } from './client.js';
@@ -42,6 +42,28 @@ export function postgresSessionStore(db: ApiDatabase): SessionStore {
         );
       }
       return parsed.data;
+    },
+
+    async latestSession(phone) {
+      const rows = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.phone, phone))
+        .orderBy(desc(sessions.lastActive))
+        .limit(1);
+
+      const row = rows[0];
+      if (row === undefined) return undefined;
+
+      const { caseId, ...rest } = row;
+      const parsed = SessionSchema.safeParse({
+        ...rest,
+        startedAt: rest.startedAt.toISOString(),
+        lastActive: rest.lastActive.toISOString(),
+        ...(caseId === null ? {} : { caseId }),
+      });
+
+      return parsed.success ? parsed.data : undefined;
     },
 
     async save(session) {

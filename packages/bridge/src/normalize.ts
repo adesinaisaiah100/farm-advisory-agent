@@ -34,6 +34,7 @@ export interface RawWaMessage {
         videoMessage?: RawMediaContent | undefined;
         documentMessage?: RawMediaContent | undefined;
         stickerMessage?: RawMediaContent | undefined;
+        [key: string]: unknown;
       }
     | undefined;
   messageTimestamp?: number | { low?: number | undefined } | undefined;
@@ -162,6 +163,23 @@ function extractMedia(message: NonNullable<RawWaMessage['message']>): Normalized
   return undefined;
 }
 
+function unwrapMessage(msg: NonNullable<RawWaMessage['message']>): NonNullable<RawWaMessage['message']> {
+  let current: any = msg;
+  for (let i = 0; i < 5; i++) {
+    if (!current || typeof current !== 'object') break;
+    const inner =
+      current.ephemeralMessage?.message ||
+      current.viewOnceMessage?.message ||
+      current.viewOnceMessageV2?.message ||
+      current.viewOnceMessageV2Extension?.message ||
+      current.documentWithCaptionMessage?.message ||
+      current.editedMessage?.message?.protocolMessage?.editedMessage;
+    if (!inner) break;
+    current = inner;
+  }
+  return (current && typeof current === 'object' ? current : msg) as NonNullable<RawWaMessage['message']>;
+}
+
 export interface NormalizeOptions {
   readonly selfJid: string;
   readonly now: Date;
@@ -189,8 +207,9 @@ export function normalize(raw: RawWaMessage, options: NormalizeOptions): Normali
   const message = raw.message;
   if (!message) return { ok: false, reason: 'no_content' };
 
-  const text = extractText(message);
-  const media = extractMedia(message);
+  const unwrapped = unwrapMessage(message);
+  const text = extractText(unwrapped);
+  const media = extractMedia(unwrapped);
   if (!text && !media) return { ok: false, reason: 'no_content' };
 
   return {

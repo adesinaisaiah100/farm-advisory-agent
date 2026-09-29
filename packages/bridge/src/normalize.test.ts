@@ -166,6 +166,27 @@ describe('normalize rejects', () => {
   it('drops a whitespace-only message rather than answering an empty turn', () => {
     expect(rejected(normalize(whitespaceOnlyText, OPTIONS))).toBe('no_content');
   });
+
+  it('unwraps view-once and ephemeral image messages so photos are not dropped as no_content', () => {
+    const viewOnceImage = {
+      key: { id: '3EB0A1B2C3D4E5F60799', remoteJid: '2348082974602@s.whatsapp.net', fromMe: false },
+      message: {
+        viewOnceMessage: {
+          message: {
+            imageMessage: {
+              mimetype: 'image/jpeg',
+              caption: 'Look at my broiler',
+              fileLength: 12345,
+            },
+          },
+        },
+      },
+    };
+    const value = accepted(normalize(viewOnceImage, OPTIONS));
+    expect(value.text).toBe('Look at my broiler');
+    expect(value.media?.kind).toBe('image');
+    expect(value.media?.mime).toBe('image/jpeg');
+  });
 });
 
 describe('toInboundMessage', () => {
