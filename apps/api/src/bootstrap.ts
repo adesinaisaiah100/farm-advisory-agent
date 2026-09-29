@@ -9,6 +9,7 @@ import {
 import { createApp, type ApiDeps, type ReadyReport } from './index.js';
 import { createApiDb } from './db/client.js';
 import { postgresSessionStore } from './db/session-store.js';
+import { postgresFarmerStore } from './db/farmer-store.js';
 
 export interface RuntimeEnv {
   readonly nodeEnv: string;
@@ -94,6 +95,7 @@ export function buildApiDeps(env: RuntimeEnv): BootstrapResult {
     deps: {
       chat: {
         store: postgresSessionStore(db),
+        farmerStore: postgresFarmerStore(db),
         turn: {
           chat: chatProvider,
           compact: new GeminiCompactProvider({ apiKey }),

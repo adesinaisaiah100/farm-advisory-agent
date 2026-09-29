@@ -1,6 +1,24 @@
 import { sql } from 'drizzle-orm';
-import { index, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
 import type { SessionState, SessionStatus } from '@poultry/schemas';
+
+export const farmers = pgTable(
+  'farmers',
+  {
+    phone: text('phone').primaryKey(),
+    name: text('name'),
+    state: text('state'),
+    lga: text('lga'),
+    farmSize: integer('farm_size'),
+    species: text('species'),
+    preferredLang: text('preferred_lang'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('farmers_phone_idx').on(table.phone),
+  ],
+);
 
 export const sessions = pgTable(
   'sessions',
@@ -25,4 +43,4 @@ export const sessions = pgTable(
   ],
 );
 
-export const apiSchema = { sessions };
+export const apiSchema = { sessions, farmers };

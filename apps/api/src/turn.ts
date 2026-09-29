@@ -1,8 +1,9 @@
-import type { ChatRequest, SessionState } from '@poultry/schemas';
+import type { CaseData, ChatRequest, SessionState, Species } from '@poultry/schemas';
 import { ChatRequestSchema } from '@poultry/schemas';
 import { newSession, runTurn } from '@poultry/core';
 import type { SessionStore, TurnDeps, TurnResult } from '@poultry/core';
 import { LlmError } from '@poultry/core';
+import type { FarmerStore } from './db/farmer-store.js';
 
 /**
  * The turn, as a function with no HTTP in it. The route is a thin adapter over
@@ -12,6 +13,7 @@ import { LlmError } from '@poultry/core';
  */
 export interface TurnServiceDeps {
   readonly store: SessionStore;
+  readonly farmerStore?: FarmerStore;
   readonly turn: TurnDeps;
   readonly newId: () => string;
   readonly now: () => Date;
@@ -40,8 +42,20 @@ export async function handleChat(
   }
   const request: ChatRequest = parsed.data;
 
+  const farmer = await deps.farmerStore?.getFarmer(request.farmerPhone);
+
   let existing = await deps.store.openSession(request.farmerPhone);
   let inheritedCase: Partial<CaseData> = {};
+
+  if (farmer) {
+    inheritedCase = {
+      farmerName: farmer.name ?? undefined,
+      lga: farmer.lga ?? undefined,
+      state: farmer.state ?? undefined,
+      farmSize: farmer.farmSize ?? undefined,
+      species: (farmer.species as Species) ?? undefined,
+    };
+  }
 
   if (!existing && deps.store.latestSession) {
     const latest = await deps.store.latestSession(request.farmerPhone);
@@ -57,8 +71,8 @@ export async function handleChat(
           status: 'open',
           lastActive: deps.now().toISOString(),
         };
-      } else {
-        // Outside 4-hour window: Start a fresh case, but inherit farmer identity & farm facts!
+      } else if (!farmer) {
+        // Outside 4-hour window and no permanent profile: inherit from previous case
         const prevCase = latest.state.case;
         inheritedCase = {
           farmerName: prevCase.farmerName,
@@ -69,6 +83,15 @@ export async function handleChat(
         };
       }
     }
+  }
+
+  // Format farmerContext for LLM if farmer is known
+  let farmerContext = request.farmerContext;
+  if (!farmerContext && (farmer?.name || inheritedCase.farmerName)) {
+    const name = farmer?.name ?? inheritedCase.farmerName;
+    const loc = [farmer?.lga ?? inheritedCase.lga, farmer?.state ?? inheritedCase.state].filter(Boolean).join(', ');
+    const flock = [farmer?.farmSize ?? inheritedCase.farmSize, farmer?.species ?? inheritedCase.species ?? 'birds'].filter(Boolean).join(' ');
+    farmerContext = `${name}${loc ? ` · ${loc}` : ''}${flock ? ` · ${flock}` : ''} · returning farmer`;
   }
 
   // A stored case always wins over a client-sent one. The bridge holds a
@@ -91,7 +114,7 @@ export async function handleChat(
         case: caseData,
         notes,
         stallCount,
-        farmerContext: request.farmerContext,
+        farmerContext,
         query: request.text,
         history,
       },
@@ -133,6 +156,22 @@ export async function handleChat(
   });
 
   await deps.store.save({ ...session, state, lastActive: deps.now().toISOString(), caseId });
+
+  // Upsert extracted farmer facts into permanent farmer store
+  const updatedCase = result.state.case;
+  if (
+    deps.farmerStore &&
+    (updatedCase.farmerName || updatedCase.lga || updatedCase.state || updatedCase.farmSize || updatedCase.species)
+  ) {
+    await deps.farmerStore.upsertFarmer({
+      phone: request.farmerPhone,
+      name: updatedCase.farmerName,
+      lga: updatedCase.lga,
+      state: updatedCase.state,
+      farmSize: updatedCase.farmSize,
+      species: updatedCase.species,
+    });
+  }
 
   // Do not abruptly close on status === 'complete'! The farmer may have follow-ups,
   // additional symptoms, or questions. Close only when the farmer explicitly expresses

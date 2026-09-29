@@ -369,4 +369,66 @@ describe('handleChat', () => {
 
     expect(outcome.result.state.case.id).toBe(supplied);
   });
+
+  it('loads permanent farmer profile from farmerStore and injects farmerContext', async () => {
+    let capturedContext: string | undefined;
+    const d = deps(async (input) => {
+      capturedContext = input.farmerContext;
+      return { delta: {}, reply: 'Welcome back Biola!' };
+    });
+
+    const mockFarmerStore = {
+      getFarmer: async (phone: string) => ({
+        phone,
+        name: 'Biola',
+        lga: 'Ibadan North',
+        state: 'Oyo',
+        farmSize: 500,
+        species: 'broiler',
+        preferredLang: 'pcm',
+        createdAt: NOW.toISOString(),
+        updatedAt: NOW.toISOString(),
+      }),
+      upsertFarmer: async () => {},
+    };
+
+    const outcome = await handleChat(
+      { farmerPhone: '+2349155132405', text: 'hello again' },
+      { ...d, farmerStore: mockFarmerStore },
+    );
+
+    expect(capturedContext).toBe('Biola · Ibadan North, Oyo · 500 broiler · returning farmer');
+    expect(outcome.result.state.case.farmerName).toBe('Biola');
+    expect(outcome.result.state.case.lga).toBe('Ibadan North');
+  });
+
+  it('upserts extracted farmer profile facts into farmerStore', async () => {
+    let upserted: unknown;
+    const d = deps(answering({
+      delta: { farmerName: 'Biola', lga: 'Ibadan North', state: 'Oyo' },
+      reply: 'Noted Biola.',
+    }));
+
+    const mockFarmerStore = {
+      getFarmer: async () => undefined,
+      upsertFarmer: async (profile: unknown) => {
+        upserted = profile;
+      },
+    };
+
+    await handleChat(
+      { farmerPhone: '+2349155132405', text: 'My name is Biola from Ibadan North' },
+      { ...d, farmerStore: mockFarmerStore },
+    );
+
+    expect(upserted).toEqual({
+      phone: '+2349155132405',
+      name: 'Biola',
+      lga: 'Ibadan North',
+      state: 'Oyo',
+      farmSize: undefined,
+      species: undefined,
+    });
+  });
 });
+
