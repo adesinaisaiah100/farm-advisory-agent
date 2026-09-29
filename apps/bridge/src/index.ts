@@ -96,8 +96,10 @@ function buildMediaIntake(
         { store, transcriber, vision, now: () => new Date(), newId: () => crypto.randomUUID() },
         { phone, mime, body: bytes },
       );
+      const publicBase = env.R2_PUBLIC_URL?.replace(/\/$/, '') ?? `${endpoint}/${R2_BUCKET}`;
+      const mediaUrl = `${publicBase}/${result.media.r2Key.replace(/^\//, '')}`;
       return {
-        mediaUrl: result.media.r2Key,
+        mediaUrl,
         text:
           result.kind === 'needs_confirmation'
             ? undefined

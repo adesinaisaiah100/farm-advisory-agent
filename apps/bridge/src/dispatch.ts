@@ -104,6 +104,9 @@ export async function dispatch(raw: RawWaMessage, deps: DispatchDeps): Promise<D
         mediaText = stored.text;
         confirmQuestion = stored.confirmQuestion;
       }
+      if (mediaUrl && !mediaUrl.startsWith('http://') && !mediaUrl.startsWith('https://')) {
+        mediaUrl = `https://r2.birdvet.cloud/${mediaUrl.replace(/^\//, '')}`;
+      }
     } catch (error) {
       deps.log.error('media intake failed', { waMsgId: inbound.waMsgId, error: String(error) });
       return { outcome: 'failed', waMsgId: inbound.waMsgId, reason: 'media_intake_failed' };

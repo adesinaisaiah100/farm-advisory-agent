@@ -159,6 +159,23 @@ describe('dispatch media', () => {
     expect(kinds).toEqual(['audio:audio/ogg']);
   });
 
+  it('normalizes a relative media key into a full https url so the contract never rejects', async () => {
+    const urls: string[] = [];
+    await dispatch(
+      captionedPhoto,
+      deps({
+        mediaUrl: 'media/2349155132405/2026-09-29/abc.jpg',
+        turn: {
+          async handle(message) {
+            urls.push(message.media?.url ?? '');
+            return 'Seen.';
+          },
+        },
+      }),
+    );
+    expect(urls[0]).toBe('https://r2.birdvet.cloud/media/2349155132405/2026-09-29/abc.jpg');
+  });
+
   it('keeps a photo caption alongside the photo', async () => {
     let text: string | undefined;
     await dispatch(
