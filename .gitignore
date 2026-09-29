@@ -21,7 +21,7 @@ coverage/
 # --- WhatsApp bridge session (device identity / account access) ---
 # Baileys writes the linked-device credentials here. Committing it hands over
 # the WhatsApp account, so it is ignored by directory AND by known filenames.
-.bridge-session/
+.bridge-session*/
 *.session.json
 auth_info.json
 creds.json

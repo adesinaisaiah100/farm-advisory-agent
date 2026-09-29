@@ -108,10 +108,16 @@ export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
     const { state, saveCreds } = await useMultiFileAuthState(deps.authDir);
     const { version } = await fetchLatestBaileysVersion();
 
+    const msgStore = new Map<string, unknown>();
+
     currentSock = makeWASocket({
       version,
       auth: { creds: state.creds, keys: makeCacheableSignalKeyStore(state.keys, logger) },
       logger,
+      syncFullHistory: false,
+      getMessage: async (key) => {
+        return (key.id ? msgStore.get(key.id) : undefined) as any;
+      },
     });
 
     currentSock.ev.on('creds.update', saveCreds);
@@ -184,6 +190,9 @@ export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
 
     currentSock.ev.on('messages.upsert', ({ messages }) => {
       for (const message of messages) {
+        if (message.key?.id && message.message) {
+          msgStore.set(message.key.id, message.message);
+        }
         void deps.onMessage(toRaw(message));
       }
     });
@@ -228,7 +237,7 @@ function getInnerMedia(msg: unknown): { content: any; type: string } | null {
 }
 
 export async function downloadMedia(
-  _sock: WASocket,
+  sock: WASocket,
   raw: RawWaMessage,
   _media: NormalizedMedia,
 ): Promise<Uint8Array | null> {
@@ -237,7 +246,15 @@ export async function downloadMedia(
 
   // 1. Try Baileys' high-level downloadMediaMessage
   try {
-    const buffer = await downloadMediaMessage(message, 'buffer', {});
+    const buffer = await downloadMediaMessage(
+      message,
+      'buffer',
+      {},
+      {
+        reuploadRequest: sock?.updateMediaMessage,
+        logger: (sock as unknown as { logger: BaileysLogger }).logger,
+      },
+    );
     if (buffer) return new Uint8Array(buffer);
   } catch {
     // If high-level download fails (e.g. nested view-once structure or missing context), fall through to stream

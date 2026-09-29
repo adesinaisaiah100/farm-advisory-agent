@@ -225,6 +225,7 @@ async function main(): Promise<void> {
       remoteJid: raw.key?.remoteJid,
       senderPn: raw.key?.senderPn,
       fromMe: raw.key?.fromMe,
+      messageTypes: raw.message ? Object.keys(raw.message) : undefined,
     });
     const result = await dispatch(raw, {
       dedup,
