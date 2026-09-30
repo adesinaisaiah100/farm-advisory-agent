@@ -23,7 +23,7 @@ describe('BirdVet Web Dashboard App', () => {
     // Check tabs exist
     const casesBtn = screen.getByRole('button', { name: /Cases/i });
     const reportsBtn = screen.getByRole('button', { name: /Outbreak Reports/i });
-    const storesBtn = screen.getByRole('button', { name: /Agro-Vet Stores/i });
+    const storesBtn = screen.getByRole('button', { name: /Veterinary Network/i });
     const libraryBtn = screen.getByRole('button', { name: /Veterinary Library/i });
     const chatBtn = screen.getByRole('button', { name: /Web Chat/i });
 
@@ -37,9 +37,10 @@ describe('BirdVet Web Dashboard App', () => {
     fireEvent.click(reportsBtn);
     expect(screen.getByText('Poultry Disease Outbreaks')).toBeTruthy();
 
-    // Click Agro-Vet Stores tab
+    // Click Veterinary Network tab
     fireEvent.click(storesBtn);
-    expect(screen.getByText('Agro-Vet Referral Network')).toBeTruthy();
+    expect(screen.getByText('Veterinary & Agro-Vet Network')).toBeTruthy();
+    expect(screen.getByText('Coming Soon')).toBeTruthy();
 
     // Click Veterinary Library tab
     fireEvent.click(libraryBtn);

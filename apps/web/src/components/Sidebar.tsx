@@ -54,8 +54,8 @@ export function Sidebar({
           className={`sidebar-link ${activeTab === 'stores' ? 'active' : ''}`}
           onClick={() => onSelectTab('stores')}
         >
-          <span>Agro-Vet Stores</span>
-          <span className="sidebar-count">{storeCount}</span>
+          <span>Veterinary Network</span>
+          <span className="sidebar-count" style={{ fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Soon</span>
         </button>
 
         <button
