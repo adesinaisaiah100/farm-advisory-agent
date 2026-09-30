@@ -1,4 +1,4 @@
-import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage, SessionSummaryItem, Criticality, CaseStatus } from './types.js';
+import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage, SessionSummaryItem, Criticality, CaseStatus, LibraryDoc } from './types.js';
 
 const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? '' : 'http://127.0.0.1:3001';
 
@@ -299,6 +299,77 @@ export async function fetchStores(): Promise<readonly AgroVetStore[]> {
   } catch {
     return [];
   }
+}
+
+export interface LibraryUploadInput {
+  readonly title: string;
+  readonly category: string;
+  readonly file: File;
+  readonly publisher?: string;
+}
+
+async function readApiError(res: Response, fallback: string): Promise<Error> {
+  try {
+    const data = await res.json();
+    const message = data?.error?.message;
+    return new Error(typeof message === 'string' && message ? message : fallback);
+  } catch {
+    return new Error(fallback);
+  }
+}
+
+export async function fetchLibrary(): Promise<readonly LibraryDoc[]> {
+  const res = await fetchWithRetry(`${API_BASE}/library`);
+  if (!res.ok) throw await readApiError(res, `HTTP ${res.status}`);
+  const data = await res.json();
+  const raw = Array.isArray(data) ? data : (data.documents ?? []);
+  return raw.map((d: any): LibraryDoc => ({
+    id: d.id,
+    name: d.name,
+    category: d.category,
+    size: d.size,
+    date: d.date,
+    status: d.status,
+    chunkCount: d.chunkCount,
+    ...(d.url ? { url: d.url } : {}),
+    ...(d.publisher ? { publisher: d.publisher } : {}),
+    ...(typeof d.year === 'number' ? { year: d.year } : {}),
+  }));
+}
+
+export async function uploadLibraryDocument(input: LibraryUploadInput): Promise<LibraryDoc> {
+  const form = new FormData();
+  form.append('title', input.title);
+  form.append('category', input.category);
+  if (input.publisher?.trim()) form.append('publisher', input.publisher.trim());
+  form.append('file', input.file, input.file.name);
+
+  const res = await fetchWithRetry(`${API_BASE}/library/upload`, { method: 'POST', body: form });
+  if (!res.ok) throw await readApiError(res, `HTTP ${res.status}`);
+  const data = await res.json();
+  return fetchLibraryDocument(data.document.id);
+}
+
+export async function fetchLibraryDocument(id: string): Promise<LibraryDoc> {
+  const res = await fetchWithRetry(`${API_BASE}/library/${encodeURIComponent(id)}`);
+  if (!res.ok) throw await readApiError(res, `HTTP ${res.status}`);
+  return res.json() as Promise<LibraryDoc>;
+}
+
+export async function fetchLibraryPreview(id: string): Promise<readonly string[]> {
+  const res = await fetchWithRetry(`${API_BASE}/library/${encodeURIComponent(id)}/preview`);
+  if (!res.ok) throw await readApiError(res, `HTTP ${res.status}`);
+  const data = await res.json();
+  return Array.isArray(data.chunks) ? data.chunks : [];
+}
+
+export async function deleteLibraryDocument(id: string): Promise<void> {
+  const res = await fetchWithRetry(`${API_BASE}/library/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  if (!res.ok) throw await readApiError(res, `HTTP ${res.status}`);
+}
+
+export function libraryFileUrl(id: string): string {
+  return `${API_BASE}/library/${encodeURIComponent(id)}/file`;
 }
 
 export async function sendChatMessage(phone: string, text: string): Promise<string> {

@@ -85,9 +85,14 @@ export interface LibraryDoc {
   readonly name: string;
   readonly category: string;
   readonly size: string;
+  /** ISO-8601 timestamp from the server; formatting happens in the view. */
   readonly date: string;
   readonly status: 'active' | 'processing';
-}
+  readonly chunkCount: number;
+  readonly url?: string;
+  readonly publisher?: string;
+  readonly year?: number;
+  }
 
 export interface ChatMessage {
   readonly id: string;

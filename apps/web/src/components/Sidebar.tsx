@@ -7,7 +7,7 @@ interface SidebarProps {
   readonly onSelectTab: (tab: TabId) => void;
   readonly caseCount: number;
   readonly reportCount: number;
-  readonly storeCount: number;
+  readonly _storeCount?: number;
   readonly libraryCount: number;
   readonly theme: 'dark' | 'light';
   readonly onToggleTheme: () => void;
@@ -18,7 +18,7 @@ export function Sidebar({
   onSelectTab,
   caseCount,
   reportCount,
-  storeCount,
+  _storeCount,
   libraryCount,
   theme,
   onToggleTheme

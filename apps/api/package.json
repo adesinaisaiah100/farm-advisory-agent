@@ -15,10 +15,13 @@
   "dependencies": {
     "@neondatabase/serverless": "1.1.0",
     "@poultry/core": "workspace:*",
+    "@poultry/rag": "workspace:*",
     "@poultry/schemas": "workspace:*",
     "@poultry/stores": "workspace:*",
+    "@types/pdf-parse": "^1.1.5",
     "drizzle-orm": "0.45.3",
-    "hono": "^4.6.0"
+    "hono": "^4.6.0",
+    "pdf-parse": "^2.4.5"
   },
   "devDependencies": {
     "@hono/node-server": "^1.13.0",

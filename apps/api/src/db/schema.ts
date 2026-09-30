@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, jsonb, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { documents } from '@poultry/rag';
 import type { SessionState, SessionStatus } from '@poultry/schemas';
 
 export const farmers = pgTable(
@@ -43,4 +44,28 @@ export const sessions = pgTable(
   ],
 );
 
-export const apiSchema = { sessions, farmers };
+/**
+ * Upload metadata for a reference document. The clinical content lives in the
+ * RAG tables (`documents`/`chunk_groups`/`chunks`); this table holds only what
+ * the dashboard shows a clinician and what we need to fetch or delete the
+ * original file again. Splitting them keeps `@poultry/rag` free of UI concerns.
+ */
+export const libraryDocuments = pgTable(
+  'library_documents',
+  {
+    documentId: text('document_id')
+      .primaryKey()
+      .references(() => documents.id, { onDelete: 'cascade' }),
+    category: text('category').notNull(),
+    filename: text('filename').notNull(),
+    mimeType: text('mime_type').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    r2Key: text('r2_key').notNull(),
+    uploadedAt: timestamp('uploaded_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('library_documents_category_idx').on(table.category),
+  ],
+);
+
+export const apiSchema = { sessions, farmers, libraryDocuments };

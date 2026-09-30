@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './styles/theme.css';
-import type { CaseSummary, OutbreakReport, AgroVetStore, LibraryDoc } from './types.js';
-import { INITIAL_CASES, INITIAL_REPORTS, INITIAL_STORES, INITIAL_LIBRARY_DOCS } from './mockData.js';
-import { fetchCases, fetchCaseDetail, fetchReports, fetchStores } from './api.js';
+import type { CaseSummary, OutbreakReport, AgroVetStore } from './types.js';
+import { INITIAL_CASES, INITIAL_REPORTS, INITIAL_STORES } from './mockData.js';
+import { fetchCases, fetchCaseDetail, fetchLibrary, fetchReports, fetchStores } from './api.js';
 import { Sidebar, type TabId } from './components/Sidebar.js';
 import { TopBar } from './components/TopBar.js';
 import { CasesView } from './components/CasesView.js';
@@ -20,7 +20,7 @@ export function App() {
   const [cases, setCases] = useState<readonly CaseSummary[]>(INITIAL_CASES);
   const [reports, setReports] = useState<readonly OutbreakReport[]>(INITIAL_REPORTS);
   const [stores, setStores] = useState<readonly AgroVetStore[]>(INITIAL_STORES);
-  const [libraryDocs, setLibraryDocs] = useState<readonly LibraryDoc[]>(INITIAL_LIBRARY_DOCS);
+  const [libraryCount, setLibraryCount] = useState<number>(0);
 
   const [selectedCase, setSelectedCase] = useState<CaseSummary | null>(null);
   const [loadingCases, setLoadingCases] = useState<boolean>(true);
@@ -40,6 +40,14 @@ export function App() {
     fetchReports().then(setReports).catch(() => {});
     fetchStores().then(setStores).catch(() => {});
   };
+
+  // The library view owns its own rows; the sidebar badge only needs the count.
+  useEffect(() => {
+    if (activeTab !== 'library') return;
+    fetchLibrary()
+      .then((docs) => setLibraryCount(docs.length))
+      .catch(() => setLibraryCount(0));
+  }, [activeTab]);
 
   // Fetch live cases, outbreak reports, and verified stores from Neon Postgres on mount
   useEffect(() => {
@@ -68,14 +76,6 @@ export function App() {
     }
   };
 
-  const handleAddLibraryDoc = (newDoc: LibraryDoc) => {
-    setLibraryDocs(prev => [newDoc, ...prev]);
-  };
-
-  const handleDeleteLibraryDoc = (id: string) => {
-    setLibraryDocs(prev => prev.filter(d => d.id !== id));
-  };
-
   // Filter cases by global search query
   const searchedCases = cases.filter(c => {
     const q = searchQuery.toLowerCase().trim();
@@ -97,7 +97,7 @@ export function App() {
         caseCount={cases.length}
         reportCount={reports.length}
         storeCount={stores.length}
-        libraryCount={libraryDocs.length}
+        libraryCount={libraryCount}
         theme={theme}
         onToggleTheme={toggleTheme}
       />
@@ -130,13 +130,7 @@ export function App() {
           <StoresView stores={stores} />
         )}
 
-        {activeTab === 'library' && (
-          <LibraryView
-            docs={libraryDocs}
-            onAddDoc={handleAddLibraryDoc}
-            onDeleteDoc={handleDeleteLibraryDoc}
-          />
-        )}
+        {activeTab === 'library' && <LibraryView />}
 
         {activeTab === 'chat' && (
           <ChatView />

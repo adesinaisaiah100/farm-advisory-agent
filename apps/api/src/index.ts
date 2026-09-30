@@ -7,11 +7,13 @@ import { getStores, searchByLga } from '@poultry/stores';
 import { handleChat, RequestError } from './turn.js';
 import type { RequestStatus, TurnServiceDeps } from './turn.js';
 import type { DashboardStore } from './db/dashboard-store.js';
+import { LibraryIngestError, type LibraryStore } from './db/library-store.js';
 
 export interface ApiDeps {
   readonly chat?: TurnServiceDeps;
   readonly ready?: () => Promise<ReadyReport>;
   readonly dashboard?: DashboardStore;
+  readonly library?: LibraryStore;
 }
 
 export interface ReadyReport {
@@ -183,6 +185,150 @@ export function createApp(deps: ApiDeps = {}) {
       : getStores();
 
     return c.json({ stores, total: stores.length }, 200);
+  });
+
+  // ─── Veterinary Library Endpoints (RAG Corpus & Documents) ───────────────
+
+  /**
+   * GET /library
+   * Returns all persisted reference guidelines, chunk counts, and categories.
+   */
+  app.get('/library', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    const documents = await deps.library.listDocuments();
+    return c.json({ documents, total: documents.length }, 200);
+  });
+
+  /**
+   * GET /library/:id
+   * Returns specific document metadata and chunk stats.
+   */
+  app.get('/library/:id', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    const id = c.req.param('id');
+    const doc = await deps.library.getDocument(id);
+    if (!doc) {
+      return c.json(error('not_found', `document ${id} not found`), 404);
+    }
+    return c.json(doc, 200);
+  });
+
+  /**
+   * GET /library/:id/preview
+   * Real extracted text from the first indexed chunks. This is the honest
+   * answer to "did the pipeline actually read my document?".
+   */
+  app.get('/library/:id/preview', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    const id = c.req.param('id');
+    const preview = await deps.library.getDocumentPreview(id);
+    if (!preview) {
+      return c.json(error('not_found', `document ${id} not found`), 404);
+    }
+    return c.json({ id, chunks: preview }, 200);
+  });
+
+  /**
+   * GET /library/:id/file
+   * Streams the original upload from R2 through the API, so the browser never
+   * needs a public bucket URL.
+   */
+  app.get('/library/:id/file', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    const id = c.req.param('id');
+    const file = await deps.library.getDocumentFile(id);
+    if (!file) {
+      return c.json(error('not_found', `document ${id} not found`), 404);
+    }
+    return c.body(file.bytes, 200, {
+      'Content-Type': file.mimeType,
+      'Content-Disposition': `inline; filename="${file.filename.replace(/"/g, '')}"`,
+      'Content-Length': String(file.bytes.length),
+    });
+  });
+
+  /**
+   * POST /library/upload
+   * Accepts a PDF or plain-text file, stores it in Cloudflare R2, paginates and
+   * micro-chunks the text, generates Gemini embeddings, and persists to Neon
+   * pgvector. A file that cannot be read or indexed is rejected with a reason;
+   * nothing is persisted on failure.
+   */
+  app.post('/library/upload', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    try {
+      const body = await c.req.parseBody();
+      const title = String(body['title'] ?? '').trim();
+      const category = String(body['category'] ?? '').trim();
+      const publisher = String(body['publisher'] ?? '').trim() || undefined;
+      const file = body['file'];
+
+      if (!title) {
+        return c.json(error('invalid_request', 'A document title is required.'), 400);
+      }
+      if (!category) {
+        return c.json(error('invalid_request', 'A category is required.'), 400);
+      }
+
+      let bytes: Uint8Array;
+      let filename: string;
+      let mimeType: string;
+
+      if (file && typeof file === 'object' && 'arrayBuffer' in file) {
+        const uploaded = file as File;
+        bytes = new Uint8Array(await uploaded.arrayBuffer());
+        filename = uploaded.name;
+        mimeType = uploaded.type || (filename.toLowerCase().endsWith('.txt') ? 'text/plain' : 'application/pdf');
+      } else if (typeof body['text'] === 'string' && body['text'].trim().length > 0) {
+        bytes = new TextEncoder().encode(body['text']);
+        filename = `${title.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 80)}.txt`;
+        mimeType = 'text/plain';
+      } else {
+        return c.json(error('invalid_request', 'A PDF or text file is required.'), 400);
+      }
+
+      const doc = await deps.library.ingestDocument({
+        title,
+        category,
+        buffer: bytes,
+        filename,
+        mimeType,
+        ...(publisher ? { publisher } : {}),
+      });
+
+      return c.json({ ok: true, document: doc }, 201);
+    } catch (err) {
+      if (err instanceof LibraryIngestError) {
+        return c.json(error('upload_failed', err.message), err.status);
+      }
+      return c.json(
+        error('upload_failed', err instanceof Error ? err.message : 'failed to ingest document'),
+        500,
+      );
+    }
+  });
+
+  /**
+   * DELETE /library/:id
+   * Cascades delete from Neon Postgres pgvector (documents, chunk_groups, chunks) and R2.
+   */
+  app.delete('/library/:id', async (c) => {
+    if (deps.library === undefined) {
+      return c.json(error('not_configured', 'no library store configured'), 503);
+    }
+    const id = c.req.param('id');
+    const deleted = await deps.library.deleteDocument(id);
+    return c.json({ ok: deleted, deletedId: id }, 200);
   });
 
   return app;

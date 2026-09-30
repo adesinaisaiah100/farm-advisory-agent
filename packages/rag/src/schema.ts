@@ -32,8 +32,10 @@ export const DocTypeSchema = z.enum([
   'drug_monograph',
   'guideline',
   'regulation',
-  'other',
-]);
+    'other',
+  ]);
+
+export type DocType = z.infer<typeof DocTypeSchema>;
 
 export const SourceDocumentSchema = z.object({
   id: z.string().min(1),
