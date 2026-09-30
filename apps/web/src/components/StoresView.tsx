@@ -17,7 +17,7 @@ export function StoresView({ stores }: StoresViewProps) {
       <div className="page-header">
         <div className="page-title">
           <h1>Agro-Vet Referral Network</h1>
-          <p>Verified medication cold-chain hubs, laboratory referral partners, and field veterinary officers.</p>
+          <p>Field verification and cold-chain inspection of local agro-vet stores and avian veterinarians are currently in progress.</p>
         </div>
 
         <div className="filters-group">
@@ -36,13 +36,13 @@ export function StoresView({ stores }: StoresViewProps) {
         </div>
       </div>
 
-      {/* Veterinary Doctors Tele-Consultation Network — Coming Soon */}
+      {/* Agro-Vet Stores & Veterinary Network — Coming Soon Banner */}
       <div className="vet-coming-soon-banner">
         <div className="vet-banner-header">
           <div>
-            <div className="vet-banner-title">Avian Veterinary Doctors & Tele-Consultation Network</div>
+            <div className="vet-banner-title">Agro-Vet Stores & Veterinary Tele-Consultation Network</div>
             <div className="vet-banner-desc">
-              Direct live video/audio tele-triage with certified Nigerian Veterinary Medical Association (NVMA) avian specialists and emergency on-farm post-mortem booking.
+              Physical store auditing, cold-chain temperature verification, and licensed avian veterinary practitioner onboarding are currently in progress. Zero fabricated store stock or unverified partner claims.
             </div>
           </div>
           <span className="tag-coming-soon">Coming Soon</span>
@@ -64,28 +64,28 @@ export function StoresView({ stores }: StoresViewProps) {
           </div>
 
           <div className="vet-feature-card">
-            <div className="vet-feature-title">📋 Certified Digital Rx Dispatch</div>
+            <div className="vet-feature-title">🏪 Certified Cold-Chain Agro-Vet Hubs</div>
             <div className="vet-feature-desc">
-              Legally compliant digital prescriptions routed directly to certified agro-vet cold-chain stores in the farmer's LGA.
+              In-person audit of refrigeration, vaccine potency, and authentic NAFDAC-registered stock prior to verified listing.
             </div>
           </div>
         </div>
       </div>
 
-      {/* Verified Agro-Vet Stores Grid */}
+      {/* Directory Section */}
       <div style={{ marginBottom: '12px' }}>
         <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
-          Verified Agro-Vet Cold-Chain Hubs ({filtered.length})
+          Community Directory — Pending Field Verification ({filtered.length})
         </h2>
         <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
-          Zero fabricated inventory — verified store physical locations and cold-chain vaccine availability.
+          All listings are provisional until verified by local field veterinary officers.
         </span>
       </div>
 
       <div className="grid-cards">
         {filtered.length === 0 ? (
           <div style={{ gridColumn: '1 / -1', padding: '36px', textAlign: 'center', color: 'var(--text-light)' }}>
-            No verified agro-vet stores found in this location.
+            No agro-vet directory listings found for this location.
           </div>
         ) : (
           filtered.map(s => (
@@ -95,7 +95,7 @@ export function StoresView({ stores }: StoresViewProps) {
                   <div className="card-item-title">{s.name}</div>
                   <div className="card-item-subtitle">{s.lga}, {s.state} State</div>
                 </div>
-                <span className="tag-rect tag-resolved">Verified Partner</span>
+                <span className="tag-rect tag-moderate">Pending Field Verification</span>
               </div>
 
               <div className="card-item-body">
@@ -117,11 +117,11 @@ export function StoresView({ stores }: StoresViewProps) {
 
               <div className="card-item-footer">
                 <span style={{ fontSize: '11px', color: 'var(--text-light)' }}>
-                  Zero fabricated inventory
+                  Cold-chain audit required
                 </span>
                 <a
                   href={`tel:${s.phone}`}
-                  className="btn-action primary"
+                  className="btn-action"
                   style={{ textDecoration: 'none' }}
                 >
                   Call Store

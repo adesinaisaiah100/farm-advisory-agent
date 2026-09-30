@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { cors } from 'hono/cors';
 import type { Context } from 'hono';
 import type { ChatResponse } from '@poultry/schemas';
 import { ChatResponseSchema } from '@poultry/schemas';
@@ -20,6 +21,8 @@ export interface ReadyReport {
 
 export function createApp(deps: ApiDeps = {}) {
   const app = new Hono();
+
+  app.use('*', cors());
 
   app.get('/health', (c) => c.json({ status: 'ok', service: 'poultry-api' }));
 

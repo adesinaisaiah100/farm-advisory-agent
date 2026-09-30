@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { App } from './App.js';
+import * as api from './api.js';
 
 describe('BirdVet Web Dashboard App', () => {
   afterEach(() => {
     cleanup();
+    vi.restoreAllMocks();
   });
+
   it('renders the BirdVet dashboard with sidebar navigation', () => {
     render(<App />);
     expect(screen.getByText('BirdVet')).toBeTruthy();
@@ -59,19 +62,36 @@ describe('BirdVet Web Dashboard App', () => {
     expect(themeBtn.textContent).toContain('Dark');
   });
 
-  it('opens and closes the case detail drawer', () => {
+  it('opens and closes the case detail drawer', async () => {
+    vi.spyOn(api, 'fetchCases').mockResolvedValue([
+      {
+        id: 'case_live_01',
+        farmer: 'Segun Adebayo',
+        phone: '+234 915 513 2405',
+        state: 'Oyo',
+        lga: 'Ibadan North',
+        species: 'Broilers (600 birds)',
+        flockSize: 600,
+        symptoms: 'Bloody stooling, lethargy',
+        mortality: 3,
+        onsetDays: 1,
+        duration: '1 day ago',
+        criticality: 'critical',
+        status: 'triage',
+        lastActive: '14:20',
+        history: []
+      }
+    ]);
+
     render(<App />);
 
-    // Click a farmer row
-    const farmerRow = screen.getByText('Alhaji Musa Danladi');
+    const farmerRow = await screen.findByText('Segun Adebayo');
     fireEvent.click(farmerRow);
 
-    // Detail drawer should open
-    expect(screen.getByText(/Alhaji Musa Danladi's Case/i)).toBeTruthy();
+    expect(await screen.findByText(/Segun Adebayo's Case/i)).toBeTruthy();
     expect(screen.getByText(/Clinical Assessment/i)).toBeTruthy();
     expect(screen.getByText(/WhatsApp Consultation History/i)).toBeTruthy();
 
-    // Close drawer
     const closeBtn = screen.getByLabelText('Close case drawer');
     fireEvent.click(closeBtn);
     expect(screen.queryByText(/Clinical Assessment/i)).toBeNull();

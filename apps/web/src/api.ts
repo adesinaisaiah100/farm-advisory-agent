@@ -1,5 +1,4 @@
 import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage } from './types.js';
-import { INITIAL_CASES, INITIAL_REPORTS, INITIAL_STORES } from './mockData.js';
 
 const API_BASE = 'http://127.0.0.1:3001';
 
@@ -86,9 +85,9 @@ export async function fetchCases(): Promise<readonly CaseSummary[]> {
         };
       });
     }
-    return INITIAL_CASES;
+    return [];
   } catch {
-    return INITIAL_CASES;
+    return [];
   }
 }
 
@@ -176,9 +175,9 @@ export async function fetchReports(): Promise<readonly OutbreakReport[]> {
         };
       });
     }
-    return INITIAL_REPORTS;
+    return [];
   } catch {
-    return INITIAL_REPORTS;
+    return [];
   }
 }
 
@@ -200,9 +199,9 @@ export async function fetchStores(): Promise<readonly AgroVetStore[]> {
         services: s.services && s.services.length > 0 ? s.services : ['Vaccine Cold Chain', 'Anticoccidials', 'Post-Mortem Referral', 'Emergency Antibiotics']
       }));
     }
-    return INITIAL_STORES;
+    return [];
   } catch {
-    return INITIAL_STORES;
+    return [];
   }
 }
 
