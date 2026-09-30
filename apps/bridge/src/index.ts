@@ -320,6 +320,12 @@ async function main(): Promise<void> {
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  process.on('unhandledRejection', (reason) => {
+    log.warn('suppressed unhandled promise rejection in socket/dependencies', {
+      reason: String(reason),
+    });
+  });
 }
 
 main().catch((error: unknown) => {

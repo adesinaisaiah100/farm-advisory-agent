@@ -193,7 +193,9 @@ export async function connectSocket(deps: SocketDeps): Promise<BridgeSocket> {
         if (message.key?.id && message.message) {
           msgStore.set(message.key.id, message.message);
         }
-        void deps.onMessage(toRaw(message));
+        deps.onMessage(toRaw(message)).catch((err) => {
+          deps.log.error('unhandled error processing inbound message', { error: String(err) });
+        });
       }
     });
   }
