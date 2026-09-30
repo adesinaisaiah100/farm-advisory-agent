@@ -210,7 +210,9 @@ async function main(): Promise<void> {
   const allowed = parseAllowedFrom(env.BRIDGE_ALLOWED_FROM);
 
   if (allowed.length === 0) {
-    log.warn('BRIDGE_ALLOWED_FROM is empty, so the bridge will answer nobody until you set it');
+    log.info('BRIDGE_ALLOWED_FROM is not set — open pilot mode: accepting messages from any number');
+  } else {
+    log.info('BRIDGE_ALLOWED_FROM configured', { count: allowed.length });
   }
 
   const turnUrl = env.BRIDGE_TURN_URL ?? 'http://127.0.0.1:3000/chat';
