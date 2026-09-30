@@ -15,9 +15,6 @@ export function LandingView({ onEnterPortal }: LandingViewProps) {
             <span className="landing-brand-title">
               BIRDVET
             </span>
-            <span className="landing-badge">
-              Clinical AI
-            </span>
           </div>
 
           <div className="landing-header-actions">
@@ -28,7 +25,7 @@ export function LandingView({ onEnterPortal }: LandingViewProps) {
               className="landing-phone-link"
               title="Chat with BirdVet on WhatsApp"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
               </svg>
               <span>+234 707 179 4632</span>
@@ -48,21 +45,14 @@ export function LandingView({ onEnterPortal }: LandingViewProps) {
 
       {/* Main Hero Container (Centered) */}
       <main className="landing-main">
-        {/* Overline Label */}
-        <div className="landing-overline-wrap">
-          <span className="landing-overline">
-            Poultry Clinical Triage &amp; Disease Surveillance &bull; Nigeria
-          </span>
-        </div>
-
-        {/* Primary Quote Headline */}
+        {/* Punchy Outcome Headline */}
         <h1 className="landing-headline">
-          &ldquo;When a poultry farmer notices something is wrong, getting the right information quickly isn&rsquo;t always easy.&rdquo;
+          Protect Your Flock with Instant Veterinary AI
         </h1>
 
-        {/* Subtitle */}
+        {/* Clear Conversational Subtitle */}
         <p className="landing-subtitle">
-          BirdVet is a WhatsApp-first veterinary copilot for Nigerian smallholders. Farmers describe flock symptoms via spoken voice notes in Nigerian Pidgin; BirdVet gathers context, enforces strict clinical safety, and turns conversations into structured cases for licensed veterinarians.
+          Send a WhatsApp voice note in Nigerian Pidgin or English. BirdVet spots disease symptoms early, guides emergency biosecurity, and connects you with licensed veterinarians before mortality spreads.
         </p>
 
         {/* Action Controls (Strict Anti-Pill: 6px radius) */}
@@ -90,57 +80,39 @@ export function LandingView({ onEnterPortal }: LandingViewProps) {
           </button>
         </div>
 
-        {/* 3-Column Structured Information Grid */}
+        {/* 3-Column Structured Information Cards */}
         <section className="landing-grid-section">
           <div className="landing-grid">
             <div className="landing-col-card">
-              <span className="landing-col-num">01 / WhatsApp Intake</span>
+              <span className="landing-col-num">01 / Voice First</span>
               <h3 className="landing-col-title">Spoken Nigerian Pidgin</h3>
               <p className="landing-col-desc">
-                Farmers send normal voice notes without typing English or filling forms. Transcribed with 0.0% word error rate on agricultural vernacular via Gemini 3.5.
+                Farmers send natural WhatsApp voice notes without typing or filling complicated forms. Understood natively across vernacular dialects.
               </p>
             </div>
 
             <div className="landing-col-card">
-              <span className="landing-col-num">02 / Clinical Safety</span>
-              <h3 className="landing-col-title">The Four Doors Ladder</h3>
+              <span className="landing-col-num">02 / Early Warning</span>
+              <h3 className="landing-col-title">Prevent Flock Outbreaks</h3>
               <p className="landing-col-desc">
-                Strict safety protocol: never fabricates antibiotic prescriptions. Routes between supportive biosecurity, vetted agro-vet store slips, and emergency escalation.
+                Identifies respiratory, digestive, and lethargy signs early. Enforces biosecurity measures and stops harmful drug self-medication.
               </p>
             </div>
 
             <div className="landing-col-card">
-              <span className="landing-col-num">03 / Grounded RAG</span>
-              <h3 className="landing-col-title">251-Page Vet Manual</h3>
+              <span className="landing-col-num">03 / Vet Referral</span>
+              <h3 className="landing-col-title">Licensed Care Nearby</h3>
               <p className="landing-col-desc">
-                Grounded in 760 micro-chunks with 768-dim Gemini MRL embeddings on Neon pgvector, paired with streaming Cloudflare R2 original documentation.
+                Generates clinical triage summaries and referral slips connecting you directly with licensed veterinary professionals in your LGA.
               </p>
             </div>
           </div>
         </section>
-
-        {/* Engineering Proof Bar */}
-        <div className="landing-proof-bar">
-          <div className="landing-proof-item">
-            <span className="landing-proof-dot" aria-hidden="true" />
-            <span className="landing-proof-status">765 / 765 Tests Passing (100% Green)</span>
-          </div>
-          <div className="landing-proof-stack">Stack: Hono &bull; Cloudflare R2 &bull; Neon pgvector &bull; Gemini 3.1 &bull; Baileys</div>
-          <a
-            href="https://github.com/adesinaisaiah100/farm-advisory-agent"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="landing-proof-link"
-          >
-            <span>GitHub Repository</span>
-            <span aria-hidden="true">&nearr;</span>
-          </a>
-        </div>
       </main>
 
       {/* Clean Minimal Footer */}
       <footer className="landing-footer">
-        Borderless Bytes Hackathon (StacStart) &bull; Built by Adesina Oluwatimileyin Isaiah &bull; All Rights Reserved
+        BirdVet &bull; Borderless Bytes Hackathon (StacStart) &bull; Built by Adesina Oluwatimileyin Isaiah
       </footer>
     </div>
   );

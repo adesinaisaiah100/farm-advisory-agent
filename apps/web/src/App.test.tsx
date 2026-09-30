@@ -98,13 +98,13 @@ describe('BirdVet Web Dashboard App', () => {
     expect(screen.queryByText(/Clinical Assessment/i)).toBeNull();
   });
 
-  it('renders the LandingView component with quote headline and transitions to portal', async () => {
+  it('renders the LandingView component with punchy headline and transitions to portal', async () => {
     const { LandingView } = await import('./components/LandingView.js');
     let entered = false;
     render(<LandingView onEnterPortal={() => { entered = true; }} />);
 
     expect(screen.getByText('BIRDVET')).toBeTruthy();
-    expect(screen.getByText(/When a poultry farmer notices something is wrong/i)).toBeTruthy();
+    expect(screen.getByText(/Protect Your Flock with Instant Veterinary AI/i)).toBeTruthy();
     expect(screen.getByText(/Start WhatsApp Consultation/i)).toBeTruthy();
 
     const portalBtn = screen.getByRole('button', { name: /Open Clinician Portal/i });
