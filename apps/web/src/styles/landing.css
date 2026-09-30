@@ -1,0 +1,321 @@
+/* ==========================================================================
+   BIRDVET LANDING VIEW — CLEAN MODERN EDITORIAL CSS
+   Strict Anti-Pill Law: Zero pills, 6px buttons, 4px tags, 8px cards
+   Solid dark background, high contrast, zero blurry gradients
+   ========================================================================== */
+
+.landing-root {
+  min-height: 100vh;
+  background-color: #09090b;
+  color: #fafafa;
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background-color: rgba(9, 9, 11, 0.95);
+  border-bottom: 1px solid #27272a;
+  backdrop-filter: blur(8px);
+}
+
+.landing-header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.landing-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-brand-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.landing-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid #3f3f46;
+  color: #a1a1aa;
+  background-color: #18181b;
+}
+
+.landing-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.landing-phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #a1a1aa;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.landing-phone-link:hover {
+  color: #ffffff;
+}
+
+.landing-signal-square {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  display: inline-block;
+  border-radius: 0;
+}
+
+.landing-btn-portal-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background-color: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.landing-btn-portal-sm:hover {
+  background-color: #27272a;
+  border-color: #52525b;
+}
+
+/* Main Hero */
+.landing-main {
+  flex: 1;
+  max-width: 1020px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 64px 24px 80px 24px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.landing-overline-wrap {
+  margin-bottom: 24px;
+}
+
+.landing-overline {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #a1a1aa;
+  border-bottom: 1px solid #3f3f46;
+  padding-bottom: 4px;
+}
+
+.landing-headline {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 800;
+  font-size: clamp(32px, 5vw, 50px);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  margin: 0 0 24px 0;
+  max-width: 900px;
+}
+
+.landing-subtitle {
+  font-size: clamp(15px, 2vw, 17px);
+  line-height: 1.65;
+  color: #a1a1aa;
+  margin: 0 0 40px 0;
+  max-width: 720px;
+}
+
+/* Actions */
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 64px;
+}
+
+.landing-btn-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  background-color: #10b981;
+  color: #09090b;
+  border: none;
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.landing-btn-whatsapp:hover {
+  background-color: #059669;
+}
+
+.landing-btn-whatsapp-sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 400;
+  color: #064e3b;
+}
+
+.landing-btn-portal-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  background-color: #18181b;
+  color: #fafafa;
+  border: 1px solid #3f3f46;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.landing-btn-portal-lg:hover {
+  background-color: #27272a;
+  border-color: #52525b;
+}
+
+/* 3-Column Structured Information Grid */
+.landing-grid-section {
+  border-top: 1px solid #27272a;
+  padding-top: 48px;
+}
+
+.landing-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+}
+
+@media (max-width: 768px) {
+  .landing-grid {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+.landing-col {
+  border-left: 1px solid #27272a;
+  padding-left: 20px;
+}
+
+.landing-col-num {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #71717a;
+  margin-bottom: 8px;
+}
+
+.landing-col-title {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-weight: 700;
+  font-size: 16px;
+  color: #ffffff;
+  margin: 0 0 8px 0;
+}
+
+.landing-col-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* Engineering Proof Bar */
+.landing-proof-bar {
+  margin-top: 64px;
+  padding: 16px 20px;
+  border: 1px solid #27272a;
+  background-color: #121215;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #a1a1aa;
+}
+
+.landing-proof-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.landing-proof-status {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.landing-proof-stack {
+  color: #a1a1aa;
+}
+
+.landing-proof-link {
+  color: #ffffff;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s ease;
+}
+
+.landing-proof-link:hover {
+  text-decoration: underline;
+  color: #10b981;
+}
+
+/* Footer */
+.landing-footer {
+  border-top: 1px solid #27272a;
+  padding: 24px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: #71717a;
+}
