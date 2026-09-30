@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdVet — Veterinary Triage & Surveillance Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM: BIRDVET CLEAN DASHBOARD
+       ========================================================================== */
+    :root {
+      /* Color Palette: Clean Neutral Modern (Default Dark) */
+      --bg-canvas: #090D16;
+      --bg-surface: #101624;
+      --bg-surface-elevated: #161F33;
+      --bg-surface-hover: #1C2740;
+      
+      --border-subtle: rgba(255, 255, 255, 0.07);
+      --border-strong: rgba(255, 255, 255, 0.14);
+      --border-focus: #3B82F6;
+      
+      --text-primary: #F8FAFC;
+      --text-secondary: #94A3B8;
+      --text-muted: #64748B;
+      
+      /* Semantic Status Signals */
+      --emerald-bg: rgba(16, 185, 129, 0.12);
+      --emerald-border: rgba(16, 185, 129, 0.28);
+      --emerald-text: #34D399;
+      
+      --amber-bg: rgba(245, 158, 11, 0.12);
+      --amber-border: rgba(245, 158, 11, 0.28);
+      --amber-text: #FBBF24;
+      
+      --rose-bg: rgba(239, 68, 68, 0.12);
+      --rose-border: rgba(239, 68, 68, 0.28);
+      --rose-text: #F87171;
+      
+      --blue-bg: rgba(59, 130, 246, 0.12);
+      --blue-border: rgba(59, 130, 246, 0.28);
+      --blue-text: #60A5FA;
+
+      /* Typography */
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-display: 'Plus Jakarta Sans', var(--font-body);
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Layout */
+      --sidebar-width: 240px;
+      --header-height: 64px;
+      --drawer-width: 480px;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+      --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Light Theme Support */
+    [data-theme="light"] {
+      --bg-canvas: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-surface-elevated: #F1F5F9;
+      --bg-surface-hover: #E2E8F0;
+      
+      --border-subtle: #E2E8F0;
+      --border-strong: #CBD5E1;
+      
+      --text-primary: #0F172A;
+      --text-secondary: #475569;
+      --text-muted: #94A3B8;
+      
+      --emerald-bg: #ECFDF5;
+      --emerald-border: #A7F3D0;
+      --emerald-text: #059669;
+      
+      --amber-bg: #FFFBEB;
+      --amber-border: #FDE68A;
+      --amber-text: #D97706;
+      
+      --rose-bg: #FEF2F2;
+      --rose-border: #FECACA;
+      --rose-text: #DC2626;
+      
+      --blue-bg: #EFF6FF;
+      --blue-border: #BFDBFE;
+      --blue-text: #2563EB;
+      
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Base Reset */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Top App Shell */
+    .app-layout {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       SIDEBAR
+       ========================================================================== */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-surface);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+      z-index: 10;
+    }
+
+    .sidebar-brand {
+      height: var(--header-height);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #10B981, #059669);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 800;
+      font-size: 16px;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+
+    .brand-text {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+    }
+
+    .brand-badge {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: var(--blue-bg);
+      color: var(--blue-text);
+      padding: 2px 6px;
+      border-radius: var(--radius-full);
+      border: 1px solid var(--blue-border);
+      margin-left: auto;
+    }
+
+    .sidebar-nav {
+      padding: 16px 12px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: var(--radius-md);
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition-fast);
+      user-select: none;
+    }
+
+    .nav-item:hover {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active {
+      background-color: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: inset 3px 0 0 var(--emerald-text);
+    }
+
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.8;
+    }
+
+    .nav-item.active svg {
+      opacity: 1;
+      color: var(--emerald-text);
+    }
+
+    .nav-counter {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--border-subtle);
+      padding: 2px 7px;
+      border-radius: var(--radius-full);
+      color: var(--text-muted);
+    }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-pill-live {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--emerald-text);
+    }
+
+    .pulse-dot {
+      width: 7px;
+      height: 7px;
+      background-color: var(--emerald-text);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--emerald-text);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    /* Theme Toggle */
+    .btn-theme {
+      background: none;
+      border: 1px solid var(--border-subtle);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-theme:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       MAIN CONTENT AREA
+       ========================================================================== */
+    .main-viewport {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Top Navigation / Search Header */
+    .top-header {
+      height: var(--header-height);
+      background-color: var(--bg-surface);
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      gap: 16px;
+      flex-shrink: 0;
+    }
+
+    .search-box {
+      position: relative;
+      width: 380px;
+    }
+
+    .search-box input {
+      width: 100%;
+      height: 38px;
+      padding: 0 12px 0 36px;
+      border-radius: var(--radius-md);
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      font-size: 13.5px;
+      outline: none;
+      transition: border-color var(--transition-fast);
+    }
+
+    .search-box input:focus {
+      border-color: var(--border-focus);
+    }
+
+    .search-box svg {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    /* Metric Stat Pills Header */
+    .stats-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      font-size: 12px;
+    }
+
+    .stat-chip-label {
+      color: var(--text-secondary);
+    }
+
+    .stat-chip-value {
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+    }
+
+    .stat-chip.alert-escalated {
+      border-color: var(--rose-border);
+      background: var(--rose-bg);
+    }
+    .stat-chip.alert-escalated .stat-chip-value {
+      color: var(--rose-text);
+    }
+
+    /* Content Body Container */
+    .content-scrollable {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+      background-color: var(--bg-canvas);
+    }
+
+    /* Section Header */
+    .view-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .view-title-group h1 {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .view-title-group p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+
+    /* Filter Controls Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-select {
+      height: 34px;
+      padding: 0 10px;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .filter-select:hover {
+      border-color: var(--border-strong);
+      color: var(--text-primary);
+    }
+
+    /* ==========================================================================
+       CASES DATA TABLE / CARD ARCHITECTURE (Anti-Collision)
+       ========================================================================== */
+    .cases-table-container {
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+
+    .case-row {
+      display: grid;
+      grid-template-columns: 240px 140px 180px 1fr 130px;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      transition: background-color var(--transition-fast);
+      gap: 16px;
+    }
+
+    .case-row:last-child {
+      border-bottom: none;
+    }
+
+    .case-row:hover {
+      background-color: var(--bg-surface-elevated);
+    }
+
+    .case-row.active-selected {
+      background-color: var(--bg-surface-hover);
+      box-shadow: inset 3px 0 0 var(--border-focus);
+    }
+
+    /* Col 1: Farmer & Top Kicker */
+    .case-farmer-col {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .top-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .top-kicker.danger { color: var(--rose-text); }
+    .top-kicker.warning { color: var(--amber-text); }
+    .top-kicker.success { color: var(--emerald-text); }
+    .top-kicker.neutral { color: var(--text-muted); }
+
+    .farmer-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .farmer-phone {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Col 2: Location */
+    .case-location-col {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .case-location-lga {
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .case-location-state {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* Col 3: Species & Flock Size */
+    .case-flock-col {
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .species-tag {
+      font-weight: 500;
+      color: var(--text-primary);
+      text-transform: capitalize;
+    }
+
+    .flock-detail {
+      font-size: 11.5px;
+      color: var(--text-muted);
+    }
+
+    /* Col 4: Symptoms & Onset */
+    .case-symptoms-col {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+    }
+
+    .symptom-highlight {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    /* Col 5: Status Badge Pill */
+    .case-status-col {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+    }
+
+    .status-badge.escalated {
+      background-color: var(--rose-bg);
+      border: 1px solid var(--rose-border);
+      color: var(--rose-text);
+    }
+
+    .status-badge.in_progress {
+      background-color: var(--amber-bg);
+      border: 1px solid var(--amber-border);
+      color: var(--amber-text);
+    }
+
+    .status-badge.complete {
+      background-color: var(--emerald-bg);
+      border: 1px solid var(--emerald-border);
+      color: var(--emerald-text);
+    }
+
+    /* ==========================================================================
+       SLIDE-OVER CASE DRAWER
+       ========================================================================== */
+    .drawer-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(4px);
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--transition-fast);
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .case-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: var(--drawer-width);
+      max-width: 90vw;
+      height: 100vh;
+      background-color: var(--bg-surface);
+      border-left: 1px solid var(--border-subtle);
+      box-shadow: var(--shadow-lg);
+      z-index: 50;
+      transform: translateX(100%);
+      transition: transform 250ms cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .case-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .drawer-title-group h2 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .drawer-title-group p {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .btn-close-drawer {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-close-drawer:hover {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+    }
+
+    .drawer-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Vitals Metric Strip */
+    .vitals-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .vital-card {
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+    }
+
+    .vital-title {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .vital-val {
+      font-size: 15px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      color: var(--text-primary);
+      margin-top: 2px;
+    }
+
+    .vital-val.danger { color: var(--rose-text); }
+    .vital-val.warning { color: var(--amber-text); }
+
+    /* Farmer Info Card */
+    .profile-card {
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 14px;
+    }
+
+    .profile-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+
+    .profile-row:last-child { border-bottom: none; }
+    .profile-label { color: var(--text-secondary); }
+    .profile-val { font-weight: 600; color: var(--text-primary); }
+
+    /* Conversation Replay Section */
+    .chat-replay-section h3 {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .chat-bubbles-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      line-height: 1.45;
+      position: relative;
+    }
+
+    .chat-bubble.farmer {
+      align-self: flex-start;
+      background-color: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+      border-bottom-left-radius: 2px;
+    }
+
+    .chat-bubble.agent {
+      align-self: flex-end;
+      background-color: #064E3B; /* Deep Forest Green for BirdVet */
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #ECFDF5;
+      border-bottom-right-radius: 2px;
+    }
+
+    .bubble-meta {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .chat-bubble.agent .bubble-meta {
+      color: #A7F3D0;
+    }
+
+    .audio-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #38BDF8;
+      background: rgba(56, 189, 248, 0.12);
+      padding: 3px 8px;
+      border-radius: var(--radius-full);
+      margin-bottom: 6px;
+    }
+
+    /* Drawer Footer Action Buttons */
+    .drawer-footer {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-action-primary {
+      flex: 1;
+      height: 38px;
+      background: #10B981;
+      color: white;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-action-primary:hover {
+      background: #059669;
+    }
+
+    .btn-action-secondary {
+      height: 38px;
+      padding: 0 14px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-action-secondary:hover {
+      color: var(--text-primary);
+      border-color: var(--border-strong);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-layout">
+    <!-- ================= SIDEBAR ================= -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">BV</div>
+        <div class="brand-text">BirdVet</div>
+        <span class="brand-badge">Clinic</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="switchTab('cases')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+          <span>Active Cases</span>
+          <span class="nav-counter" id="totalCasesBadge">6</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('surveillance')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          <span>Outbreak Alerts</span>
+          <span class="nav-counter" style="color: var(--rose-text); background: var(--rose-bg);">2</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('stores')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+          <span>Agro-Vet Network</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('sandbox')">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <span>Clinic Console</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="status-pill-live">
+          <div class="pulse-dot"></div>
+          <span>API 3001 Live</span>
+        </div>
+        <button class="btn-theme" onclick="toggleTheme()">
+          <span id="themeLabel">☀️ Light</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- ================= MAIN VIEWPORT ================= -->
+    <main class="main-viewport">
+      <!-- Top Search & Stats Bar -->
+      <header class="top-header">
+        <div class="search-box">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <input type="text" id="caseSearchInput" placeholder="Search farmer, phone, symptom, or LGA..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-chip alert-escalated">
+            <span class="stat-chip-label">Escalated:</span>
+            <span class="stat-chip-value" id="countEscalated">2</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-chip-label">In Progress:</span>
+            <span class="stat-chip-value" id="countInProgress">3</span>
+          </div>
+          <div class="stat-chip">
+            <span class="stat-chip-label">Complete:</span>
+            <span class="stat-chip-value" id="countComplete">1</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- View Content: Active Cases -->
+      <div class="content-scrollable" id="tabContentCases">
+        <div class="view-header">
+          <div class="view-title-group">
+            <h1>Poultry Health Triage Ledger</h1>
+            <p>Live clinical sessions conducted across WhatsApp and web channels.</p>
+          </div>
+
+          <div class="filter-bar">
+            <select class="filter-select" id="statusFilter" onchange="applyFilters()">
+              <option value="all">All Statuses</option>
+              <option value="escalated">Escalated</option>
+              <option value="in_progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+            <select class="filter-select" id="stateFilter" onchange="applyFilters()">
+              <option value="all">All States</option>
+              <option value="Oyo">Oyo</option>
+              <option value="Lagos">Lagos</option>
+            </select>
+            <select class="filter-select" id="speciesFilter" onchange="applyFilters()">
+              <option value="all">All Species</option>
+              <option value="broiler">Broilers</option>
+              <option value="layer">Layers</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cases Table -->
+        <div class="cases-table-container">
+          <div id="casesListBody">
+            <!-- Dynamic rows injected via JS -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= SLIDE-OVER CASE DRAWER ================= -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+  <aside class="case-drawer" id="caseDrawer">
+    <div class="drawer-header">
+      <div class="drawer-title-group">
+        <h2 id="drawerTitle">Case Details</h2>
+        <p id="drawerCaseId">ID: --</p>
+      </div>
+      <button class="btn-close-drawer" onclick="closeDrawer()">
+        <svg style="width:20px;height:20px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+      </button>
+    </div>
+
+    <div class="drawer-body">
+      <!-- Vitals Metric Strip -->
+      <div class="vitals-grid">
+        <div class="vital-card">
+          <div class="vital-title">Mortality</div>
+          <div class="vital-val" id="drawerMortality">0 dead</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-title">Duration</div>
+          <div class="vital-val" id="drawerOnset">--</div>
+        </div>
+        <div class="vital-card">
+          <div class="vital-title">Case Status</div>
+          <div class="vital-val" id="drawerStatusText">--</div>
+        </div>
+      </div>
+
+      <!-- Farmer Profile Card -->
+      <div class="profile-card">
+        <div class="profile-row">
+          <span class="profile-label">Farmer Name:</span>
+          <span class="profile-val" id="drawerFarmerName">--</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Phone:</span>
+          <span class="profile-val" id="drawerFarmerPhone" style="font-family: var(--font-mono);">--</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Location:</span>
+          <span class="profile-val" id="drawerFarmerLocation">--</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Flock Species:</span>
+          <span class="profile-val" id="drawerFarmerSpecies">--</span>
+        </div>
+        <div class="profile-row">
+          <span class="profile-label">Session Window:</span>
+          <span class="profile-val" id="drawerLastActive">Active 4m ago</span>
+        </div>
+      </div>
+
+      <!-- WhatsApp Conversation Replay -->
+      <div class="chat-replay-section">
+        <h3>WhatsApp Conversation Replay</h3>
+        <div class="chat-bubbles-container" id="drawerChatReplay">
+          <!-- Chat bubbles injected dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn-action-primary" onclick="alert('Dispatching SMS/Referral notice to local vet...')">
+        <svg style="width:16px;height:16px;" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
+        <span>Connect Local Vet</span>
+      </button>
+      <button class="btn-action-secondary" onclick="alert('Exporting clinical summary PDF...')">Export PDF</button>
+    </div>
+  </aside>
+
+  <!-- ================= PROTOTYPE JAVASCRIPT ================= -->
+  <script>
+    // Real session records mirrored directly from our live Neon Postgres database:
+    const SAMPLE_CASES = [
+      {
+        sessionId: "0745dcde-05e3-4735-b670-106bd949ca15",
+        caseId: "e55cd531-9f40-4fd5-b399-41d05833b27f",
+        farmerName: "Biola",
+        phone: "+2348022847502",
+        state: "Lagos",
+        lga: "Phase 2",
+        species: "broiler",
+        flockSize: 500,
+        symptoms: ["no dey chop", "shit blood"],
+        onsetDays: 2,
+        mortalityCount: 3,
+        status: "in_progress",
+        kicker: "⚠️ 3 DEAD · ONSET 2 DAYS · LAGOS",
+        kickerType: "warning",
+        history: [
+          { role: "farmer", text: "hi" },
+          { role: "agent", text: "Hello! Welcome to Birdvet. I'm here to help you care for your flock. May I know your name and which LGA or State your farm is located in?" },
+          { role: "farmer", text: "sir in Lagos I stay in phase 2" },
+          { role: "agent", text: "Nice to meet you! Could you please tell me your name, and what kind of birds are you keeping on your farm?" },
+          { role: "farmer", text: "I rear broilers sirmy man e Is biola" },
+          { role: "agent", text: "Nice to meet you, Biola. I am here to help you with your broilers. Please tell me, what symptoms are you noticing in your birds, and how long has this been happening?" },
+          { role: "farmer", text: "See, I don't notice say like the birds, they no dey chop, they dey shit blood. And e don happen for like two days now. My birds no dey chop. Some of them don die already.", isAudio: true },
+          { role: "agent", text: "Ehya, Biola, I sorry for the loss, my brother. Bloody droppings na serious matter for broilers, abeg how many of them don die so far?" },
+          { role: "farmer", text: "like 3 na" },
+          { role: "agent", text: "Ehya, Biola, 3 birds don die na serious matter. Abeg, make you contact local vet sharp-sharp for post-mortem, and separate the sick ones from the healthy ones immediately make the sickness no spread reach everybody." }
+        ]
+      },
+      {
+        sessionId: "9fc47a83-f680-420a-ac5a-c2a48411f1ca",
+        caseId: "c458b12d-7899-4832-9313-99dcef0543c4",
+        farmerName: "Segun",
+        phone: "+2349155132405",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "broiler",
+        flockSize: 500,
+        symptoms: ["shit blood", "lethargic with tucked heads"],
+        onsetDays: 2,
+        mortalityCount: 1,
+        status: "escalated",
+        kicker: "🔴 HIGH RISK · COCCIDIOSIS SUSPECTED",
+        kickerType: "danger",
+        history: [
+          { role: "farmer", text: "Na broiler oi I get like 500" },
+          { role: "agent", text: "Thank you, Segun. I dey sorry to hear say your birds dey sick, make we figure this out together. Wetin be the signs you dey see for the birds, and for how many days now?" },
+          { role: "farmer", text: "Dem dey shit blood and for like 2 days now one don die sef" },
+          { role: "agent", text: "Segun, I am very sorry to hear say one bird don die. Since you see blood for their droppings, abeg tell me, how many of them dey show this sign, and how dem dey behave generally?" },
+          { role: "farmer", text: "Like 20 make i send picture" },
+          { role: "agent", text: "Please do not delay this. The bird problem is serious — we need to take it seriously. We are directing you to a veterinary professional who can come out to your farm." }
+        ]
+      },
+      {
+        sessionId: "6e04933b-a7a4-48c4-bcf4-b02c747c70ed",
+        caseId: "e48f19b6-0227-4980-aa48-b0529aa0193b",
+        farmerName: "Segun",
+        phone: "+2349155132405",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "broiler",
+        flockSize: 500,
+        symptoms: ["sternal recumbency", "head tucked under wing", "legs extended outward"],
+        onsetDays: 2,
+        mortalityCount: 2,
+        status: "complete",
+        kicker: "🟢 RESOLVED · POST-MORTEM ADVISED",
+        kickerType: "success",
+        history: [
+          { role: "farmer", text: "Dem don dey do like this for 2 days na" },
+          { role: "agent", text: "Ehya, Segun, two days don reach now. Abeg, any of the birds don die since this one start, or na only the weakness you dey see?" },
+          { role: "farmer", text: "Ehn na soo 2 don die" },
+          { role: "agent", text: "Ehya, Segun, sorry for the loss. Since two don die already, abeg keep one of the dead birds for cold place sharp-sharp and call your vet make e come do post-mortem." },
+          { role: "farmer", text: "Okay sir thank you" },
+          { role: "agent", text: "You are welcome, Segun. Please monitor the rest of the flock closely and reach out if you notice any new changes. May your birds stay safe." }
+        ]
+      },
+      {
+        sessionId: "64a7ac16-9c70-41ce-92e5-4ba7a593a2c4",
+        caseId: "2223c8c6-a8c2-4f5c-a947-176b5d87da2e",
+        farmerName: "Yih",
+        phone: "+2349071301019",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "broiler",
+        flockSize: 300,
+        symptoms: ["intake in progress"],
+        onsetDays: 1,
+        mortalityCount: 0,
+        status: "in_progress",
+        kicker: "🟡 INTAKE ACTIVE · OYO",
+        kickerType: "warning",
+        history: [
+          { role: "farmer", text: "Broiler" },
+          { role: "agent", text: "Hello! Welcome to Birdvet. I'm here to help you care for your flock. May I know your name and which LGA or State your farm is located in?" },
+          { role: "farmer", text: "Ibadan, oyo state" },
+          { role: "agent", text: "Thank you for that information. May I know your name, and could you please tell me what symptoms you are seeing in your birds?" }
+        ]
+      }
+    ];
+
+    let currentCases = [...SAMPLE_CASES];
+    let selectedCaseId = null;
+
+    function renderCases(cases) {
+      const container = document.getElementById('casesListBody');
+      if (cases.length === 0) {
+        container.innerHTML = `<div style="padding: 40px; text-align: center; color: var(--text-muted);">No cases found matching your filters.</div>`;
+        return;
+      }
+
+      container.innerHTML = cases.map(c => `
+        <div class="case-row ${c.caseId === selectedCaseId ? 'active-selected' : ''}" onclick="openCaseDrawer('${c.caseId}')">
+          <!-- Col 1: Farmer & Top-Kicker -->
+          <div class="case-farmer-col">
+            <div class="top-kicker ${c.kickerType}">
+              <span>●</span>
+              <span>${c.kicker}</span>
+            </div>
+            <div class="farmer-name">${c.farmerName}</div>
+            <div class="farmer-phone">${c.phone}</div>
+          </div>
+
+          <!-- Col 2: Location -->
+          <div class="case-location-col">
+            <span class="case-location-lga">${c.lga || 'Unknown LGA'}</span>
+            <span class="case-location-state">${c.state} State</span>
+          </div>
+
+          <!-- Col 3: Species -->
+          <div class="case-flock-col">
+            <span class="species-tag">${c.species}</span>
+            <span class="flock-detail">${c.flockSize ? c.flockSize + ' birds' : 'Flock size pending'}</span>
+          </div>
+
+          <!-- Col 4: Symptoms -->
+          <div class="case-symptoms-col">
+            <span class="symptom-highlight">${c.symptoms.join(', ')}</span>
+            ${c.onsetDays ? ` · ${c.onsetDays}d onset` : ''}
+          </div>
+
+          <!-- Col 5: Badge -->
+          <div class="case-status-col">
+            <span class="status-badge ${c.status}">${c.status.replace('_', ' ')}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function openCaseDrawer(caseId) {
+      const c = SAMPLE_CASES.find(item => item.caseId === caseId);
+      if (!c) return;
+
+      selectedCaseId = caseId;
+      renderCases(currentCases);
+
+      document.getElementById('drawerTitle').innerText = `${c.farmerName}'s Case`;
+      document.getElementById('drawerCaseId').innerText = `ID: ${c.caseId.slice(0, 8)}...`;
+      
+      const mortEl = document.getElementById('drawerMortality');
+      mortEl.innerText = `${c.mortalityCount || 0} dead`;
+      mortEl.className = 'vital-val ' + (c.mortalityCount > 0 ? 'danger' : '');
+
+      document.getElementById('drawerOnset').innerText = c.onsetDays ? `${c.onsetDays} days` : 'Pending';
+      document.getElementById('drawerStatusText').innerText = c.status.replace('_', ' ').toUpperCase();
+
+      document.getElementById('drawerFarmerName').innerText = c.farmerName;
+      document.getElementById('drawerFarmerPhone').innerText = c.phone;
+      document.getElementById('drawerFarmerLocation').innerText = `${c.lga}, ${c.state} State`;
+      document.getElementById('drawerFarmerSpecies').innerText = `${c.species} (${c.flockSize || 'Flock size unstated'})`;
+
+      // Render WhatsApp Conversation Replay
+      const chatContainer = document.getElementById('drawerChatReplay');
+      chatContainer.innerHTML = c.history.map(msg => `
+        <div class="chat-bubble ${msg.role}">
+          ${msg.isAudio ? `<div class="audio-badge">🎙️ WhatsApp Voice Note</div>` : ''}
+          <div>${msg.text}</div>
+          <div class="bubble-meta">${msg.role === 'farmer' ? 'Farmer' : 'BirdVet AI'} · Sent</div>
+        </div>
+      `).join('');
+
+      document.getElementById('caseDrawer').classList.add('open');
+      document.getElementById('drawerOverlay').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('caseDrawer').classList.remove('open');
+      document.getElementById('drawerOverlay').classList.remove('open');
+      selectedCaseId = null;
+      renderCases(currentCases);
+    }
+
+    function handleSearch(query) {
+      const q = query.trim().toLowerCase();
+      currentCases = SAMPLE_CASES.filter(c => {
+        return c.farmerName.toLowerCase().includes(q) ||
+               c.phone.includes(q) ||
+               c.state.toLowerCase().includes(q) ||
+               (c.lga && c.lga.toLowerCase().includes(q)) ||
+               c.symptoms.some(s => s.toLowerCase().includes(q));
+      });
+      renderCases(currentCases);
+    }
+
+    function applyFilters() {
+      const status = document.getElementById('statusFilter').value;
+      const state = document.getElementById('stateFilter').value;
+      const species = document.getElementById('speciesFilter').value;
+
+      currentCases = SAMPLE_CASES.filter(c => {
+        const matchesStatus = status === 'all' || c.status === status;
+        const matchesState = state === 'all' || c.state === state;
+        const matchesSpecies = species === 'all' || c.species === species;
+        return matchesStatus && matchesState && matchesSpecies;
+      });
+      renderCases(currentCases);
+    }
+
+    function toggleTheme() {
+      const body = document.documentElement;
+      const isLight = body.getAttribute('data-theme') === 'light';
+      if (isLight) {
+        body.removeAttribute('data-theme');
+        document.getElementById('themeLabel').innerText = '☀️ Light';
+      } else {
+        body.setAttribute('data-theme', 'light');
+        document.getElementById('themeLabel').innerText = '🌙 Dark';
+      }
+    }
+
+    function switchTab(tab) {
+      alert(`Switching to ${tab} view in full React build!`);
+    }
+
+    // Initial render
+    renderCases(currentCases);
+  </script>
+</body>
+</html>
