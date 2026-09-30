@@ -152,28 +152,19 @@
   font-size: 14px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background-color: #10B981;
-  color: #FFFFFF;
-  border: none;
+  background-color: #141320;
+  color: #F3F3FA;
+  border: 1px solid #2D2945;
   border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease, transform 0.1s ease;
-  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.28);
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .landing-btn-whatsapp:hover {
-  background-color: #059669;
-}
-
-.landing-btn-whatsapp-phone {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  font-weight: 500;
-  color: #D1FAE5;
-  background-color: rgba(6, 78, 59, 0.45);
-  padding: 2px 8px;
-  border-radius: 4px;
+  background-color: #1C1A2C;
+  border-color: #10B981;
+  color: #FFFFFF;
 }
 
 .landing-btn-portal-lg {
@@ -184,18 +175,17 @@
   font-size: 14px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background-color: #141320;
-  color: #F3F3FA;
-  border: 1px solid #2D2945;
+  background-color: #8B5CF6;
+  color: #FFFFFF;
+  border: 1px solid #7C3AED;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .landing-btn-portal-lg:hover {
-  background-color: #1C1A2C;
-  border-color: #8B5CF6;
-  color: #FFFFFF;
+  background-color: #7C3AED;
+  border-color: #6D28D9;
 }
 
 /* 3-Column Structured Information Cards */
