@@ -104,6 +104,14 @@ function count(text: string, markers: readonly string[]): number {
 }
 
 export function classifyLanguage(text: string): DetectedLanguage {
+  const clean = text.trim().toLowerCase();
+  if (/^(please\s+)?(switch\s+to\s+|speak\s+|talk\s+(in\s+)?|use\s+)?(pidgin|broken(\s+english)?)(\s+abeg)?$/i.test(clean)) {
+    return 'pidgin';
+  }
+  if (/^(please\s+)?(switch\s+to\s+|speak\s+|talk\s+(in\s+)?|use\s+)?english(\s+please)?$/i.test(clean)) {
+    return 'english';
+  }
+
   const pidginHits = count(text, PIDGIN_MARKERS);
   const englishHits = count(text, ENGLISH_MARKERS);
   const pidgin = pidginHits * PIDGIN_WEIGHT;

@@ -16,6 +16,7 @@
     "@neondatabase/serverless": "1.1.0",
     "@poultry/core": "workspace:*",
     "@poultry/schemas": "workspace:*",
+    "@poultry/stores": "workspace:*",
     "drizzle-orm": "0.45.3",
     "hono": "^4.6.0"
   },

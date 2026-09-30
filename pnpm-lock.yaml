@@ -218,6 +218,9 @@ importers:
       '@poultry/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      '@poultry/stores':
+        specifier: workspace:*
+        version: link:../../packages/stores
       drizzle-orm:
         specifier: 0.45.3
         version: 0.45.3(@neondatabase/serverless@1.1.0)(@types/pg@8.23.1)(pg@8.23.0)
