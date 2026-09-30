@@ -466,6 +466,21 @@ tbody td {
   border-radius: var(--radius-tag);
 }
 
+.tag-session-multi {
+  background: var(--accent-purple-subtle);
+  color: var(--accent-purple-text);
+  border-color: var(--accent-purple-border);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tag-session-single {
+  background: var(--bg-hover);
+  color: var(--text-light);
+  border-color: var(--border-color);
+  font-weight: 500;
+}
+
 /* Spacious Cards Grid */
 .grid-cards {
   display: grid;
@@ -910,6 +925,109 @@ tbody td {
 .detail-value {
   font-weight: 600;
   color: var(--text-main);
+}
+
+/* ==========================================================================
+   CONSULTATION EPISODES TIMELINE (LONGITUDINAL FARMER SESSIONS)
+   Strict Anti-Pill: 4-6px border radius, obsidian glass, purple accents
+   ========================================================================== */
+
+.drawer-session-timeline {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-card);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.timeline-header {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.timeline-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.timeline-subtitle {
+  font-size: 11.5px;
+  color: var(--text-light);
+}
+
+.timeline-tabs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.timeline-tab-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--border-color);
+  background: var(--bg-subtle-solid);
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 140ms ease;
+}
+
+.timeline-tab-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+  border-color: var(--border-strong);
+}
+
+.timeline-tab-btn.active {
+  background: var(--accent-purple-subtle);
+  border-color: var(--accent-purple);
+  color: var(--text-main);
+  font-weight: 600;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+}
+
+.timeline-tab-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--accent-purple-text);
+  letter-spacing: 0.02em;
+}
+
+.timeline-tab-btn.active .timeline-tab-badge {
+  color: #FFFFFF;
+  background: var(--accent-purple);
+  padding: 1px 5px;
+  border-radius: var(--radius-tag);
+}
+
+.timeline-tab-date {
+  font-size: 11.5px;
+  color: inherit;
+}
+
+.timeline-tab-latest {
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 1px 5px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.35);
+  color: #4ADE80;
+  border-radius: var(--radius-tag);
 }
 
 /* ==========================================================================

@@ -94,7 +94,7 @@ export function CasesView({
           <thead>
             <tr>
               <th>Criticality</th>
-              <th>Farmer & Phone</th>
+              <th>Farmer & Consultations</th>
               <th>Location</th>
               <th>Flock Specs</th>
               <th>Clinical Signs</th>
@@ -136,7 +136,12 @@ export function CasesView({
                     <span className={`tag-rect tag-${c.criticality}`}>{c.criticality}</span>
                   </td>
                   <td>
-                    <div className="cell-farmer">{c.farmer}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                      <span className="cell-farmer">{c.farmer}</span>
+                      <span className={`tag-rect ${c.sessionCount && c.sessionCount > 1 ? 'tag-session-multi' : 'tag-session-single'}`}>
+                        {c.sessionCount && c.sessionCount > 1 ? `${c.sessionCount} Sessions` : '1 Session'}
+                      </span>
+                    </div>
                     <div className="cell-phone">{c.phone}</div>
                   </td>
                   <td>{c.lga ? `${c.lga}, ` : ''}{c.state || 'Oyo'}</td>

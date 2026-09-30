@@ -11,6 +11,26 @@ export interface TurnMessage {
   readonly timestamp?: string;
 }
 
+export interface SessionSummaryItem {
+  readonly sessionId: string;
+  readonly caseId?: string;
+  readonly status: CaseStatus;
+  readonly criticality: Criticality;
+  readonly startedAt?: string;
+  readonly lastActive?: string;
+  readonly symptoms?: string;
+  readonly mortality?: number;
+  readonly onsetDays?: number;
+  readonly duration?: string;
+  readonly history?: readonly TurnMessage[];
+  readonly mediaItems?: readonly {
+    kind: 'image' | 'audio';
+    title: string;
+    url?: string;
+    description?: string;
+  }[];
+}
+
 export interface CaseSummary {
   readonly id: string;
   readonly sessionId?: string;
@@ -34,6 +54,8 @@ export interface CaseSummary {
     url?: string;
     description?: string;
   }[];
+  readonly sessionCount?: number;
+  readonly sessions?: readonly SessionSummaryItem[];
 }
 
 export interface OutbreakReport {

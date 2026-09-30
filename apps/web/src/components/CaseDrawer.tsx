@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import type { CaseSummary, TurnMessage } from '../types.js';
+import React, { useState, useEffect } from 'react';
+import type { CaseSummary, TurnMessage, SessionSummaryItem } from '../types.js';
+import { fetchCaseDetail } from '../api.js';
 
 interface CaseDrawerProps {
   readonly caseItem: CaseSummary | null;
@@ -9,15 +10,83 @@ interface CaseDrawerProps {
 
 export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProps) {
   const [playingIdx, setPlayingIdx] = useState<number | null>(null);
+  const [activeSessionId, setActiveSessionId] = useState<string>('');
+  const [sessionDetail, setSessionDetail] = useState<CaseSummary | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState<boolean>(false);
+  const [cachedSessions, setCachedSessions] = useState<Record<string, CaseSummary>>({});
+
+  useEffect(() => {
+    if (caseItem) {
+      const initialId = caseItem.sessionId || caseItem.id;
+      setActiveSessionId(initialId);
+      setSessionDetail(null);
+      setCachedSessions({ [initialId]: caseItem });
+    }
+  }, [caseItem?.id, caseItem?.sessionId]);
 
   if (!caseItem) return null;
+
+  const handleSelectSession = async (sessId: string) => {
+    if (sessId === activeSessionId) return;
+    setActiveSessionId(sessId);
+    setPlayingIdx(null);
+
+    if (cachedSessions[sessId]) {
+      setSessionDetail(cachedSessions[sessId]);
+      return;
+    }
+
+    setIsLoadingSession(true);
+    try {
+      const detail = await fetchCaseDetail(sessId);
+      if (detail) {
+        setSessionDetail(detail);
+        setCachedSessions(prev => ({ ...prev, [sessId]: detail }));
+      }
+    } catch (err) {
+      console.error('Failed to load consultation session episode:', err);
+    } finally {
+      setIsLoadingSession(false);
+    }
+  };
 
   const togglePlayAudio = (idx: number) => {
     setPlayingIdx(prev => (prev === idx ? null : idx));
   };
 
-  const hasMedia = (caseItem.mediaItems && caseItem.mediaItems.length > 0) ||
-    caseItem.history.some(m => m.isPhoto || m.isVoice);
+  // Find active session metadata
+  const activeSessionSummary = caseItem.sessions?.find(
+    s => s.sessionId === activeSessionId || s.caseId === activeSessionId
+  );
+
+  const displayCaseId = sessionDetail?.id || activeSessionSummary?.caseId || activeSessionSummary?.sessionId || caseItem.id;
+  const displayCriticality = sessionDetail?.criticality || activeSessionSummary?.criticality || caseItem.criticality;
+  const displayStatus = sessionDetail?.status || activeSessionSummary?.status || caseItem.status;
+  const displayMortality = sessionDetail?.mortality ?? activeSessionSummary?.mortality ?? caseItem.mortality;
+  const displayDuration = sessionDetail?.duration || activeSessionSummary?.duration || caseItem.duration;
+  const displaySymptoms = sessionDetail?.symptoms || activeSessionSummary?.symptoms || caseItem.symptoms;
+  const displayHistory: readonly TurnMessage[] = sessionDetail?.history ?? (
+    activeSessionId === (caseItem.sessionId || caseItem.id) ? caseItem.history : []
+  );
+  const displayMediaItems = sessionDetail?.mediaItems ?? (
+    activeSessionId === (caseItem.sessionId || caseItem.id) ? (caseItem.mediaItems || []) : []
+  );
+
+  const hasMedia = displayMediaItems.length > 0 || displayHistory.some(m => m.isPhoto || m.isVoice);
+
+  const episodes: readonly SessionSummaryItem[] = caseItem.sessions && caseItem.sessions.length > 0
+    ? caseItem.sessions
+    : [{
+        sessionId: caseItem.sessionId || caseItem.id,
+        caseId: caseItem.id,
+        status: caseItem.status,
+        criticality: caseItem.criticality,
+        startedAt: 'Today',
+        lastActive: caseItem.lastActive,
+        symptoms: caseItem.symptoms,
+        mortality: caseItem.mortality,
+        duration: caseItem.duration
+      }];
 
   return (
     <>
@@ -27,7 +96,7 @@ export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProp
           <div>
             <h2>{caseItem.farmer}'s Case</h2>
             <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
-              Case ID: {caseItem.id}
+              Case ID: {displayCaseId}
             </span>
           </div>
           <button
@@ -41,33 +110,75 @@ export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProp
         </div>
 
         <div className="drawer-content">
+          {/* Consultation Episodes / Session Timeline */}
+          {episodes.length > 0 && (
+            <div className="drawer-session-timeline">
+              <div className="timeline-header">
+                <span className="timeline-title">
+                  Consultation Episodes ({episodes.length})
+                </span>
+                <span className="timeline-subtitle">
+                  {episodes.length > 1
+                    ? 'Switch between past WhatsApp consultations for this farmer'
+                    : '1 recorded consultation session for this farmer'}
+                </span>
+              </div>
+              <div className="timeline-tabs-row">
+                {episodes.map((sess, idx) => {
+                  const isSelected = (sess.sessionId === activeSessionId) || (sess.caseId === activeSessionId);
+                  const epNum = episodes.length - idx;
+                  return (
+                    <button
+                      key={sess.sessionId || idx}
+                      type="button"
+                      className={`timeline-tab-btn ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleSelectSession(sess.sessionId)}
+                      aria-label={`Consultation episode ${epNum}`}
+                    >
+                      <span className="timeline-tab-badge">Ep #{epNum}</span>
+                      <span className="timeline-tab-date">{sess.startedAt || sess.lastActive || `Session ${epNum}`}</span>
+                      {idx === 0 && <span className="timeline-tab-latest">Latest</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Triage Overview */}
           <div className="drawer-section">
-            <h3>Clinical Assessment</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <h3 style={{ margin: 0 }}>Clinical Assessment</h3>
+              {isLoadingSession && (
+                <span style={{ fontSize: '11px', color: 'var(--accent-purple-text)' }}>
+                  Loading episode...
+                </span>
+              )}
+            </div>
             <div className="detail-row">
               <span className="detail-label">Criticality:</span>
-              <span className={`tag-rect tag-${caseItem.criticality}`}>{caseItem.criticality}</span>
+              <span className={`tag-rect tag-${displayCriticality}`}>{displayCriticality}</span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Intake Status:</span>
-              <span className={`tag-rect tag-${caseItem.status === 'in_progress' ? 'progress' : caseItem.status}`}>
-                {caseItem.status.replace('_', ' ')}
+              <span className={`tag-rect tag-${displayStatus === 'in_progress' ? 'progress' : displayStatus}`}>
+                {displayStatus.replace('_', ' ')}
               </span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Mortality:</span>
-              <span className="detail-value" style={{ color: caseItem.mortality > 0 ? '#F87171' : 'inherit' }}>
-                {caseItem.mortality > 0 ? `${caseItem.mortality} birds dead` : '0 reported'}
+              <span className="detail-value" style={{ color: displayMortality > 0 ? '#F87171' : 'inherit' }}>
+                {displayMortality > 0 ? `${displayMortality} birds dead` : '0 reported'}
               </span>
             </div>
             <div className="detail-row">
               <span className="detail-label">Onset Duration:</span>
-              <span className="detail-value">{caseItem.duration}</span>
+              <span className="detail-value">{displayDuration}</span>
             </div>
             <div className="detail-row" style={{ flexDirection: 'column', gap: '4px', alignItems: 'flex-start' }}>
               <span className="detail-label">Reported Signs:</span>
               <span style={{ fontSize: '13px', color: 'var(--text-main)', marginTop: '2px' }}>
-                {caseItem.symptoms}
+                {displaySymptoms}
               </span>
             </div>
           </div>
@@ -102,8 +213,8 @@ export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProp
             <div className="drawer-section">
               <h3>Diagnostic Farm Media & Telemetry</h3>
               <div className="drawer-media-grid">
-                {caseItem.mediaItems && caseItem.mediaItems.length > 0 ? (
-                  caseItem.mediaItems.map((item, mIdx) => (
+                {displayMediaItems && displayMediaItems.length > 0 ? (
+                  displayMediaItems.map((item, mIdx) => (
                     <div key={mIdx} className="media-thumbnail-card">
                       <div className="media-thumbnail-preview">
                         <span style={{ fontSize: '18px' }}>{item.kind === 'image' ? '📸' : '🎤'}</span>
@@ -130,12 +241,12 @@ export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProp
           <div className="drawer-section">
             <h3>WhatsApp Consultation History</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '8px' }}>
-              {caseItem.history.length === 0 ? (
+              {displayHistory.length === 0 ? (
                 <div style={{ fontSize: '12.5px', color: 'var(--text-light)', padding: '8px 0' }}>
                   Intake logged via API telephony channel.
                 </div>
               ) : (
-                caseItem.history.map((msg, idx) => {
+                displayHistory.map((msg, idx) => {
                   const isAgent = msg.sender === 'Agent';
 
                   // Render Voice Note Player
@@ -262,14 +373,14 @@ export function CaseDrawer({ caseItem, onClose, onStatusChange }: CaseDrawerProp
           <button
             type="button"
             className="btn-action"
-            onClick={() => onStatusChange?.(caseItem.id, 'resolved')}
+            onClick={() => onStatusChange?.(activeSessionId || caseItem.id, 'resolved')}
           >
             Mark Resolved
           </button>
           <button
             type="button"
             className="btn-action primary"
-            onClick={() => onStatusChange?.(caseItem.id, 'escalated')}
+            onClick={() => onStatusChange?.(activeSessionId || caseItem.id, 'escalated')}
           >
             Escalate to Vet Officer
           </button>

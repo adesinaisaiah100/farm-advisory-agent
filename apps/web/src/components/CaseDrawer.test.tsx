@@ -91,4 +91,47 @@ describe('CaseDrawer Media Playback & Observation Component', () => {
     fireEvent.click(screen.getByRole('button', { name: /Escalate to Vet Officer/i }));
     expect(handleStatusChange).toHaveBeenCalledWith('case_media_001', 'escalated');
   });
+
+  it('renders longitudinal consultation episodes timeline and switches between sessions', () => {
+    const multiSessionCase: CaseSummary = {
+      ...mockCaseWithMedia,
+      sessionCount: 2,
+      sessions: [
+        {
+          sessionId: 'case_media_002',
+          caseId: 'case_media_002',
+          status: 'triage',
+          criticality: 'critical',
+          startedAt: 'Sep 30',
+          lastActive: '14:20',
+          symptoms: 'Sudden high mortality, torticollis',
+          mortality: 8,
+          duration: '1 day ago'
+        },
+        {
+          sessionId: 'case_media_001',
+          caseId: 'case_media_001',
+          status: 'resolved',
+          criticality: 'moderate',
+          startedAt: 'Sep 24',
+          lastActive: '10:00',
+          symptoms: 'Mild sneezing and coughing',
+          mortality: 0,
+          duration: '7 days ago'
+        }
+      ]
+    };
+
+    render(<CaseDrawer caseItem={multiSessionCase} onClose={() => {}} />);
+
+    expect(screen.getByText('Consultation Episodes (2)')).toBeTruthy();
+    expect(screen.getByText('Ep #2')).toBeTruthy();
+    expect(screen.getByText('Ep #1')).toBeTruthy();
+
+    const ep1Btn = screen.getByRole('button', { name: /Consultation episode 1/i });
+    fireEvent.click(ep1Btn);
+
+    expect(screen.getByText('Mild sneezing and coughing')).toBeTruthy();
+    expect(screen.getByText('0 reported')).toBeTruthy();
+  });
 });

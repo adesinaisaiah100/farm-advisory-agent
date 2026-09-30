@@ -1,4 +1,4 @@
-import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage } from './types.js';
+import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage, SessionSummaryItem, Criticality, CaseStatus } from './types.js';
 
 const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? '' : 'http://127.0.0.1:3001';
 
@@ -70,37 +70,89 @@ export async function fetchCases(): Promise<readonly CaseSummary[]> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data && Array.isArray(data.cases) && data.cases.length > 0) {
-      return data.cases.map((c: any) => {
-        const symptomsArr: string[] = Array.isArray(c.symptoms) ? c.symptoms : (c.symptoms ? [c.symptoms] : []);
+      // Group sessions by unique farmer phone number
+      const farmerMap = new Map<string, any[]>();
+      for (const item of data.cases) {
+        const key = item.phone?.trim() || item.sessionId || item.caseId;
+        const list = farmerMap.get(key) ?? [];
+        list.push(item);
+        farmerMap.set(key, list);
+      }
+
+      const farmerSummaries: CaseSummary[] = [];
+
+      for (const [, sessionList] of farmerMap.entries()) {
+        // Sort sessions by lastActive desc so sessionList[0] is the most recent consultation episode
+        sessionList.sort((a, b) => {
+          const tA = a.lastActive ? new Date(a.lastActive).getTime() : 0;
+          const tB = b.lastActive ? new Date(b.lastActive).getTime() : 0;
+          return tB - tA;
+        });
+
+        const latest = sessionList[0];
+
+        const sessions: SessionSummaryItem[] = sessionList.map((s) => {
+          const sArr: string[] = Array.isArray(s.symptoms) ? s.symptoms : (s.symptoms ? [s.symptoms] : []);
+          const sStr = sArr.length > 0 ? sArr.join(', ') : 'Clinical observation pending';
+          const mort = s.mortalityCount || 0;
+          const crit: Criticality = (mort >= 3 || sStr.includes('blood') || sStr.includes('die'))
+            ? 'critical'
+            : (mort > 0 ? 'high' : (s.status === 'complete' ? 'resolved' : 'moderate'));
+          const stat: CaseStatus = (s.status === 'completed' || s.status === 'complete')
+            ? 'resolved'
+            : (s.status || 'in_progress');
+
+          return {
+            sessionId: s.sessionId,
+            caseId: s.caseId,
+            status: stat,
+            criticality: crit,
+            startedAt: s.startedAt ? new Date(s.startedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : undefined,
+            lastActive: s.lastActive ? new Date(s.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            symptoms: sStr,
+            mortality: mort,
+            onsetDays: s.onsetDays || 1,
+            duration: s.onsetDays ? `${s.onsetDays} days ago` : 'Recent'
+          };
+        });
+
+        const symptomsArr: string[] = Array.isArray(latest.symptoms) ? latest.symptoms : (latest.symptoms ? [latest.symptoms] : []);
         const symptomsStr = symptomsArr.length > 0 ? symptomsArr.join(', ') : 'Clinical observation pending';
-        const mortality = c.mortalityCount || 0;
-        const criticality = (mortality >= 3 || symptomsStr.includes('blood') || symptomsStr.includes('die'))
+        const mortality = latest.mortalityCount || 0;
+
+        const hasCritical = sessionList.some(s => (s.mortalityCount || 0) >= 3 || JSON.stringify(s.symptoms || '').includes('blood'));
+        const hasHigh = sessionList.some(s => (s.mortalityCount || 0) > 0);
+        const criticality: Criticality = (mortality >= 3 || symptomsStr.includes('blood') || symptomsStr.includes('die'))
           ? 'critical'
-          : (mortality > 0 ? 'high' : (c.status === 'complete' ? 'resolved' : 'moderate'));
+          : (mortality > 0 ? 'high' : (hasCritical ? 'critical' : (hasHigh ? 'high' : (latest.status === 'complete' ? 'resolved' : 'moderate'))));
 
-        const status = (c.status === 'completed' || c.status === 'complete')
+        const status: CaseStatus = (latest.status === 'completed' || latest.status === 'complete')
           ? 'resolved'
-          : (c.status || 'in_progress');
+          : (latest.status || 'in_progress');
 
-        return {
-          id: c.caseId || c.sessionId,
-          sessionId: c.sessionId,
-          farmer: c.farmerName || 'Farmer ' + (c.phone ? c.phone.slice(-4) : 'Unknown'),
-          phone: formatPhoneNumber(c.phone || ''),
-          state: c.state || 'Oyo',
-          lga: c.lga || 'Ibadan',
-          species: c.species ? `${c.species} (${c.farmSize || 500} birds)` : 'Broilers',
-          flockSize: c.farmSize || 500,
+        farmerSummaries.push({
+          id: latest.caseId || latest.sessionId,
+          sessionId: latest.sessionId,
+          farmer: latest.farmerName || 'Farmer ' + (latest.phone ? latest.phone.slice(-4) : 'Unknown'),
+          phone: formatPhoneNumber(latest.phone || ''),
+          state: latest.state || 'Oyo',
+          lga: latest.lga || 'Ibadan',
+          species: latest.species ? `${latest.species} (${latest.farmSize || 500} birds)` : 'Broilers',
+          flockSize: latest.farmSize || 500,
           symptoms: symptomsStr,
           mortality,
-          onsetDays: c.onsetDays || 1,
-          duration: c.onsetDays ? `${c.onsetDays} days ago` : 'Recent',
+          onsetDays: latest.onsetDays || 1,
+          duration: latest.onsetDays ? `${latest.onsetDays} days ago` : 'Recent',
           criticality,
           status,
-          lastActive: c.lastActive ? new Date(c.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
-          history: []
-        };
-      });
+          lastActive: latest.lastActive ? new Date(latest.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+          history: [],
+          sessionCount: sessionList.length,
+          sessions
+        });
+      }
+
+      return farmerSummaries;
     }
     return [];
   } catch {
@@ -141,6 +193,31 @@ export async function fetchCaseDetail(idOrSessionId: string): Promise<CaseSummar
       ? 'critical'
       : (mortality > 0 ? 'high' : 'moderate');
 
+    const sessionsList: SessionSummaryItem[] = Array.isArray(data.sessions) && data.sessions.length > 0
+      ? data.sessions.map((s: any) => {
+          const sArr: string[] = Array.isArray(s.symptoms) ? s.symptoms : (s.symptoms ? [s.symptoms] : []);
+          const sStr = sArr.length > 0 ? sArr.join(', ') : 'Clinical observation pending';
+          const mort = s.mortalityCount || 0;
+          const crit: Criticality = (mort >= 3 || sStr.includes('blood') || sStr.includes('die'))
+            ? 'critical'
+            : (mort > 0 ? 'high' : (s.status === 'complete' ? 'resolved' : 'moderate'));
+          const stat: CaseStatus = (s.status === 'completed' || s.status === 'complete')
+            ? 'resolved'
+            : (s.status || 'in_progress');
+
+          return {
+            sessionId: s.sessionId,
+            caseId: s.caseId,
+            status: stat,
+            criticality: crit,
+            startedAt: s.startedAt ? new Date(s.startedAt).toLocaleDateString([], { month: 'short', day: 'numeric' }) : undefined,
+            lastActive: s.lastActive ? new Date(s.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
+            symptoms: sStr,
+            mortality: mort,
+          };
+        })
+      : [];
+
     return {
       id: c.id || data.caseId || data.sessionId,
       sessionId: data.sessionId,
@@ -158,7 +235,9 @@ export async function fetchCaseDetail(idOrSessionId: string): Promise<CaseSummar
       status: (c.status === 'completed' || c.status === 'complete') ? 'resolved' : (c.status || 'in_progress'),
       lastActive: data.lastActive ? new Date(data.lastActive).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Recently',
       history,
-      mediaItems
+      mediaItems,
+      sessionCount: sessionsList.length || 1,
+      sessions: sessionsList
     };
   } catch (err) {
     console.error('Failed to fetch case detail:', err);

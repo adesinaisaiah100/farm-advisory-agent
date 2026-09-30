@@ -29,6 +29,18 @@ export interface CaseSummary {
   readonly lastActive: string;
 }
 
+export interface CaseSessionItem {
+  readonly sessionId: string;
+  readonly caseId?: string;
+  readonly status: string;
+  readonly startedAt: string;
+  readonly lastActive: string;
+  readonly symptoms: readonly string[];
+  readonly mortalityCount?: number;
+  readonly diseaseHits: readonly string[];
+  readonly historyCount?: number;
+}
+
 export interface CaseDetail {
   readonly sessionId: string;
   readonly caseId?: string;
@@ -39,6 +51,7 @@ export interface CaseDetail {
   readonly notes: readonly string[];
   readonly startedAt: string;
   readonly lastActive: string;
+  readonly sessions?: readonly CaseSessionItem[];
 }
 
 export interface CaseFilter {
@@ -207,6 +220,29 @@ export function postgresDashboardStore(db: ApiDatabase): DashboardStore {
         notes?: string[];
       };
 
+      const allSessionRows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .where(eq(sessions.phone, session.phone))
+          .orderBy(desc(sessions.lastActive))
+      );
+
+      const farmerSessions: CaseSessionItem[] = allSessionRows.map((s) => {
+        const c = (s.state as { case?: Partial<CaseData> })?.case ?? {};
+        return {
+          sessionId: s.id,
+          caseId: s.caseId ?? c.id,
+          status: c.status ?? s.status,
+          startedAt: s.startedAt.toISOString(),
+          lastActive: s.lastActive.toISOString(),
+          symptoms: c.symptoms ?? [],
+          mortalityCount: c.mortalityCount ?? 0,
+          diseaseHits: c.diseaseHits ?? [],
+          historyCount: (s.state as { history?: TurnMessage[] })?.history?.length ?? 0,
+        };
+      });
+
       return {
         sessionId: session.id,
         caseId: session.caseId ?? state.case?.id,
@@ -217,6 +253,7 @@ export function postgresDashboardStore(db: ApiDatabase): DashboardStore {
         notes: state.notes ?? [],
         startedAt: session.startedAt.toISOString(),
         lastActive: session.lastActive.toISOString(),
+        sessions: farmerSessions,
       };
     },
 
@@ -357,6 +394,21 @@ export function inMemoryDashboardStore(initial: {
       if (session === undefined) return undefined;
 
       const farmer = farmerList.find((f) => f.phone === session.phone);
+      const farmerSessions: CaseSessionItem[] = sessionList
+        .filter((s) => s.phone === session.phone)
+        .sort((a, b) => new Date(b.lastActive).getTime() - new Date(a.lastActive).getTime())
+        .map((s) => ({
+          sessionId: s.id,
+          caseId: s.caseId ?? s.state.case.id,
+          status: s.state.case.status ?? s.status,
+          startedAt: s.startedAt,
+          lastActive: s.lastActive,
+          symptoms: s.state.case.symptoms ?? [],
+          mortalityCount: s.state.case.mortalityCount ?? 0,
+          diseaseHits: s.state.case.diseaseHits ?? [],
+          historyCount: s.state.history?.length ?? 0,
+        }));
+
       return {
         sessionId: session.id,
         caseId: session.caseId ?? session.state.case.id,
@@ -367,6 +419,7 @@ export function inMemoryDashboardStore(initial: {
         notes: session.state.notes ?? [],
         startedAt: session.startedAt,
         lastActive: session.lastActive,
+        sessions: farmerSessions,
       };
     },
 
