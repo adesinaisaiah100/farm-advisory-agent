@@ -17,7 +17,7 @@ export function StoresView({ stores }: StoresViewProps) {
       <div className="page-header">
         <div className="page-title">
           <h1>Agro-Vet Referral Network</h1>
-          <p>Verified medication, vaccine cold-chain, and post-mortem referral partners.</p>
+          <p>Verified medication cold-chain hubs, laboratory referral partners, and field veterinary officers.</p>
         </div>
 
         <div className="filters-group">
@@ -34,6 +34,52 @@ export function StoresView({ stores }: StoresViewProps) {
             <option value="Plateau">Plateau State</option>
           </select>
         </div>
+      </div>
+
+      {/* Veterinary Doctors Tele-Consultation Network — Coming Soon */}
+      <div className="vet-coming-soon-banner">
+        <div className="vet-banner-header">
+          <div>
+            <div className="vet-banner-title">Avian Veterinary Doctors & Tele-Consultation Network</div>
+            <div className="vet-banner-desc">
+              Direct live video/audio tele-triage with certified Nigerian Veterinary Medical Association (NVMA) avian specialists and emergency on-farm post-mortem booking.
+            </div>
+          </div>
+          <span className="tag-coming-soon">Coming Soon</span>
+        </div>
+
+        <div className="vet-features-grid">
+          <div className="vet-feature-card">
+            <div className="vet-feature-title">🩺 Avian Tele-Triage & Consultation</div>
+            <div className="vet-feature-desc">
+              Direct handoff from WhatsApp intake to a licensed avian veterinarian for complex or multi-pathogen flock emergencies.
+            </div>
+          </div>
+
+          <div className="vet-feature-card">
+            <div className="vet-feature-title">🔬 Field Post-Mortem & Necropsy Dispatch</div>
+            <div className="vet-feature-desc">
+              On-demand booking of accredited veterinary field pathologists for immediate flock necropsy and tissue sample retrieval.
+            </div>
+          </div>
+
+          <div className="vet-feature-card">
+            <div className="vet-feature-title">📋 Certified Digital Rx Dispatch</div>
+            <div className="vet-feature-desc">
+              Legally compliant digital prescriptions routed directly to certified agro-vet cold-chain stores in the farmer's LGA.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Verified Agro-Vet Stores Grid */}
+      <div style={{ marginBottom: '12px' }}>
+        <h2 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-main)' }}>
+          Verified Agro-Vet Cold-Chain Hubs ({filtered.length})
+        </h2>
+        <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+          Zero fabricated inventory — verified store physical locations and cold-chain vaccine availability.
+        </span>
       </div>
 
       <div className="grid-cards">

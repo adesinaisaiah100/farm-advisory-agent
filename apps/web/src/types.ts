@@ -5,11 +5,15 @@ export interface TurnMessage {
   readonly sender: 'Farmer' | 'Agent';
   readonly text: string;
   readonly isVoice?: boolean;
+  readonly isPhoto?: boolean;
+  readonly mediaUrl?: string;
+  readonly photoObservations?: readonly string[];
   readonly timestamp?: string;
 }
 
 export interface CaseSummary {
   readonly id: string;
+  readonly sessionId?: string;
   readonly farmer: string;
   readonly phone: string;
   readonly state: string;
@@ -24,6 +28,12 @@ export interface CaseSummary {
   readonly status: CaseStatus;
   readonly history: readonly TurnMessage[];
   readonly lastActive: string;
+  readonly mediaItems?: readonly {
+    kind: 'image' | 'audio';
+    title: string;
+    url?: string;
+    description?: string;
+  }[];
 }
 
 export interface OutbreakReport {

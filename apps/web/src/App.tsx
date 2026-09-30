@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './styles/theme.css';
 import type { CaseSummary, OutbreakReport, AgroVetStore, LibraryDoc } from './types.js';
 import { INITIAL_CASES, INITIAL_REPORTS, INITIAL_STORES, INITIAL_LIBRARY_DOCS } from './mockData.js';
-import { fetchCases, fetchReports, fetchStores } from './api.js';
+import { fetchCases, fetchCaseDetail, fetchReports, fetchStores } from './api.js';
 import { Sidebar, type TabId } from './components/Sidebar.js';
 import { TopBar } from './components/TopBar.js';
 import { CasesView } from './components/CasesView.js';
@@ -29,7 +29,7 @@ export function App() {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Try fetching live data on mount
+  // Fetch live cases, outbreak reports, and verified stores from Neon Postgres on mount
   useEffect(() => {
     fetchCases().then(setCases).catch(() => {});
     fetchReports().then(setReports).catch(() => {});
@@ -38,6 +38,17 @@ export function App() {
 
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  };
+
+  const handleSelectCase = (caseItem: CaseSummary) => {
+    setSelectedCase(caseItem);
+    fetchCaseDetail(caseItem.sessionId || caseItem.id)
+      .then(detail => {
+        if (detail) {
+          setSelectedCase(detail);
+        }
+      })
+      .catch(() => {});
   };
 
   const handleStatusChange = (caseId: string, newStatus: any) => {
@@ -92,7 +103,7 @@ export function App() {
           <CasesView
             cases={searchedCases}
             selectedCaseId={selectedCase?.id}
-            onSelectCase={setSelectedCase}
+            onSelectCase={handleSelectCase}
           />
         )}
 
