@@ -11,6 +11,7 @@ interface SidebarProps {
   readonly libraryCount: number;
   readonly theme: 'dark' | 'light';
   readonly onToggleTheme: () => void;
+  readonly onBackToLanding?: () => void;
 }
 
 export function Sidebar({
@@ -21,7 +22,8 @@ export function Sidebar({
   _storeCount,
   libraryCount,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  onBackToLanding
 }: SidebarProps) {
   return (
     <aside className="sidebar">
@@ -31,6 +33,16 @@ export function Sidebar({
       </div>
 
       <nav className="sidebar-menu">
+        {onBackToLanding && (
+          <button
+            type="button"
+            className="sidebar-link"
+            style={{ marginBottom: '6px', color: '#a1a1aa' }}
+            onClick={onBackToLanding}
+          >
+            <span>&larr; Landing Overview</span>
+          </button>
+        )}
         <button
           type="button"
           className={`sidebar-link ${activeTab === 'cases' ? 'active' : ''}`}

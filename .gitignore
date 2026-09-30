@@ -40,3 +40,5 @@ Thumbs.db
 *.sqlite
 *.db
 .neon
+*.pdf
+
