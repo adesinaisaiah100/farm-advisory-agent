@@ -14,8 +14,8 @@ import { libraryDocuments } from './schema.js';
 import { ClinicalDocumentAnalyzer } from './clinical-analyzer.js';
 import type { R2StorageService } from '../r2.js';
 
-/** Gemini's embedContent caps a single request well below a full book. */
-const EMBED_BATCH_SIZE = 32;
+/** Gemini free tier allows up to 100 requests per minute; 15 items/batch with 7.5s pacing stays under quota. */
+const EMBED_BATCH_SIZE = 15;
 
 export class LibraryIngestError extends Error {
   constructor(
@@ -99,9 +99,9 @@ export async function extractDocumentText(
     let raw: string;
     try {
       const { PDFParse } = await import('pdf-parse');
-      // v2: the constructor loads the document. `load()` is private and `getText()`
-      // resolves to a TextResult, whose text lives on `.text`.
-      const parser = new PDFParse({ data: bytes });
+      // Pass a fresh slice so PDFParse/pdf.js worker detachment does not affect
+      // the original buffer required for subsequent R2 upload.
+      const parser = new PDFParse({ data: bytes.slice() });
       try {
         raw = (await parser.getText()).text;
       } finally {
@@ -192,9 +192,29 @@ export function postgresLibraryStore(
 
   async function embedBatched(texts: readonly string[]): Promise<(readonly number[])[]> {
     const out: (readonly number[])[] = [];
+    const totalBatches = Math.ceil(texts.length / EMBED_BATCH_SIZE);
     for (let i = 0; i < texts.length; i += EMBED_BATCH_SIZE) {
       const batch = texts.slice(i, i + EMBED_BATCH_SIZE);
-      out.push(...(await embedder.embed(batch)));
+      const batchNum = Math.floor(i / EMBED_BATCH_SIZE) + 1;
+      let attempts = 0;
+      while (attempts < 8) {
+        try {
+          out.push(...(await embedder.embed(batch)));
+          break;
+        } catch (err) {
+          attempts++;
+          if (attempts >= 8) throw err;
+          const isRateLimit = String(err).includes('429') || String(err).toLowerCase().includes('quota');
+          const delay = isRateLimit ? 35000 : 2000 * attempts;
+          // eslint-disable-next-line no-console
+          console.warn(`[embedBatched] Batch ${batchNum}/${totalBatches} attempt ${attempts} paused for ${delay}ms (${err instanceof Error ? err.message : String(err)})...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+        }
+      }
+      if (i + EMBED_BATCH_SIZE < texts.length) {
+        // Space batches by 7.5 seconds to strictly maintain <100 items per minute
+        await new Promise((resolve) => setTimeout(resolve, 7500));
+      }
     }
     return out;
   }

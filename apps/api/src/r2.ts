@@ -44,7 +44,9 @@ export async function signedR2Fetch(
   const pathWithQuery = parsedUrl.pathname;
 
   const enc = new TextEncoder();
-  const bodyBytes = body ? new Uint8Array(body) : new Uint8Array(0);
+  const bodyBytes = body
+    ? new Uint8Array(body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength))
+    : new Uint8Array(0);
   const payloadHashBuf = await crypto.subtle.digest('SHA-256', bodyBytes.buffer.slice(0) as ArrayBuffer);
   const payloadHash = bufToHex(payloadHashBuf);
 
@@ -81,15 +83,22 @@ export async function signedR2Fetch(
 
   const authHeader = `AWS4-HMAC-SHA256 Credential=${creds.accessKeyId}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
 
+  const headers: Record<string, string> = {
+    'Authorization': authHeader,
+    'Content-Type': contentType ?? 'application/octet-stream',
+    'x-amz-content-sha256': payloadHash,
+    'x-amz-date': dateTimeStr,
+  };
+  if (body) {
+    headers['Content-Length'] = String(bodyBytes.byteLength);
+  }
+
   return fetch(url, {
     method,
-    headers: {
-      'Authorization': authHeader,
-      'Content-Type': contentType ?? 'application/octet-stream',
-      'x-amz-content-sha256': payloadHash,
-      'x-amz-date': dateTimeStr,
-    },
+    headers,
     body: body ? (bodyBytes.buffer.slice(0) as ArrayBuffer) : undefined,
+    // @ts-expect-error duplex is needed in Node.js fetch for body streams
+    duplex: 'half',
   });
 }
 

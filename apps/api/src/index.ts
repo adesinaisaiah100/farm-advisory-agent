@@ -308,6 +308,8 @@ export function createApp(deps: ApiDeps = {}) {
 
       return c.json({ ok: true, document: doc }, 201);
     } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error('[library-upload-error]', err);
       if (err instanceof LibraryIngestError) {
         return c.json(error('upload_failed', err.message), err.status);
       }
