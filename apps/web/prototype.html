@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,9 +9,62 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     /* ==========================================================================
-       CLEAN DASHBOARD: ZERO PILLS, ZERO DOTS, CRISP RECTANGULAR TAGS
+       OBSIDIAN & PURPLE THEME: ZERO PILLS, ZERO DOTS, CRISP RECTANGULAR TAGS
        ========================================================================== */
-    :root {
+    :root, [data-theme="dark"] {
+      --bg-page: #0C0B12;             /* Obsidian night base with subtle deep purple tone */
+      --bg-surface: #141320;          /* Sleek surface / cards / sidebar */
+      --bg-subtle: #1C1A2C;           /* Input fields, table headers, hover surfaces */
+      --bg-hover: #232038;            /* Row hover / card hover */
+      
+      --border-color: #28243D;        /* Subtle dark violet-slate border */
+      --border-strong: #3D375C;       /* Stronger border on focus */
+      
+      --text-main: #F3F3FA;           /* Crisp soft white */
+      --text-muted: #A3A0BC;          /* Muted violet-slate text */
+      --text-light: #706C8C;          /* Secondary dim text */
+
+      /* Refined Violet / Purple Accents */
+      --accent-purple: #8B5CF6;        /* Primary purple */
+      --accent-purple-hover: #7C3AED;  /* Deep hover */
+      --accent-purple-subtle: #231B3D; /* Subtle purple badge/card background */
+      --accent-purple-border: #4D3782; /* Purple border */
+      --accent-purple-text: #DDD6FE;   /* Purple text */
+
+      /* Clean Criticality / Severity Tags (Rectangular, NO rounded pills) */
+      --crit-critical-bg: #2E1217;
+      --crit-critical-text: #F87171;
+      --crit-critical-border: #5C1D24;
+
+      --crit-high-bg: #2C1A12;
+      --crit-high-text: #FB923C;
+      --crit-high-border: #632D15;
+
+      --crit-moderate-bg: #2C2411;
+      --crit-moderate-text: #FBBF24;
+      --crit-moderate-border: #594314;
+
+      --crit-resolved-bg: #12251D;
+      --crit-resolved-text: #34D399;
+      --crit-resolved-border: #1B4D36;
+
+      --status-escalated-bg: #2E1217;
+      --status-escalated-text: #F87171;
+      --status-escalated-border: #5C1D24;
+
+      --status-progress-bg: #2B1E12;
+      --status-progress-text: #FBBF24;
+      --status-progress-border: #594314;
+
+      --status-complete-bg: #12251D;
+      --status-complete-text: #34D399;
+      --status-complete-border: #1B4D36;
+
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 4px;
+    }
+
+    [data-theme="light"] {
       --bg-page: #F8FAFC;
       --bg-surface: #FFFFFF;
       --bg-subtle: #F1F5F9;
@@ -24,7 +77,12 @@
       --text-muted: #475569;
       --text-light: #64748B;
 
-      /* Clean Criticality / Severity Tags (Rectangular, NO rounded pills) */
+      --accent-purple: #7C3AED;
+      --accent-purple-hover: #6D28D9;
+      --accent-purple-subtle: #F5F3FF;
+      --accent-purple-border: #DDD6FE;
+      --accent-purple-text: #6D28D9;
+
       --crit-critical-bg: #FEF2F2;
       --crit-critical-text: #991B1B;
       --crit-critical-border: #FCA5A5;
@@ -52,51 +110,6 @@
       --status-complete-bg: #F0FDF4;
       --status-complete-text: #15803D;
       --status-complete-border: #86EFAC;
-
-      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      --radius: 4px;
-    }
-
-    [data-theme="dark"] {
-      --bg-page: #0B0F19;
-      --bg-surface: #111827;
-      --bg-subtle: #1F2937;
-      --bg-hover: #1E293B;
-
-      --border-color: #1F2937;
-      --border-strong: #374151;
-
-      --text-main: #F9FAFB;
-      --text-muted: #D1D5DB;
-      --text-light: #9CA3AF;
-
-      --crit-critical-bg: #450A0A;
-      --crit-critical-text: #FCA5A5;
-      --crit-critical-border: #7F1D1D;
-
-      --crit-high-bg: #431407;
-      --crit-high-text: #FED7AA;
-      --crit-high-border: #7C2D12;
-
-      --crit-moderate-bg: #422006;
-      --crit-moderate-text: #FEF08A;
-      --crit-moderate-border: #713F12;
-
-      --crit-resolved-bg: #052E16;
-      --crit-resolved-text: #86EFAC;
-      --crit-resolved-border: #14532D;
-
-      --status-escalated-bg: #450A0A;
-      --status-escalated-text: #F87171;
-      --status-escalated-border: #991B1B;
-
-      --status-progress-bg: #451A03;
-      --status-progress-text: #FBBF24;
-      --status-progress-border: #B45309;
-
-      --status-complete-bg: #052E16;
-      --status-complete-text: #86EFAC;
-      --status-complete-border: #15803D;
     }
 
     * {
@@ -179,7 +192,7 @@
       background: var(--bg-subtle);
       color: var(--text-main);
       font-weight: 600;
-      border-left-color: #10B981;
+      border-left-color: var(--accent-purple);
     }
 
     .sidebar-count {
@@ -537,113 +550,95 @@
     }
 
     /* ==========================================================================
-       KNOWLEDGE BASE / RAG INGESTION STYLES
+       VETERINARY LIBRARY / SIMPLE FILE REPOSITORY
        ========================================================================== */
-    .rag-stats-bar {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .rag-stat-box {
-      background: var(--bg-surface);
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 14px;
-    }
-
-    .rag-stat-box-title {
-      font-size: 12px;
-      color: var(--text-light);
-      font-weight: 500;
-    }
-
-    .rag-stat-box-val {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text-main);
-      margin-top: 4px;
-    }
-
-    .rag-split-layout {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+    .library-layout {
+      display: flex;
+      flex-direction: column;
       gap: 20px;
     }
 
-    .rag-card {
+    .library-upload-card {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
     }
 
-    .rag-card h2 {
+    .library-upload-header {
+      margin-bottom: 14px;
+    }
+
+    .library-upload-header h2 {
       font-size: 15px;
       font-weight: 700;
+      color: var(--text-main);
     }
 
-    .rag-card p {
+    .library-upload-header p {
       font-size: 12.5px;
       color: var(--text-light);
+      margin-top: 2px;
     }
 
-    .rag-search-box {
+    .library-dropzone {
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      background: var(--bg-page);
+      cursor: pointer;
+      transition: border-color 150ms, background 150ms;
+      margin-bottom: 14px;
+    }
+
+    .library-dropzone:hover {
+      border-color: var(--accent-purple);
+      background: var(--bg-subtle);
+    }
+
+    .dropzone-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .dropzone-hint {
+      font-size: 11.5px;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    .library-upload-fields {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .library-toolbar {
       display: flex;
-      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
     }
 
-    .rag-search-input {
-      flex: 1;
-      height: 36px;
+    .library-search {
+      width: 280px;
+      height: 32px;
       padding: 0 10px;
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
-      background: var(--bg-page);
+      background: var(--bg-surface);
       color: var(--text-main);
       font-size: 13px;
       outline: none;
     }
 
-    .rag-results-container {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      max-height: 380px;
-      overflow-y: auto;
-    }
-
-    .rag-chunk-card {
-      border: 1px solid var(--border-color);
-      border-radius: var(--radius);
-      padding: 12px;
-      background: var(--bg-page);
-      font-size: 12.5px;
-      line-height: 1.45;
-    }
-
-    .rag-chunk-header {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 6px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-light);
-    }
-
-    .rag-chunk-score {
-      color: #10B981;
-      font-weight: 700;
-    }
-
-    .rag-ingest-form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
+    .library-search:focus {
+      border-color: var(--border-strong);
     }
 
     .form-group label {
@@ -664,11 +659,6 @@
       font-size: 13px;
       outline: none;
       font-family: inherit;
-    }
-
-    .form-group textarea {
-      resize: vertical;
-      min-height: 90px;
     }
 
     /* Interactive Web Chat Sandbox */
@@ -714,7 +704,7 @@
     .btn-send-chat {
       height: 38px;
       padding: 0 16px;
-      background: #10B981;
+      background: var(--accent-purple);
       color: white;
       border: none;
       border-radius: var(--radius);
@@ -724,7 +714,7 @@
     }
 
     .btn-send-chat:hover {
-      background: #059669;
+      background: var(--accent-purple-hover);
     }
 
     /* Detail Drawer */
@@ -853,8 +843,9 @@
 
     .chat-msg.agent {
       align-self: flex-end;
-      background: #064E3B;
-      color: #ECFDF5;
+      background: var(--accent-purple-subtle);
+      border: 1px solid var(--accent-purple-border);
+      color: var(--text-main);
     }
 
     .chat-sender {
@@ -865,13 +856,13 @@
     }
 
     .chat-msg.agent .chat-sender {
-      color: #A7F3D0;
+      color: var(--accent-purple-text);
     }
 
     .chat-voice-label {
       font-size: 11px;
       font-weight: 600;
-      color: #2563EB;
+      color: var(--accent-purple);
       margin-bottom: 3px;
     }
 
@@ -899,13 +890,13 @@
     }
 
     .btn-action.primary {
-      background: #10B981;
-      border-color: #059669;
+      background: var(--accent-purple);
+      border-color: var(--accent-purple-hover);
       color: #FFFFFF;
     }
 
     .btn-action.primary:hover {
-      background: #059669;
+      background: var(--accent-purple-hover);
     }
 
     .btn-action:hover:not(.primary) {
@@ -936,9 +927,9 @@
           <span>Agro-Vet Stores</span>
           <span class="sidebar-count" id="countStores">7</span>
         </a>
-        <a class="sidebar-link" id="navRag" onclick="switchTab('rag')">
-          <span>Knowledge Base (RAG)</span>
-          <span class="sidebar-count">1.4k</span>
+        <a class="sidebar-link" id="navLibrary" onclick="switchTab('library')">
+          <span>Veterinary Library</span>
+          <span class="sidebar-count" id="countLibrary">4</span>
         </a>
         <a class="sidebar-link" id="navChat" onclick="switchTab('chat')">
           <span>Web Chat</span>
@@ -947,7 +938,7 @@
 
       <div class="sidebar-footer">
         <span style="font-size: 12px; color: var(--text-light);">Local Version</span>
-        <button class="btn-toggle-theme" onclick="toggleTheme()" id="btnTheme">Theme: Light</button>
+        <button class="btn-toggle-theme" onclick="toggleTheme()" id="btnTheme">Theme: Dark</button>
       </div>
     </aside>
 
@@ -1070,93 +1061,86 @@
         </div>
       </section>
 
-      <!-- ================= TAB 4: KNOWLEDGE BASE (RAG) ================= -->
-      <section class="tab-panel" id="tabPanelRag">
+      <!-- ================= TAB 4: VETERINARY LIBRARY ================= -->
+      <section class="tab-panel" id="tabPanelLibrary">
         <div class="page-header">
           <div class="page-title">
-            <h1>Knowledge Base & RAG Ingestion</h1>
-            <p>Indexed veterinary textbooks, clinical manuals, and pgvector semantic retrieval.</p>
+            <h1>Veterinary Library</h1>
+            <p>Upload and manage reference handbooks, treatment protocols, and disease manuals.</p>
           </div>
         </div>
 
-        <div class="rag-stats-bar">
-          <div class="rag-stat-box">
-            <div class="rag-stat-box-title">Indexed Documents</div>
-            <div class="rag-stat-box-val">3 Manuals</div>
-          </div>
-          <div class="rag-stat-box">
-            <div class="rag-stat-box-title">Total Text Chunks</div>
-            <div class="rag-stat-box-val">1,420 Chunks</div>
-          </div>
-          <div class="rag-stat-box">
-            <div class="rag-stat-box-title">Vector Dimensions</div>
-            <div class="rag-stat-box-val">768 Dim (text-004)</div>
-          </div>
-          <div class="rag-stat-box">
-            <div class="rag-stat-box-title">Search Metric</div>
-            <div class="rag-stat-box-val">Cosine Similarity</div>
-          </div>
-        </div>
-
-        <div class="rag-split-layout">
-          <!-- Left: Vector Search Sandbox -->
-          <div class="rag-card">
-            <h2>Semantic Knowledge Retrieval</h2>
-            <p>Search the vector database with real clinical questions to test retrieved chunks.</p>
-
-            <div class="rag-search-box">
-              <input type="text" class="rag-search-input" id="ragQueryInput" placeholder="Try: 'bloody droppings in broilers' or 'coccidiosis vs enteritis'..." onkeydown="if(event.key==='Enter') testRagSearch()">
-              <button class="btn-action primary" onclick="testRagSearch()">Retrieve</button>
+        <div class="library-layout">
+          <!-- Simple Upload Area -->
+          <div class="library-upload-card">
+            <div class="library-upload-header">
+              <h2>Add Reference Document</h2>
+              <p>Upload clinical guidelines or manuals to supply verified veterinary guidance to the advisory system.</p>
             </div>
 
-            <div class="rag-results-container" id="ragResultsBox">
-              <div class="rag-chunk-card">
-                <div class="rag-chunk-header">
-                  <span>FAO Poultry Disease Manual · Chapter 4 (Coccidiosis)</span>
-                  <span class="rag-chunk-score">0.94 Similarity</span>
-                </div>
-                <div>Eimeria tenella causes severe caecal coccidiosis characterized by bleeding into the caecal pouches, pale combs, and high mortality in birds 3 to 6 weeks old. Fresh bloody droppings are the primary pathognomonic clinical sign.</div>
-              </div>
-
-              <div class="rag-chunk-card">
-                <div class="rag-chunk-header">
-                  <span>NVRI Vom Guidelines · Avian Enteritis Protocol</span>
-                  <span class="rag-chunk-score">0.88 Similarity</span>
-                </div>
-                <div>Differential diagnosis: Differentiate bloody coccidiosis from necrotic enteritis. Necrotic enteritis produces dark, watery, foul-smelling droppings without bright frank blood. Separate all symptomatic birds immediately.</div>
-              </div>
+            <div class="library-dropzone" onclick="document.getElementById('fileUploadInput').click()">
+              <input type="file" id="fileUploadInput" accept=".pdf,.doc,.docx,.txt" style="display: none;" onchange="handleFileChosen(this)">
+              <div class="dropzone-text" id="dropzoneText">Click to select a PDF or guideline document, or drag it here</div>
+              <div class="dropzone-hint">Supports PDF, DOCX, TXT up to 25 MB</div>
             </div>
-          </div>
 
-          <!-- Right: Document Ingestion Form -->
-          <div class="rag-card">
-            <h2>Ingest New Veterinary Document</h2>
-            <p>Upload or paste clinical guidance. Sentences will be micro-chunked and embedded.</p>
-
-            <form class="rag-ingest-form" onsubmit="event.preventDefault(); simulateIngest();">
-              <div class="form-group">
-                <label>Document Title</label>
-                <input type="text" id="docTitle" placeholder="e.g. Nigerian National Biosecurity Guideline (2026)" required>
+            <form class="library-upload-fields" onsubmit="event.preventDefault(); submitLibraryDocument();">
+              <div class="form-group" style="margin: 0;">
+                <label>Document Title (Optional)</label>
+                <input type="text" id="libDocTitle" placeholder="e.g. FAO Poultry Disease Field Manual (2026)">
               </div>
 
-              <div class="form-group">
+              <div class="form-group" style="margin: 0;">
                 <label>Category</label>
-                <select id="docCategory">
-                  <option value="clinical">Clinical Pathology & Disease</option>
-                  <option value="biosecurity">Biosecurity & Farm Management</option>
-                  <option value="pharmacology">Medication & Vaccine Protocols</option>
+                <select id="libDocCategory">
+                  <option value="Clinical Pathology">Clinical Pathology</option>
+                  <option value="Disease Outbreaks">Disease Outbreaks</option>
+                  <option value="Medications & Vaccines">Medications & Vaccines</option>
+                  <option value="Biosecurity & Hygiene">Biosecurity & Hygiene</option>
                 </select>
               </div>
 
-              <div class="form-group">
-                <label>Document Content (Text / Markdown)</label>
-                <textarea id="docContent" placeholder="Paste guidelines or manual text here for sentence splitting and embedding..." required></textarea>
-              </div>
-
-              <button type="submit" class="btn-action primary" style="width: 100%; height: 38px;">
-                Chunk & Ingest into pgvector
+              <button type="submit" class="btn-action primary" style="height: 34px; padding: 0 18px;">
+                Upload Document
               </button>
             </form>
+          </div>
+
+          <!-- Documents Table / Library List -->
+          <div>
+            <div class="library-toolbar">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                Uploaded Reference Documents (<span id="libDocCount">4</span>)
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" class="library-search" id="libSearchInput" placeholder="Search library documents..." oninput="filterLibrarySearch(this.value)">
+                <select class="filter-dropdown" id="filterLibCategory" onchange="filterLibraryCategory(this.value)">
+                  <option value="all">All Categories</option>
+                  <option value="Clinical Pathology">Clinical Pathology</option>
+                  <option value="Disease Outbreaks">Disease Outbreaks</option>
+                  <option value="Medications & Vaccines">Medications & Vaccines</option>
+                  <option value="Biosecurity & Hygiene">Biosecurity & Hygiene</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Document Name</th>
+                    <th>Category</th>
+                    <th>File Size</th>
+                    <th>Date Added</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="libraryTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
@@ -1613,9 +1597,10 @@
         document.getElementById('navStores').classList.add('active');
         document.getElementById('tabPanelStores').classList.add('active');
         renderStores(STORES);
-      } else if (tabName === 'rag') {
-        document.getElementById('navRag').classList.add('active');
-        document.getElementById('tabPanelRag').classList.add('active');
+      } else if (tabName === 'library') {
+        document.getElementById('navLibrary').classList.add('active');
+        document.getElementById('tabPanelLibrary').classList.add('active');
+        renderLibrary(currentLibraryDocs);
       } else if (tabName === 'chat') {
         document.getElementById('navChat').classList.add('active');
         document.getElementById('tabPanelChat').classList.add('active');
@@ -1702,28 +1687,166 @@
       renderStores(filtered);
     }
 
-    // RAG Search Test
-    function testRagSearch() {
-      const q = document.getElementById('ragQueryInput').value.trim();
-      if (!q) return;
+    // ==========================================================================
+    // VETERINARY LIBRARY JAVASCRIPT
+    // ==========================================================================
+    let LIBRARY_DOCS = [
+      {
+        id: 'DOC-001',
+        name: 'FAO Poultry Diseases Field Handbook (4th Edition).pdf',
+        category: 'Clinical Pathology',
+        size: '3.8 MB',
+        date: 'Sep 24, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-002',
+        name: 'NVRI Newcastle Disease & Gumboro Field Protocol.pdf',
+        category: 'Disease Outbreaks',
+        size: '1.4 MB',
+        date: 'Sep 20, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-003',
+        name: 'National Poultry Biosecurity & Disinfection Standards.pdf',
+        category: 'Biosecurity & Hygiene',
+        size: '2.1 MB',
+        date: 'Sep 15, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-004',
+        name: 'Veterinary Antibiotic Withdrawal Periods Schedule.pdf',
+        category: 'Medications & Vaccines',
+        size: '890 KB',
+        date: 'Sep 10, 2026',
+        status: 'active'
+      }
+    ];
 
-      const container = document.getElementById('ragResultsBox');
-      container.innerHTML = `
-        <div class="rag-chunk-card">
-          <div class="rag-chunk-header">
-            <span>Query: "${q}" · Vector Matched Chunks</span>
-            <span class="rag-chunk-score">0.96 Score</span>
-          </div>
-          <div><strong>Retrieved Guideline:</strong> For acute cases showing signs of ${q}, isolate affected birds immediately, collect fresh drop samples on clean paper for microscopic oocyst count, and avoid wet litter conditions. Consult nearest agro-vet for anticoccidial / electrolyte administration.</div>
-        </div>
-      `;
+    let currentLibraryDocs = [...LIBRARY_DOCS];
+    let selectedFileObj = null;
+
+    function renderLibrary(data) {
+      const tbody = document.getElementById('libraryTableBody');
+      const countEl = document.getElementById('libDocCount');
+      if (countEl) countEl.innerText = data.length;
+
+      if (!tbody) return;
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-light);">No reference documents found in library.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(doc => `
+        <tr>
+          <td>
+            <div style="font-weight: 600; color: var(--text-main);">${doc.name}</div>
+            <div style="font-size: 11.5px; color: var(--text-light);">ID: ${doc.id}</div>
+          </td>
+          <td>
+            <span class="tag-rect tag-service">${doc.category}</span>
+          </td>
+          <td style="color: var(--text-muted); font-size: 12.5px;">${doc.size}</td>
+          <td style="color: var(--text-muted); font-size: 12.5px;">${doc.date}</td>
+          <td>
+            <span class="tag-rect tag-resolved">${doc.status === 'active' ? 'Active' : doc.status}</span>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn-action" style="height: 28px; padding: 0 10px; font-size: 12px;" onclick="viewDocument('${doc.id}')">View</button>
+            <button class="btn-action" style="height: 28px; padding: 0 10px; font-size: 12px; color: #F87171;" onclick="deleteDocument('${doc.id}')">Remove</button>
+          </td>
+        </tr>
+      `).join('');
     }
 
-    function simulateIngest() {
-      const title = document.getElementById('docTitle').value;
-      alert(`Success: "${title}" split into 38 micro-chunks and ingested into pgvector!`);
-      document.getElementById('docTitle').value = '';
-      document.getElementById('docContent').value = '';
+    function handleFileChosen(input) {
+      if (input.files && input.files[0]) {
+        selectedFileObj = input.files[0];
+        document.getElementById('dropzoneText').innerText = `Selected: ${selectedFileObj.name} (${(selectedFileObj.size / (1024 * 1024)).toFixed(2)} MB)`;
+        const titleInput = document.getElementById('libDocTitle');
+        if (!titleInput.value) {
+          titleInput.value = selectedFileObj.name.replace(/\.[^/.]+$/, "");
+        }
+      }
+    }
+
+    function submitLibraryDocument() {
+      const titleInput = document.getElementById('libDocTitle');
+      const categoryInput = document.getElementById('libDocCategory');
+      
+      let docName = titleInput.value.trim() || (selectedFileObj ? selectedFileObj.name : 'Untitled Clinical Manual');
+      if (!docName.toLowerCase().endsWith('.pdf') && !docName.toLowerCase().endsWith('.docx') && !docName.toLowerCase().endsWith('.txt')) {
+        docName += '.pdf';
+      }
+      const category = categoryInput.value;
+      const size = selectedFileObj ? `${(selectedFileObj.size / (1024 * 1024)).toFixed(1)} MB` : '1.8 MB';
+      
+      const newDoc = {
+        id: `DOC-00${LIBRARY_DOCS.length + 1}`,
+        name: docName,
+        category: category,
+        size: size,
+        date: 'Today',
+        status: 'active'
+      };
+
+      LIBRARY_DOCS.unshift(newDoc);
+      currentLibraryDocs = [...LIBRARY_DOCS];
+      renderLibrary(currentLibraryDocs);
+      
+      const countNav = document.getElementById('countLibrary');
+      if (countNav) countNav.innerText = LIBRARY_DOCS.length;
+
+      alert(`"${docName}" was successfully added to the Veterinary Library.`);
+
+      // Reset
+      titleInput.value = '';
+      selectedFileObj = null;
+      document.getElementById('fileUploadInput').value = '';
+      document.getElementById('dropzoneText').innerText = 'Click to select a PDF or guideline document, or drag it here';
+    }
+
+    function filterLibrarySearch(term) {
+      const q = term.trim().toLowerCase();
+      const cat = document.getElementById('filterLibCategory').value;
+      currentLibraryDocs = LIBRARY_DOCS.filter(d => {
+        const matchQ = d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q);
+        const matchCat = cat === 'all' || d.category === cat;
+        return matchQ && matchCat;
+      });
+      renderLibrary(currentLibraryDocs);
+    }
+
+    function filterLibraryCategory(cat) {
+      const q = document.getElementById('libSearchInput').value.trim().toLowerCase();
+      currentLibraryDocs = LIBRARY_DOCS.filter(d => {
+        const matchQ = !q || d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q);
+        const matchCat = cat === 'all' || d.category === cat;
+        return matchQ && matchCat;
+      });
+      renderLibrary(currentLibraryDocs);
+    }
+
+    function deleteDocument(id) {
+      const doc = LIBRARY_DOCS.find(d => d.id === id);
+      if (!doc) return;
+      if (confirm(`Remove "${doc.name}" from the veterinary library?`)) {
+        LIBRARY_DOCS = LIBRARY_DOCS.filter(d => d.id !== id);
+        currentLibraryDocs = [...LIBRARY_DOCS];
+        renderLibrary(currentLibraryDocs);
+        const countNav = document.getElementById('countLibrary');
+        if (countNav) countNav.innerText = LIBRARY_DOCS.length;
+      }
+    }
+
+    function viewDocument(id) {
+      const doc = LIBRARY_DOCS.find(d => d.id === id);
+      if (doc) {
+        alert(`Opening ${doc.name}\nCategory: ${doc.category}\nStatus: ${doc.status}\nSize: ${doc.size}`);
+      }
     }
 
     // Live Web Chat Sender
@@ -1777,13 +1900,13 @@
 
     function toggleTheme() {
       const root = document.documentElement;
-      const isDark = root.getAttribute('data-theme') === 'dark';
-      if (isDark) {
-        root.removeAttribute('data-theme');
-        document.getElementById('btnTheme').innerText = 'Theme: Light';
-      } else {
+      const current = root.getAttribute('data-theme');
+      if (current === 'light') {
         root.setAttribute('data-theme', 'dark');
         document.getElementById('btnTheme').innerText = 'Theme: Dark';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        document.getElementById('btnTheme').innerText = 'Theme: Light';
       }
     }
 
@@ -1791,6 +1914,7 @@
     renderTable(currentCases);
     renderReports(REPORTS);
     renderStores(STORES);
+    renderLibrary(currentLibraryDocs);
   </script>
 </body>
 </html>
