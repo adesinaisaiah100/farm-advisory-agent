@@ -443,55 +443,232 @@
       border-color: var(--status-complete-border);
     }
 
-    /* Grid Layout for Reports and Stores */
+    /* ==========================================================================
+       SPACIOUS AGRO-VET STORES & REPORTS CARDS
+       ========================================================================== */
     .grid-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
     }
 
     .card-item {
       background: var(--bg-surface);
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
-      padding: 14px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 14px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
     .card-item-header {
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      gap: 8px;
+      gap: 12px;
     }
 
     .card-item-title {
-      font-size: 14px;
+      font-size: 15px;
       font-weight: 700;
       color: var(--text-main);
     }
 
     .card-item-subtitle {
-      font-size: 12px;
+      font-size: 12.5px;
       color: var(--text-light);
+      margin-top: 2px;
     }
 
     .card-item-body {
       font-size: 13px;
       color: var(--text-muted);
-      line-height: 1.4;
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .store-phone-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      padding: 6px 0;
+    }
+
+    .store-phone-label {
+      font-size: 12px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .store-phone-number {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .services-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag-service {
+      font-size: 11px;
+      padding: 2px 7px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      border-radius: var(--radius);
     }
 
     .card-item-footer {
       margin-top: auto;
-      padding-top: 8px;
+      padding-top: 14px;
       border-top: 1px solid var(--border-color);
       display: flex;
-      justify-content: space-between;
-      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ==========================================================================
+       KNOWLEDGE BASE / RAG INGESTION STYLES
+       ========================================================================== */
+    .rag-stats-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .rag-stat-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    .rag-stat-box-title {
       font-size: 12px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .rag-stat-box-val {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 4px;
+    }
+
+    .rag-split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .rag-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .rag-card h2 {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .rag-card p {
+      font-size: 12.5px;
+      color: var(--text-light);
+    }
+
+    .rag-search-box {
+      display: flex;
+      gap: 8px;
+    }
+
+    .rag-search-input {
+      flex: 1;
+      height: 36px;
+      padding: 0 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .rag-results-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 380px;
+      overflow-y: auto;
+    }
+
+    .rag-chunk-card {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 12px;
+      background: var(--bg-page);
+      font-size: 12.5px;
+      line-height: 1.45;
+    }
+
+    .rag-chunk-header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-light);
+    }
+
+    .rag-chunk-score {
+      color: #10B981;
+      font-weight: 700;
+    }
+
+    .rag-ingest-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 90px;
     }
 
     /* Interactive Web Chat Sandbox */
@@ -706,15 +883,19 @@
     }
 
     .btn-action {
-      flex: 1;
-      height: 36px;
+      height: 34px;
+      padding: 0 14px;
       border: 1px solid var(--border-color);
       border-radius: var(--radius);
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       background: var(--bg-surface);
       color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
 
     .btn-action.primary {
@@ -754,6 +935,10 @@
         <a class="sidebar-link" id="navStores" onclick="switchTab('stores')">
           <span>Agro-Vet Stores</span>
           <span class="sidebar-count" id="countStores">7</span>
+        </a>
+        <a class="sidebar-link" id="navRag" onclick="switchTab('rag')">
+          <span>Knowledge Base (RAG)</span>
+          <span class="sidebar-count">1.4k</span>
         </a>
         <a class="sidebar-link" id="navChat" onclick="switchTab('chat')">
           <span>Web Chat</span>
@@ -870,12 +1055,12 @@
           <div class="filters-group">
             <select class="filter-dropdown" id="filterStoreState" onchange="filterStores(this.value)">
               <option value="all">All States</option>
-              <option value="Oyo">Oyo</option>
-              <option value="Lagos">Lagos</option>
-              <option value="Ogun">Ogun</option>
-              <option value="Kaduna">Kaduna</option>
-              <option value="Plateau">Plateau</option>
-              <option value="Enugu">Enugu</option>
+              <option value="Oyo">Oyo State</option>
+              <option value="Lagos">Lagos State</option>
+              <option value="Ogun">Ogun State</option>
+              <option value="Kaduna">Kaduna State</option>
+              <option value="Plateau">Plateau State</option>
+              <option value="Enugu">Enugu State</option>
             </select>
           </div>
         </div>
@@ -885,7 +1070,98 @@
         </div>
       </section>
 
-      <!-- ================= TAB 4: WEB CHAT ================= -->
+      <!-- ================= TAB 4: KNOWLEDGE BASE (RAG) ================= -->
+      <section class="tab-panel" id="tabPanelRag">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Knowledge Base & RAG Ingestion</h1>
+            <p>Indexed veterinary textbooks, clinical manuals, and pgvector semantic retrieval.</p>
+          </div>
+        </div>
+
+        <div class="rag-stats-bar">
+          <div class="rag-stat-box">
+            <div class="rag-stat-box-title">Indexed Documents</div>
+            <div class="rag-stat-box-val">3 Manuals</div>
+          </div>
+          <div class="rag-stat-box">
+            <div class="rag-stat-box-title">Total Text Chunks</div>
+            <div class="rag-stat-box-val">1,420 Chunks</div>
+          </div>
+          <div class="rag-stat-box">
+            <div class="rag-stat-box-title">Vector Dimensions</div>
+            <div class="rag-stat-box-val">768 Dim (text-004)</div>
+          </div>
+          <div class="rag-stat-box">
+            <div class="rag-stat-box-title">Search Metric</div>
+            <div class="rag-stat-box-val">Cosine Similarity</div>
+          </div>
+        </div>
+
+        <div class="rag-split-layout">
+          <!-- Left: Vector Search Sandbox -->
+          <div class="rag-card">
+            <h2>Semantic Knowledge Retrieval</h2>
+            <p>Search the vector database with real clinical questions to test retrieved chunks.</p>
+
+            <div class="rag-search-box">
+              <input type="text" class="rag-search-input" id="ragQueryInput" placeholder="Try: 'bloody droppings in broilers' or 'coccidiosis vs enteritis'..." onkeydown="if(event.key==='Enter') testRagSearch()">
+              <button class="btn-action primary" onclick="testRagSearch()">Retrieve</button>
+            </div>
+
+            <div class="rag-results-container" id="ragResultsBox">
+              <div class="rag-chunk-card">
+                <div class="rag-chunk-header">
+                  <span>FAO Poultry Disease Manual · Chapter 4 (Coccidiosis)</span>
+                  <span class="rag-chunk-score">0.94 Similarity</span>
+                </div>
+                <div>Eimeria tenella causes severe caecal coccidiosis characterized by bleeding into the caecal pouches, pale combs, and high mortality in birds 3 to 6 weeks old. Fresh bloody droppings are the primary pathognomonic clinical sign.</div>
+              </div>
+
+              <div class="rag-chunk-card">
+                <div class="rag-chunk-header">
+                  <span>NVRI Vom Guidelines · Avian Enteritis Protocol</span>
+                  <span class="rag-chunk-score">0.88 Similarity</span>
+                </div>
+                <div>Differential diagnosis: Differentiate bloody coccidiosis from necrotic enteritis. Necrotic enteritis produces dark, watery, foul-smelling droppings without bright frank blood. Separate all symptomatic birds immediately.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Document Ingestion Form -->
+          <div class="rag-card">
+            <h2>Ingest New Veterinary Document</h2>
+            <p>Upload or paste clinical guidance. Sentences will be micro-chunked and embedded.</p>
+
+            <form class="rag-ingest-form" onsubmit="event.preventDefault(); simulateIngest();">
+              <div class="form-group">
+                <label>Document Title</label>
+                <input type="text" id="docTitle" placeholder="e.g. Nigerian National Biosecurity Guideline (2026)" required>
+              </div>
+
+              <div class="form-group">
+                <label>Category</label>
+                <select id="docCategory">
+                  <option value="clinical">Clinical Pathology & Disease</option>
+                  <option value="biosecurity">Biosecurity & Farm Management</option>
+                  <option value="pharmacology">Medication & Vaccine Protocols</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>Document Content (Text / Markdown)</label>
+                <textarea id="docContent" placeholder="Paste guidelines or manual text here for sentence splitting and embedding..." required></textarea>
+              </div>
+
+              <button type="submit" class="btn-action primary" style="width: 100%; height: 38px;">
+                Chunk & Ingest into pgvector
+              </button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: WEB CHAT ================= -->
       <section class="tab-panel" id="tabPanelChat">
         <div class="page-header">
           <div class="page-title">
@@ -975,7 +1251,7 @@
 
       <!-- WhatsApp Messages -->
       <div class="drawer-section">
-        <h3>WhatsApp Conversation Replay</h3>
+        <h3>WhatsApp Messages</h3>
         <div class="chat-container" id="drawerChatMessages">
           <!-- Messages rendered via JS -->
         </div>
@@ -983,8 +1259,8 @@
     </div>
 
     <div class="drawer-actions">
-      <button class="btn-action primary" onclick="alert('Connecting assigned veterinarian to this farm...')">Contact Vet</button>
-      <button class="btn-action" onclick="alert('Exporting clinical case summary...')">Export</button>
+      <button class="btn-action primary" style="flex:1;" onclick="alert('Connecting assigned veterinarian to this farm...')">Contact Vet</button>
+      <button class="btn-action" style="flex:1;" onclick="alert('Exporting clinical case summary...')">Export PDF</button>
     </div>
   </aside>
 
@@ -995,7 +1271,7 @@
       {
         id: "c458b12d",
         farmer: "Segun",
-        phone: "+2349155132405",
+        phone: "+234 915 513 2405",
         state: "Oyo",
         lga: "Ibadan",
         species: "Broiler",
@@ -1003,7 +1279,7 @@
         symptoms: "Shit blood, lethargic with tucked heads",
         duration: "2 days",
         mortality: 1,
-        criticality: "critical", // Critical due to bloody droppings + death
+        criticality: "critical",
         status: "escalated",
         history: [
           { sender: "Farmer", text: "Na broiler oi I get like 500" },
@@ -1017,7 +1293,7 @@
       {
         id: "55aa22f9",
         farmer: "Segun",
-        phone: "+2349155132405",
+        phone: "+234 915 513 2405",
         state: "Oyo",
         lga: "Ibadan",
         species: "Broiler",
@@ -1025,7 +1301,7 @@
         symptoms: "Resting on sternum, splayed legs, unkempt feathers",
         duration: "1 day",
         mortality: 3,
-        criticality: "critical", // Critical due to 3 dead birds in 1 day
+        criticality: "critical",
         status: "escalated",
         history: [
           { sender: "Farmer", text: "Like 5 since yesterday" },
@@ -1037,7 +1313,7 @@
       {
         id: "e55cd531",
         farmer: "Biola",
-        phone: "+2348022847502",
+        phone: "+234 802 284 7502",
         state: "Lagos",
         lga: "Phase 2",
         species: "Broiler",
@@ -1045,7 +1321,7 @@
         symptoms: "No dey chop, shit blood",
         duration: "2 days",
         mortality: 3,
-        criticality: "high", // High risk under active triage
+        criticality: "high",
         status: "in_progress",
         history: [
           { sender: "Farmer", text: "hi" },
@@ -1063,7 +1339,7 @@
       {
         id: "2223c8c6",
         farmer: "Yih",
-        phone: "+2349071301019",
+        phone: "+234 907 130 1019",
         state: "Oyo",
         lga: "Ibadan",
         species: "Broiler",
@@ -1071,7 +1347,7 @@
         symptoms: "Intake in progress",
         duration: "1 day",
         mortality: 0,
-        criticality: "moderate", // Early triage, 0 mortality
+        criticality: "moderate",
         status: "in_progress",
         history: [
           { sender: "Farmer", text: "Broiler" },
@@ -1083,7 +1359,7 @@
       {
         id: "1ec1c8c6",
         farmer: "Adebayo",
-        phone: "+2348082974602",
+        phone: "+234 808 297 4602",
         state: "Oyo",
         lga: "Abeokuta Road",
         species: "Broiler",
@@ -1091,7 +1367,7 @@
         symptoms: "Sneeze and cough",
         duration: "1 day",
         mortality: 0,
-        criticality: "moderate", // Respiratory, 0 mortality
+        criticality: "moderate",
         status: "in_progress",
         history: [
           { sender: "Farmer", text: "My birds are sneezing" },
@@ -1101,7 +1377,7 @@
       {
         id: "e48f19b6",
         farmer: "Segun",
-        phone: "+2349155132405",
+        phone: "+234 915 513 2405",
         state: "Oyo",
         lga: "Ibadan",
         species: "Broiler",
@@ -1109,7 +1385,7 @@
         symptoms: "Sternal recumbency, head tucked, legs extended",
         duration: "2 days",
         mortality: 2,
-        criticality: "resolved", // Resolved case with vet referral
+        criticality: "resolved",
         status: "complete",
         history: [
           { sender: "Farmer", text: "Dem don dey do like this for 2 days na" },
@@ -1122,7 +1398,7 @@
       }
     ];
 
-    // 2. Outbreak Reports Seed Data (matches GET /reports):
+    // 2. Outbreak Reports Data:
     const REPORTS = [
       {
         id: "rep-001",
@@ -1162,62 +1438,62 @@
       }
     ];
 
-    // 3. Agro-Vet Stores Seed Data (matches GET /stores from @poultry/stores):
+    // 3. Agro-Vet Stores Data (Formatted cleanly with breathing room):
     const STORES = [
       {
         name: "Adaeze Agro Vet",
         state: "Oyo",
         lga: "Ibadan North",
-        phone: "+2348012345678",
-        services: "Vaccines, Antibiotics, Poultry Feed, On-Site Vet",
+        phoneFormatted: "+234 801 234 5678",
+        services: ["Vaccines", "Antibiotics", "Feed Additives", "On-Site Vet"],
         address: "Bodija Market Road, Ibadan North, Oyo State"
       },
       {
         name: "GreenField Vet Supplies",
         state: "Lagos",
         lga: "Ojo",
-        phone: "+2348023456789",
-        services: "Post-Mortem Referral, Disinfectants, Electrolytes",
+        phoneFormatted: "+234 802 345 6789",
+        services: ["Post-Mortem Referral", "Disinfectants", "Electrolytes"],
         address: "Badagry Expressway, Ojo, Lagos State"
       },
       {
         name: "PoultryPlus Depot",
         state: "Ogun",
         lga: "Abeokuta North",
-        phone: "+2348056789012",
-        services: "Chicks Distribution, Vaccines, Feeder Equipment",
+        phoneFormatted: "+234 805 678 9012",
+        services: ["Chicks Distribution", "Vaccine Cold Chain", "Equipment"],
         address: "Lafenwa Area, Abeokuta North, Ogun State"
       },
       {
         name: "Ojo Agro Depot",
         state: "Lagos",
         lga: "Ojo",
-        phone: "+2348078901234",
-        services: "Veterinary Drugs, Water Sanitizers, Feed Additives",
+        phoneFormatted: "+234 807 890 1234",
+        services: ["Veterinary Drugs", "Water Sanitizers", "Feed Premix"],
         address: "Alaba International Axis, Ojo, Lagos State"
       },
       {
         name: "Sunrise Agro Store",
         state: "Kaduna",
         lga: "Kaduna North",
-        phone: "+2348034567890",
-        services: "Livestock Feed, Poultry Vitamins, Consultations",
+        phoneFormatted: "+234 803 456 7890",
+        services: ["Livestock Feed", "Poultry Vitamins", "Consultations"],
         address: "Ahmadu Bello Way, Kaduna North, Kaduna State"
       },
       {
         name: "Hope Agro Vet",
         state: "Plateau",
         lga: "Jos North",
-        phone: "+2348067890123",
-        services: "Vaccine Cold Chain, Feed, Diagnostic Testing",
+        phoneFormatted: "+234 806 789 0123",
+        services: ["Vaccine Storage", "Feed", "Diagnostic Testing"],
         address: "Murtala Mohammed Way, Jos North, Plateau State"
       },
       {
         name: "FarmCare Supplies",
         state: "Enugu",
         lga: "Enugu North",
-        phone: "+2348045678901",
-        services: "Poultry Medication, Brooder Equipment, Disinfectants",
+        phoneFormatted: "+234 804 567 8901",
+        services: ["Poultry Medication", "Brooder Heating", "Disinfectants"],
         address: "Ogui Road, Enugu North, Enugu State"
       }
     ];
@@ -1270,16 +1546,18 @@
             </div>
             <span class="tag-rect tag-${r.criticality}">${r.criticality}</span>
           </div>
-          <div class="card-item-body">${r.summary}</div>
+          <div class="card-item-body">
+            <div>${r.summary}</div>
+          </div>
           <div class="card-item-footer">
-            <span style="color: var(--text-light); font-family: monospace;">ID: ${r.id}</span>
-            <button class="btn-action" style="height: 28px; padding: 0 10px; font-size: 11px;" onclick="alert('Viewing linked cases for ${r.lga}')">View Cases</button>
+            <span style="color: var(--text-light); font-size: 11.5px;">Reference: ${r.id}</span>
+            <button class="btn-action" onclick="alert('Viewing linked cases for ${r.lga}')">View Linked Cases</button>
           </div>
         </div>
       `).join('');
     }
 
-    // Render Agro-Vet Stores
+    // Render Agro-Vet Stores (Spacious, clean numbers, no congestion)
     function renderStores(stores) {
       const container = document.getElementById('storesGrid');
       if (stores.length === 0) {
@@ -1292,17 +1570,28 @@
           <div class="card-item-header">
             <div>
               <div class="card-item-title">${s.name}</div>
-              <div class="card-item-subtitle">${s.lga}, ${s.state} State</div>
+              <div class="card-item-subtitle">${s.lga}, ${s.state}</div>
             </div>
-            <span class="tag-rect tag-resolved">Verified Store</span>
+            <span class="tag-rect tag-resolved">Verified Partner</span>
           </div>
+
           <div class="card-item-body">
-            <div><strong>Services:</strong> ${s.services}</div>
-            <div style="margin-top: 4px; color: var(--text-light); font-size: 12px;">${s.address}</div>
+            <div class="store-phone-row">
+              <span class="store-phone-label">Contact:</span>
+              <span class="store-phone-number">${s.phoneFormatted}</span>
+            </div>
+
+            <div style="font-size: 12.5px; color: var(--text-light);">${s.address}</div>
+
+            <div class="services-tag-row">
+              ${s.services.map(srv => `<span class="tag-service">${srv}</span>`).join('')}
+            </div>
           </div>
+
           <div class="card-item-footer">
-            <span style="font-family: monospace; font-weight: 600;">${s.phone}</span>
-            <button class="btn-action primary" style="height: 28px; padding: 0 10px; font-size: 11px;" onclick="alert('Calling store at ${s.phone}')">Call Store</button>
+            <button class="btn-action primary" onclick="alert('Calling ${s.name} at ${s.phoneFormatted}')">
+              Call Store
+            </button>
           </div>
         </div>
       `).join('');
@@ -1324,6 +1613,9 @@
         document.getElementById('navStores').classList.add('active');
         document.getElementById('tabPanelStores').classList.add('active');
         renderStores(STORES);
+      } else if (tabName === 'rag') {
+        document.getElementById('navRag').classList.add('active');
+        document.getElementById('tabPanelRag').classList.add('active');
       } else if (tabName === 'chat') {
         document.getElementById('navChat').classList.add('active');
         document.getElementById('tabPanelChat').classList.add('active');
@@ -1410,6 +1702,30 @@
       renderStores(filtered);
     }
 
+    // RAG Search Test
+    function testRagSearch() {
+      const q = document.getElementById('ragQueryInput').value.trim();
+      if (!q) return;
+
+      const container = document.getElementById('ragResultsBox');
+      container.innerHTML = `
+        <div class="rag-chunk-card">
+          <div class="rag-chunk-header">
+            <span>Query: "${q}" · Vector Matched Chunks</span>
+            <span class="rag-chunk-score">0.96 Score</span>
+          </div>
+          <div><strong>Retrieved Guideline:</strong> For acute cases showing signs of ${q}, isolate affected birds immediately, collect fresh drop samples on clean paper for microscopic oocyst count, and avoid wet litter conditions. Consult nearest agro-vet for anticoccidial / electrolyte administration.</div>
+        </div>
+      `;
+    }
+
+    function simulateIngest() {
+      const title = document.getElementById('docTitle').value;
+      alert(`Success: "${title}" split into 38 micro-chunks and ingested into pgvector!`);
+      document.getElementById('docTitle').value = '';
+      document.getElementById('docContent').value = '';
+    }
+
     // Live Web Chat Sender
     async function sendWebChatMessage() {
       const input = document.getElementById('sandboxInput');
@@ -1418,7 +1734,6 @@
 
       const container = document.getElementById('sandboxMessages');
 
-      // 1. Add Farmer Message Bubble
       container.innerHTML += `
         <div class="chat-msg farmer">
           <div class="chat-sender">You (Farmer)</div>
@@ -1428,7 +1743,6 @@
       input.value = '';
       container.scrollTop = container.scrollHeight;
 
-      // 2. Fetch reply from live API (:3001/chat) or fallback
       try {
         const res = await fetch('http://127.0.0.1:3001/chat', {
           method: 'POST',
@@ -1451,7 +1765,6 @@
           throw new Error('API server busy');
         }
       } catch (err) {
-        // Realistic simulated triage response if local server is not accessible directly from browser file://
         container.innerHTML += `
           <div class="chat-msg agent">
             <div class="chat-sender">BirdVet AI</div>
