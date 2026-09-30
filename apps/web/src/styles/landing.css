@@ -1,28 +1,32 @@
 /* ==========================================================================
-   BIRDVET LANDING VIEW — CLEAN MODERN EDITORIAL CSS
+   BIRDVET LANDING VIEW — OBSIDIAN & VIOLET EDITORIAL THEME
    Strict Anti-Pill Law: Zero pills, 6px buttons, 4px tags, 8px cards
-   Solid dark background, high contrast, zero blurry gradients
+   Independent scroll container, centered typography, high contrast
    ========================================================================== */
 
 .landing-root {
-  min-height: 100vh;
-  background-color: #09090b;
-  color: #fafafa;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background-color: #0C0B12;
+  color: #F3F3FA;
   display: flex;
   flex-direction: column;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
 }
 
-/* Header */
+/* Top Sticky Navigation */
 .landing-header {
   position: sticky;
   top: 0;
   z-index: 50;
   width: 100%;
-  background-color: rgba(9, 9, 11, 0.95);
-  border-bottom: 1px solid #27272a;
-  backdrop-filter: blur(8px);
+  background-color: rgba(12, 11, 18, 0.95);
+  border-bottom: 1px solid #2D2945;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .landing-header-inner {
@@ -46,7 +50,7 @@
   font-weight: 800;
   font-size: 18px;
   letter-spacing: -0.02em;
-  color: #ffffff;
+  color: #FFFFFF;
 }
 
 .landing-badge {
@@ -56,15 +60,15 @@
   letter-spacing: 0.08em;
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px solid #3f3f46;
-  color: #a1a1aa;
-  background-color: #18181b;
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  color: #DDD6FE;
+  background-color: rgba(139, 92, 246, 0.12);
 }
 
 .landing-header-actions {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .landing-phone-link {
@@ -73,58 +77,57 @@
   gap: 8px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: #a1a1aa;
+  color: #A3A0BC;
+  background-color: #141320;
+  border: 1px solid #2D2945;
+  border-radius: 6px;
+  padding: 6px 12px;
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .landing-phone-link:hover {
-  color: #ffffff;
-}
-
-.landing-signal-square {
-  width: 8px;
-  height: 8px;
-  background-color: #10b981;
-  display: inline-block;
-  border-radius: 0;
+  border-color: #8B5CF6;
+  color: #FFFFFF;
 }
 
 .landing-btn-portal-sm {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 14px;
+  padding: 7px 14px;
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background-color: #18181b;
-  color: #fafafa;
-  border: 1px solid #3f3f46;
+  background-color: #8B5CF6;
+  color: #FFFFFF;
+  border: 1px solid #7C3AED;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .landing-btn-portal-sm:hover {
-  background-color: #27272a;
-  border-color: #52525b;
+  background-color: #7C3AED;
+  border-color: #6D28D9;
 }
 
-/* Main Hero */
+/* Main Hero Section */
 .landing-main {
   flex: 1;
-  max-width: 1020px;
+  max-width: 1040px;
   width: 100%;
   margin: 0 auto;
-  padding: 64px 24px 80px 24px;
+  padding: 72px 24px 80px 24px;
   display: flex;
   flex-direction: column;
+  align-items: center;
   box-sizing: border-box;
 }
 
 .landing-overline-wrap {
   margin-bottom: 24px;
+  text-align: center;
 }
 
 .landing-overline {
@@ -133,34 +136,39 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #a1a1aa;
-  border-bottom: 1px solid #3f3f46;
-  padding-bottom: 4px;
+  color: #DDD6FE;
+  background-color: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+  padding: 5px 12px;
 }
 
 .landing-headline {
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
   font-size: clamp(32px, 5vw, 50px);
-  line-height: 1.15;
+  line-height: 1.18;
   letter-spacing: -0.03em;
-  color: #ffffff;
-  margin: 0 0 24px 0;
-  max-width: 900px;
+  color: #FFFFFF;
+  margin: 0 auto 24px auto;
+  max-width: 880px;
+  text-align: center;
 }
 
 .landing-subtitle {
   font-size: clamp(15px, 2vw, 17px);
   line-height: 1.65;
-  color: #a1a1aa;
-  margin: 0 0 40px 0;
+  color: #A3A0BC;
+  margin: 0 auto 40px auto;
   max-width: 720px;
+  text-align: center;
 }
 
-/* Actions */
+/* Action Controls (Strict Anti-Pill: 6px radius) */
 .landing-actions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   align-items: center;
   gap: 16px;
   margin-bottom: 64px;
@@ -169,74 +177,88 @@
 .landing-btn-whatsapp {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 14px 24px;
+  gap: 10px;
+  padding: 14px 26px;
   font-size: 14px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background-color: #10b981;
-  color: #09090b;
+  background-color: #10B981;
+  color: #FFFFFF;
   border: none;
   border-radius: 6px;
   text-decoration: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
 }
 
 .landing-btn-whatsapp:hover {
   background-color: #059669;
 }
 
-.landing-btn-whatsapp-sub {
+.landing-btn-whatsapp-phone {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  font-weight: 400;
-  color: #064e3b;
+  font-weight: 500;
+  color: #D1FAE5;
+  background-color: rgba(6, 78, 59, 0.4);
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .landing-btn-portal-lg {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
+  padding: 14px 26px;
   font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   font-family: 'Inter', sans-serif;
-  background-color: #18181b;
-  color: #fafafa;
-  border: 1px solid #3f3f46;
+  background-color: #1C1A2C;
+  color: #F3F3FA;
+  border: 1px solid #2D2945;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .landing-btn-portal-lg:hover {
-  background-color: #27272a;
-  border-color: #52525b;
+  background-color: #25223A;
+  border-color: #8B5CF6;
+  color: #FFFFFF;
 }
 
-/* 3-Column Structured Information Grid */
+/* 3-Column Structured Information Cards */
 .landing-grid-section {
-  border-top: 1px solid #27272a;
+  width: 100%;
+  border-top: 1px solid #2D2945;
   padding-top: 48px;
 }
 
 .landing-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
+  gap: 20px;
 }
 
 @media (max-width: 768px) {
   .landing-grid {
     grid-template-columns: 1fr;
-    gap: 24px;
+    gap: 16px;
   }
 }
 
-.landing-col {
-  border-left: 1px solid #27272a;
-  padding-left: 20px;
+.landing-col-card {
+  background-color: #141320;
+  border: 1px solid #2D2945;
+  border-radius: 8px;
+  padding: 24px 20px;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.landing-col-card:hover {
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
 .landing-col-num {
@@ -245,7 +267,7 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #71717a;
+  color: #8B5CF6;
   margin-bottom: 8px;
 }
 
@@ -253,23 +275,24 @@
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 700;
   font-size: 16px;
-  color: #ffffff;
+  color: #FFFFFF;
   margin: 0 0 8px 0;
 }
 
 .landing-col-desc {
   font-size: 13px;
   line-height: 1.6;
-  color: #a1a1aa;
+  color: #A3A0BC;
   margin: 0;
 }
 
 /* Engineering Proof Bar */
 .landing-proof-bar {
-  margin-top: 64px;
-  padding: 16px 20px;
-  border: 1px solid #27272a;
-  background-color: #121215;
+  margin-top: 48px;
+  width: 100%;
+  padding: 16px 24px;
+  border: 1px solid #2D2945;
+  background-color: #141320;
   border-radius: 8px;
   display: flex;
   flex-wrap: wrap;
@@ -278,7 +301,8 @@
   gap: 16px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
-  color: #a1a1aa;
+  color: #A3A0BC;
+  box-sizing: border-box;
 }
 
 .landing-proof-item {
@@ -287,17 +311,25 @@
   gap: 8px;
 }
 
+.landing-proof-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10B981;
+  border-radius: 2px;
+  display: inline-block;
+}
+
 .landing-proof-status {
-  color: #ffffff;
+  color: #FFFFFF;
   font-weight: 500;
 }
 
 .landing-proof-stack {
-  color: #a1a1aa;
+  color: #A3A0BC;
 }
 
 .landing-proof-link {
-  color: #ffffff;
+  color: #DDD6FE;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -307,15 +339,16 @@
 
 .landing-proof-link:hover {
   text-decoration: underline;
-  color: #10b981;
+  color: #FFFFFF;
 }
 
 /* Footer */
 .landing-footer {
-  border-top: 1px solid #27272a;
+  border-top: 1px solid #2D2945;
   padding: 24px;
   text-align: center;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #71717a;
+  color: #706C8C;
+  background-color: #0C0B12;
 }
