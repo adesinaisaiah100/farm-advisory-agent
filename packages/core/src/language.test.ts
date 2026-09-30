@@ -29,6 +29,19 @@ describe('classifyLanguage', () => {
   it('handles empty text as unknown', () => {
     expect(classifyLanguage('')).toBe('unknown');
   });
+
+  it('detects explicit pidgin switch commands', () => {
+    expect(classifyLanguage('pidgin')).toBe('pidgin');
+    expect(classifyLanguage('speak pidgin')).toBe('pidgin');
+    expect(classifyLanguage('switch to pidgin')).toBe('pidgin');
+    expect(classifyLanguage('broken english')).toBe('pidgin');
+  });
+
+  it('detects explicit english switch commands', () => {
+    expect(classifyLanguage('english')).toBe('english');
+    expect(classifyLanguage('speak english')).toBe('english');
+    expect(classifyLanguage('switch to english')).toBe('english');
+  });
 });
 
 describe('replyLanguageFor', () => {

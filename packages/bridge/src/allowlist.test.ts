@@ -30,7 +30,7 @@ describe('isFarmerAllowed', () => {
     expect(isFarmerAllowed('+2348099999999', [FARMER])).toBe(false);
   });
 
-  it('blocks everyone when no allowlist is configured', () => {
-    expect(isFarmerAllowed(FARMER, [])).toBe(false);
+  it('allows everyone when no allowlist is configured (open pilot mode)', () => {
+    expect(isFarmerAllowed(FARMER, [])).toBe(true);
   });
 });

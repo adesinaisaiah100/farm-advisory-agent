@@ -4,6 +4,7 @@ import { ChatResponseSchema } from '@poultry/schemas';
 import { inMemorySessionStore, LlmError } from '@poultry/core';
 import { createApp } from './index.js';
 import type { TurnServiceDeps } from './turn.js';
+import { inMemoryDashboardStore } from './db/dashboard-store.js';
 
 const NOW = new Date('2026-09-28T09:00:00.000Z');
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
@@ -207,3 +208,133 @@ function post(app: Hono, body: unknown) {
     body: JSON.stringify(body),
   });
 }
+
+// ─── Phase 9 read endpoints ─────────────────────────────────────────────────
+
+const CASE_SESSION = {
+  id: 'sess-aaa1',
+  phone: '+2348099999999',
+  status: 'open' as const,
+  caseId: 'case-aaa1',
+  state: {
+    case: {
+      species: 'broiler' as const,
+      symptoms: ['blood in droppings'],
+      mortalityCount: 3,
+      farmSize: 400 as number,
+      state: 'Oyo',
+      lga: 'Ibadan North',
+      diseaseHits: ['coccidiosis' as const],
+      diseaseText: 'coccidiosis',
+      needsConfirmation: [] as string[],
+      status: 'in_progress' as const,
+    },
+    history: [{ role: 'farmer' as const, text: 'my birds are sick' }],
+    notes: ['500 broilers'],
+  },
+  startedAt: '2026-09-28T09:00:00.000Z',
+  lastActive: '2026-09-28T09:30:00.000Z',
+};
+
+describe('/cases', () => {
+  it('503s when no dashboard store was configured', async () => {
+    const res = await createApp().request('/cases');
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ error: { code: 'not_configured' } });
+  });
+
+  it('returns paginated case list with total count', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const res = await app.request('/cases');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { total: number; cases: unknown[] };
+    expect(body.total).toBe(1);
+    expect(body.cases.length).toBe(1);
+  });
+
+  it('filters by state query param', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const res = await app.request('/cases?state=Kano');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { total: number };
+    expect(body.total).toBe(0);
+  });
+
+  it('filters by species query param', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const resMatch = await app.request('/cases?species=broiler');
+    const resNoMatch = await app.request('/cases?species=layer');
+    expect(((await resMatch.json()) as { total: number }).total).toBe(1);
+    expect(((await resNoMatch.json()) as { total: number }).total).toBe(0);
+  });
+});
+
+describe('/cases/:id', () => {
+  it('503s when no dashboard was configured', async () => {
+    const res = await createApp().request('/cases/sess-aaa1');
+    expect(res.status).toBe(503);
+  });
+
+  it('returns full case detail by sessionId', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const res = await app.request('/cases/sess-aaa1');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { sessionId: string; history: unknown[] };
+    expect(body.sessionId).toBe('sess-aaa1');
+    expect(body.history.length).toBe(1);
+  });
+
+  it('404s for unknown case id', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const res = await app.request('/cases/no-such-case');
+    expect(res.status).toBe(404);
+    expect(await res.json()).toMatchObject({ error: { code: 'not_found' } });
+  });
+});
+
+describe('/reports', () => {
+  it('503s when no dashboard was configured', async () => {
+    const res = await createApp().request('/reports');
+    expect(res.status).toBe(503);
+  });
+
+  it('returns anonymised surveillance reports without farmerPhone', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const res = await app.request('/reports');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { reports: Record<string, unknown>[] };
+    expect(body.reports.length).toBeGreaterThan(0);
+    expect('farmerPhone' in (body.reports[0] ?? {})).toBe(false);
+  });
+
+  it('filters by disease query param', async () => {
+    const app = createApp({ dashboard: inMemoryDashboardStore({ sessions: [CASE_SESSION] }) });
+    const resMatch = await app.request('/reports?disease=coccidiosis');
+    const resNoMatch = await app.request('/reports?disease=newcastle');
+    expect(((await resMatch.json()) as { total: number }).total).toBe(1);
+    expect(((await resNoMatch.json()) as { total: number }).total).toBe(0);
+  });
+});
+
+describe('/stores', () => {
+  it('returns all stores when no filter applied', async () => {
+    const res = await createApp().request('/stores');
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { stores: unknown[]; total: number };
+    expect(body.stores.length).toBeGreaterThan(0);
+    expect(body.total).toBe(body.stores.length);
+  });
+
+  it('filters stores by lga', async () => {
+    const res = await createApp().request('/stores?lga=Ibadan+North');
+    const body = (await res.json()) as { stores: { lga: string }[]; total: number };
+    expect(body.total).toBeGreaterThan(0);
+    expect(body.stores.every((s) => s.lga.toLowerCase() === 'ibadan north')).toBe(true);
+  });
+
+  it('returns empty list for unknown lga', async () => {
+    const res = await createApp().request('/stores?lga=NonExistentLGA');
+    const body = (await res.json()) as { total: number };
+    expect(body.total).toBe(0);
+  });
+});

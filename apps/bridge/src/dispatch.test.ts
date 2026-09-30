@@ -103,13 +103,13 @@ describe('dispatch text', () => {
 });
 
 describe('dispatch allowlist', () => {
-  it('refuses a farmer who is not configured', async () => {
+  it('refuses a farmer who is not on an explicit allowlist', async () => {
     const result = await dispatch(textMessage, deps({ allowed: ['+2348011111111'] }));
     expect(result).toEqual({ outcome: 'not_allowed', waMsgId: '3EB0A1B2C3D4E5F60718' });
   });
 
-  it('refuses everyone when the allowlist is empty', async () => {
-    expect((await dispatch(textMessage, deps({ allowed: [] }))).outcome).toBe('not_allowed');
+  it('allows everyone when the allowlist is empty (open pilot mode)', async () => {
+    expect((await dispatch(textMessage, deps({ allowed: [] }))).outcome).toBe('replied');
   });
 });
 

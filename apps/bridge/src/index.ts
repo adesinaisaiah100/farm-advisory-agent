@@ -98,15 +98,31 @@ function buildMediaIntake(
       );
       const publicBase = env.R2_PUBLIC_URL?.replace(/\/$/, '') ?? `${endpoint}/${R2_BUCKET}`;
       const mediaUrl = `${publicBase}/${result.media.r2Key.replace(/^\//, '')}`;
+
+      // Voice notes: seamlessly pass transcript into the consultation flow.
+      // No confirmation barrier; only fallback if audio was silent/unintelligible.
+      if (result.media.kind === 'audio') {
+        const transcript = result.media.transcript?.trim();
+        if (transcript && transcript.length > 0) {
+          return {
+            mediaUrl,
+            text: transcript,
+          };
+        }
+        return {
+          mediaUrl,
+          confirmQuestion:
+            "I could not hear that clearly enough. Could you please type what is happening with your birds or send another voice note?",
+        };
+      }
+
+      // Photos & other media:
       return {
         mediaUrl,
         text:
-          result.kind === 'needs_confirmation'
-            ? undefined
-            : (result.media.transcript ??
-              (result.media.observations && result.media.observations.length > 0
-                ? `[Photo Observation: ${result.media.observations.join('. ')}]`
-                : undefined)),
+          result.media.observations && result.media.observations.length > 0
+            ? `[Photo Observation: ${result.media.observations.join('. ')}]`
+            : undefined,
         confirmQuestion: result.kind === 'needs_confirmation' ? result.question : undefined,
       };
     },
@@ -210,7 +226,9 @@ async function main(): Promise<void> {
   const allowed = parseAllowedFrom(env.BRIDGE_ALLOWED_FROM);
 
   if (allowed.length === 0) {
-    log.warn('BRIDGE_ALLOWED_FROM is empty, so the bridge will answer nobody until you set it');
+    log.info('BRIDGE_ALLOWED_FROM is not set — open pilot mode: accepting messages from any number');
+  } else {
+    log.info('BRIDGE_ALLOWED_FROM configured', { count: allowed.length });
   }
 
   const turnUrl = env.BRIDGE_TURN_URL ?? 'http://127.0.0.1:3000/chat';
@@ -260,7 +278,7 @@ async function main(): Promise<void> {
       if (result.reason === 'media_download_failed') {
         failureReply = "I saw that you sent a photo or audio, but WhatsApp couldn't download the file. Could you please try sending it again or describe what you see?";
       } else if (result.reason === 'media_intake_failed') {
-        failureReply = "I received your photo, but our analysis service had a temporary issue processing it. Could you please describe what you are seeing in your birds while I check this?";
+        failureReply = "I received your photo or voice note, but our processing service had a temporary issue. Could you please try again or describe what you are seeing in your birds?";
       } else if (result.reason === 'turn_failed') {
         failureReply = "I am having a slight network issue connecting to the clinic server. Please send your message again in just a moment.";
       }
@@ -302,6 +320,12 @@ async function main(): Promise<void> {
   };
   process.on('SIGINT', shutdown);
   process.on('SIGTERM', shutdown);
+
+  process.on('unhandledRejection', (reason) => {
+    log.warn('suppressed unhandled promise rejection in socket/dependencies', {
+      reason: String(reason),
+    });
+  });
 }
 
 main().catch((error: unknown) => {

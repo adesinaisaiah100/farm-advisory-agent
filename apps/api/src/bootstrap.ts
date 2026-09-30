@@ -10,6 +10,10 @@ import { createApp, type ApiDeps, type ReadyReport } from './index.js';
 import { createApiDb } from './db/client.js';
 import { postgresSessionStore } from './db/session-store.js';
 import { postgresFarmerStore } from './db/farmer-store.js';
+import { postgresDashboardStore } from './db/dashboard-store.js';
+import { postgresLibraryStore } from './db/library-store.js';
+import { createDb, createPool, GeminiEmbedder } from '@poultry/rag';
+import { R2StorageService } from './r2.js';
 
 export interface RuntimeEnv {
   readonly nodeEnv: string;
@@ -18,6 +22,11 @@ export interface RuntimeEnv {
   readonly geminiApiKeyProd?: string;
   readonly openRouterApiKey?: string;
   readonly openRouterFallbackModel?: string;
+  readonly r2AccountId?: string;
+  readonly r2Bucket?: string;
+  readonly r2AccessKeyId?: string;
+  readonly r2SecretAccessKey?: string;
+  readonly r2PublicUrl?: string;
 }
 
 /**
@@ -35,6 +44,11 @@ export function readRuntimeEnv(source: Record<string, string | undefined>): Runt
     geminiApiKeyProd: source['GEMINI_API_KEY_PROD'],
     openRouterApiKey: source['OPENROUTER_API_KEY'],
     openRouterFallbackModel: source['OPENROUTER_FALLBACK_MODEL'],
+    r2AccountId: source['R2_ACCOUNT_ID'],
+    r2Bucket: source['R2_BUCKET'],
+    r2AccessKeyId: source['R2_ACCESS_KEY_ID'],
+    r2SecretAccessKey: source['R2_SECRET_ACCESS_KEY'],
+    r2PublicUrl: source['R2_PUBLIC_URL'],
   };
 }
 
@@ -91,6 +105,26 @@ export function buildApiDeps(env: RuntimeEnv): BootstrapResult {
       })
     : geminiChat;
 
+  const r2 = new R2StorageService({
+    accountId: env.r2AccountId,
+    bucket: env.r2Bucket,
+    accessKeyId: env.r2AccessKeyId,
+    secretAccessKey: env.r2SecretAccessKey,
+    publicUrl: env.r2PublicUrl,
+  });
+
+  const embedder = new GeminiEmbedder({
+    apiKey,
+    dims: 768,
+    normalize: true,
+  });
+
+  // PgChunkRepository is typed against the node-postgres-shaped RagDatabase, so
+  // it gets its own Neon Pool instead of being forced through the HTTP driver.
+  const ragDb = createDb(createPool({ connectionString: env.databaseUrl, max: 2 }));
+
+  const library = postgresLibraryStore(ragDb, db, r2, embedder);
+
   return {
     deps: {
       chat: {
@@ -105,6 +139,8 @@ export function buildApiDeps(env: RuntimeEnv): BootstrapResult {
         newId: () => crypto.randomUUID(),
         now: () => new Date(),
       },
+      dashboard: postgresDashboardStore(db),
+      library,
       ready: async (): Promise<ReadyReport> => pingReadiness(db),
     },
   };

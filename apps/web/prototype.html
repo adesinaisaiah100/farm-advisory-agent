@@ -1,0 +1,1920 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BirdVet — Clinical Advisory & Surveillance Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ==========================================================================
+       OBSIDIAN & PURPLE THEME: ZERO PILLS, ZERO DOTS, CRISP RECTANGULAR TAGS
+       ========================================================================== */
+    :root, [data-theme="dark"] {
+      --bg-page: #0C0B12;             /* Obsidian night base with subtle deep purple tone */
+      --bg-surface: #141320;          /* Sleek surface / cards / sidebar */
+      --bg-subtle: #1C1A2C;           /* Input fields, table headers, hover surfaces */
+      --bg-hover: #232038;            /* Row hover / card hover */
+      
+      --border-color: #28243D;        /* Subtle dark violet-slate border */
+      --border-strong: #3D375C;       /* Stronger border on focus */
+      
+      --text-main: #F3F3FA;           /* Crisp soft white */
+      --text-muted: #A3A0BC;          /* Muted violet-slate text */
+      --text-light: #706C8C;          /* Secondary dim text */
+
+      /* Refined Violet / Purple Accents */
+      --accent-purple: #8B5CF6;        /* Primary purple */
+      --accent-purple-hover: #7C3AED;  /* Deep hover */
+      --accent-purple-subtle: #231B3D; /* Subtle purple badge/card background */
+      --accent-purple-border: #4D3782; /* Purple border */
+      --accent-purple-text: #DDD6FE;   /* Purple text */
+
+      /* Clean Criticality / Severity Tags (Rectangular, NO rounded pills) */
+      --crit-critical-bg: #2E1217;
+      --crit-critical-text: #F87171;
+      --crit-critical-border: #5C1D24;
+
+      --crit-high-bg: #2C1A12;
+      --crit-high-text: #FB923C;
+      --crit-high-border: #632D15;
+
+      --crit-moderate-bg: #2C2411;
+      --crit-moderate-text: #FBBF24;
+      --crit-moderate-border: #594314;
+
+      --crit-resolved-bg: #12251D;
+      --crit-resolved-text: #34D399;
+      --crit-resolved-border: #1B4D36;
+
+      --status-escalated-bg: #2E1217;
+      --status-escalated-text: #F87171;
+      --status-escalated-border: #5C1D24;
+
+      --status-progress-bg: #2B1E12;
+      --status-progress-text: #FBBF24;
+      --status-progress-border: #594314;
+
+      --status-complete-bg: #12251D;
+      --status-complete-text: #34D399;
+      --status-complete-border: #1B4D36;
+
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --radius: 4px;
+    }
+
+    [data-theme="light"] {
+      --bg-page: #F8FAFC;
+      --bg-surface: #FFFFFF;
+      --bg-subtle: #F1F5F9;
+      --bg-hover: #F8FAFC;
+      
+      --border-color: #E2E8F0;
+      --border-strong: #CBD5E1;
+      
+      --text-main: #0F172A;
+      --text-muted: #475569;
+      --text-light: #64748B;
+
+      --accent-purple: #7C3AED;
+      --accent-purple-hover: #6D28D9;
+      --accent-purple-subtle: #F5F3FF;
+      --accent-purple-border: #DDD6FE;
+      --accent-purple-text: #6D28D9;
+
+      --crit-critical-bg: #FEF2F2;
+      --crit-critical-text: #991B1B;
+      --crit-critical-border: #FCA5A5;
+
+      --crit-high-bg: #FFF7ED;
+      --crit-high-text: #C2410C;
+      --crit-high-border: #FDBA74;
+
+      --crit-moderate-bg: #FEFCE8;
+      --crit-moderate-text: #854D0E;
+      --crit-moderate-border: #FDE047;
+
+      --crit-resolved-bg: #F0FDF4;
+      --crit-resolved-text: #166534;
+      --crit-resolved-border: #BBF7D0;
+
+      --status-escalated-bg: #FEF2F2;
+      --status-escalated-text: #B91C1C;
+      --status-escalated-border: #F87171;
+
+      --status-progress-bg: #FFFBEB;
+      --status-progress-text: #B45309;
+      --status-progress-border: #FBBF24;
+
+      --status-complete-bg: #F0FDF4;
+      --status-complete-text: #15803D;
+      --status-complete-border: #86EFAC;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font);
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.5;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 230px;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header {
+      padding: 18px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .sidebar-header h2 {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .sidebar-header p {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .sidebar-menu {
+      padding: 12px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      flex: 1;
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+    }
+
+    .sidebar-link:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .sidebar-link.active {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-weight: 600;
+      border-left-color: var(--accent-purple);
+    }
+
+    .sidebar-count {
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-light);
+      background: var(--border-color);
+      padding: 1px 6px;
+      border-radius: var(--radius);
+    }
+
+    .sidebar-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .btn-toggle-theme {
+      background: none;
+      border: 1px solid var(--border-color);
+      padding: 4px 8px;
+      border-radius: var(--radius);
+      color: var(--text-muted);
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .btn-toggle-theme:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    /* Main Area */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      height: 56px;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      gap: 16px;
+    }
+
+    .search-input-wrapper {
+      position: relative;
+      width: 320px;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: var(--border-strong);
+      background: var(--bg-surface);
+    }
+
+    .top-summary {
+      display: flex;
+      gap: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .top-summary strong {
+      color: var(--text-main);
+    }
+
+    /* Page View Panels */
+    .tab-panel {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .page-title h1 {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .page-title p {
+      font-size: 13px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .filters-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .filter-dropdown {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .filter-dropdown:hover {
+      border-color: var(--border-strong);
+      color: var(--text-main);
+    }
+
+    /* Clean Standard Table (Rectangular, High Density) */
+    .table-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+
+    thead th {
+      padding: 9px 14px;
+      background: var(--bg-subtle);
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-light);
+      font-size: 11.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border-color);
+      cursor: pointer;
+      transition: background 100ms;
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: var(--bg-hover);
+    }
+
+    tbody tr.selected {
+      background: var(--bg-subtle);
+    }
+
+    tbody td {
+      padding: 11px 14px;
+      vertical-align: middle;
+    }
+
+    .cell-farmer {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .cell-phone {
+      font-size: 11.5px;
+      color: var(--text-light);
+    }
+
+    .cell-symptoms {
+      color: var(--text-muted);
+      max-width: 280px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Clean Rectangular Tags (No Pills, No Dots) */
+    .tag-rect {
+      display: inline-block;
+      padding: 2px 7px;
+      border-radius: var(--radius);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .tag-critical {
+      background: var(--crit-critical-bg);
+      color: var(--crit-critical-text);
+      border-color: var(--crit-critical-border);
+    }
+
+    .tag-high {
+      background: var(--crit-high-bg);
+      color: var(--crit-high-text);
+      border-color: var(--crit-high-border);
+    }
+
+    .tag-moderate {
+      background: var(--crit-moderate-bg);
+      color: var(--crit-moderate-text);
+      border-color: var(--crit-moderate-border);
+    }
+
+    .tag-resolved {
+      background: var(--crit-resolved-bg);
+      color: var(--crit-resolved-text);
+      border-color: var(--crit-resolved-border);
+    }
+
+    .tag-escalated {
+      background: var(--status-escalated-bg);
+      color: var(--status-escalated-text);
+      border-color: var(--status-escalated-border);
+    }
+
+    .tag-progress {
+      background: var(--status-progress-bg);
+      color: var(--status-progress-text);
+      border-color: var(--status-progress-border);
+    }
+
+    .tag-complete {
+      background: var(--status-complete-bg);
+      color: var(--status-complete-text);
+      border-color: var(--status-complete-border);
+    }
+
+    /* ==========================================================================
+       SPACIOUS AGRO-VET STORES & REPORTS CARDS
+       ========================================================================== */
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+    }
+
+    .card-item {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .card-item-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .card-item-subtitle {
+      font-size: 12.5px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .card-item-body {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .store-phone-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--text-main);
+      padding: 6px 0;
+    }
+
+    .store-phone-label {
+      font-size: 12px;
+      color: var(--text-light);
+      font-weight: 500;
+    }
+
+    .store-phone-number {
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+
+    .services-tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .tag-service {
+      font-size: 11px;
+      padding: 2px 7px;
+      border: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      border-radius: var(--radius);
+    }
+
+    .card-item-footer {
+      margin-top: auto;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* ==========================================================================
+       VETERINARY LIBRARY / SIMPLE FILE REPOSITORY
+       ========================================================================== */
+    .library-layout {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .library-upload-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .library-upload-header {
+      margin-bottom: 14px;
+    }
+
+    .library-upload-header h2 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .library-upload-header p {
+      font-size: 12.5px;
+      color: var(--text-light);
+      margin-top: 2px;
+    }
+
+    .library-dropzone {
+      border: 1px dashed var(--border-strong);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      background: var(--bg-page);
+      cursor: pointer;
+      transition: border-color 150ms, background 150ms;
+      margin-bottom: 14px;
+    }
+
+    .library-dropzone:hover {
+      border-color: var(--accent-purple);
+      background: var(--bg-subtle);
+    }
+
+    .dropzone-text {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .dropzone-hint {
+      font-size: 11.5px;
+      color: var(--text-light);
+      margin-top: 4px;
+    }
+
+    .library-upload-fields {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr auto;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .library-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .library-search {
+      width: 280px;
+      height: 32px;
+      padding: 0 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .library-search:focus {
+      border-color: var(--border-strong);
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-page);
+      color: var(--text-main);
+      font-size: 13px;
+      outline: none;
+      font-family: inherit;
+    }
+
+    /* Interactive Web Chat Sandbox */
+    .chat-sandbox-wrapper {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 160px);
+      overflow: hidden;
+    }
+
+    .chat-sandbox-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-sandbox-footer {
+      padding: 12px 16px;
+      border-top: 1px solid var(--border-color);
+      background: var(--bg-subtle);
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-sandbox-input {
+      flex: 1;
+      height: 38px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      font-size: 13.5px;
+      outline: none;
+    }
+
+    .btn-send-chat {
+      height: 38px;
+      padding: 0 16px;
+      background: var(--accent-purple);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .btn-send-chat:hover {
+      background: var(--accent-purple-hover);
+    }
+
+    /* Detail Drawer */
+    .drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      z-index: 50;
+      display: none;
+    }
+
+    .drawer-backdrop.open {
+      display: block;
+    }
+
+    .case-drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 480px;
+      max-width: 100vw;
+      height: 100vh;
+      background: var(--bg-surface);
+      border-left: 1px solid var(--border-color);
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 180ms ease;
+    }
+
+    .case-drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-top {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .drawer-top h2 {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .drawer-top button {
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: var(--text-light);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .drawer-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .drawer-section {
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 14px;
+      background: var(--bg-page);
+    }
+
+    .drawer-section h3 {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-label {
+      color: var(--text-light);
+    }
+
+    .detail-value {
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    /* WhatsApp Messages */
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .chat-msg {
+      max-width: 88%;
+      padding: 9px 12px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .chat-msg.farmer {
+      align-self: flex-start;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+    }
+
+    .chat-msg.agent {
+      align-self: flex-end;
+      background: var(--accent-purple-subtle);
+      border: 1px solid var(--accent-purple-border);
+      color: var(--text-main);
+    }
+
+    .chat-sender {
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 2px;
+      color: var(--text-light);
+    }
+
+    .chat-msg.agent .chat-sender {
+      color: var(--accent-purple-text);
+    }
+
+    .chat-voice-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent-purple);
+      margin-bottom: 3px;
+    }
+
+    .drawer-actions {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-action {
+      height: 34px;
+      padding: 0 14px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-action.primary {
+      background: var(--accent-purple);
+      border-color: var(--accent-purple-hover);
+      color: #FFFFFF;
+    }
+
+    .btn-action.primary:hover {
+      background: var(--accent-purple-hover);
+    }
+
+    .btn-action:hover:not(.primary) {
+      background: var(--bg-subtle);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>BirdVet</h2>
+        <p>Poultry Advisory System</p>
+      </div>
+
+      <nav class="sidebar-menu">
+        <a class="sidebar-link active" id="navCases" onclick="switchTab('cases')">
+          <span>Cases</span>
+          <span class="sidebar-count" id="countCases">6</span>
+        </a>
+        <a class="sidebar-link" id="navReports" onclick="switchTab('reports')">
+          <span>Outbreak Reports</span>
+          <span class="sidebar-count" id="countReports">4</span>
+        </a>
+        <a class="sidebar-link" id="navStores" onclick="switchTab('stores')">
+          <span>Agro-Vet Stores</span>
+          <span class="sidebar-count" id="countStores">7</span>
+        </a>
+        <a class="sidebar-link" id="navLibrary" onclick="switchTab('library')">
+          <span>Veterinary Library</span>
+          <span class="sidebar-count" id="countLibrary">4</span>
+        </a>
+        <a class="sidebar-link" id="navChat" onclick="switchTab('chat')">
+          <span>Web Chat</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span style="font-size: 12px; color: var(--text-light);">Local Version</span>
+        <button class="btn-toggle-theme" onclick="toggleTheme()" id="btnTheme">Theme: Dark</button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="search-input-wrapper">
+          <input type="text" class="search-input" id="searchInput" placeholder="Search farmer, location, or symptoms..." oninput="handleSearch(this.value)">
+        </div>
+
+        <div class="top-summary">
+          <span>Total Cases: <strong id="summaryTotal">6</strong></span>
+          <span>Critical: <strong id="summaryCritical" style="color: var(--crit-critical-text);">2</strong></span>
+          <span>High Risk: <strong id="summaryHigh" style="color: var(--crit-high-text);">1</strong></span>
+          <span>Moderate: <strong id="summaryModerate" style="color: var(--crit-moderate-text);">2</strong></span>
+          <span>Resolved: <strong id="summaryResolved" style="color: var(--crit-resolved-text);">1</strong></span>
+        </div>
+      </header>
+
+      <!-- ================= TAB 1: CASES ================= -->
+      <section class="tab-panel active" id="tabPanelCases">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Farmer Cases</h1>
+            <p>Active cases with verified severity and intake status.</p>
+          </div>
+
+          <div class="filters-group">
+            <select class="filter-dropdown" id="filterCriticality" onchange="applyFilters()">
+              <option value="all">All Criticality Levels</option>
+              <option value="critical">Critical</option>
+              <option value="high">High Risk</option>
+              <option value="moderate">Moderate</option>
+              <option value="resolved">Resolved</option>
+            </select>
+
+            <select class="filter-dropdown" id="filterStatus" onchange="applyFilters()">
+              <option value="all">All Statuses</option>
+              <option value="escalated">Escalated</option>
+              <option value="in_progress">In Progress</option>
+              <option value="complete">Complete</option>
+            </select>
+
+            <select class="filter-dropdown" id="filterState" onchange="applyFilters()">
+              <option value="all">All States</option>
+              <option value="Oyo">Oyo</option>
+              <option value="Lagos">Lagos</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Cases Table -->
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 110px;">Criticality</th>
+                <th style="width: 170px;">Farmer</th>
+                <th style="width: 130px;">Location</th>
+                <th style="width: 120px;">Flock</th>
+                <th>Reported Symptoms</th>
+                <th style="width: 90px;">Mortality</th>
+                <th style="width: 100px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="casesTableBody">
+              <!-- Rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: REPORTS ================= -->
+      <section class="tab-panel" id="tabPanelReports">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Disease Outbreak Reports</h1>
+            <p>Aggregated signals from veterinary intake conversations across Nigerian LGAs.</p>
+          </div>
+
+          <div class="filters-group">
+            <select class="filter-dropdown" id="filterReportState" onchange="filterReports(this.value)">
+              <option value="all">All States</option>
+              <option value="Oyo">Oyo State</option>
+              <option value="Lagos">Lagos State</option>
+              <option value="Ogun">Ogun State</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-cards" id="reportsGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: AGRO-VET STORES ================= -->
+      <section class="tab-panel" id="tabPanelStores">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Agro-Vet Store Network</h1>
+            <p>Verified medication, feed, and post-mortem referral locations by State and LGA.</p>
+          </div>
+
+          <div class="filters-group">
+            <select class="filter-dropdown" id="filterStoreState" onchange="filterStores(this.value)">
+              <option value="all">All States</option>
+              <option value="Oyo">Oyo State</option>
+              <option value="Lagos">Lagos State</option>
+              <option value="Ogun">Ogun State</option>
+              <option value="Kaduna">Kaduna State</option>
+              <option value="Plateau">Plateau State</option>
+              <option value="Enugu">Enugu State</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-cards" id="storesGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: VETERINARY LIBRARY ================= -->
+      <section class="tab-panel" id="tabPanelLibrary">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Veterinary Library</h1>
+            <p>Upload and manage reference handbooks, treatment protocols, and disease manuals.</p>
+          </div>
+        </div>
+
+        <div class="library-layout">
+          <!-- Simple Upload Area -->
+          <div class="library-upload-card">
+            <div class="library-upload-header">
+              <h2>Add Reference Document</h2>
+              <p>Upload clinical guidelines or manuals to supply verified veterinary guidance to the advisory system.</p>
+            </div>
+
+            <div class="library-dropzone" onclick="document.getElementById('fileUploadInput').click()">
+              <input type="file" id="fileUploadInput" accept=".pdf,.doc,.docx,.txt" style="display: none;" onchange="handleFileChosen(this)">
+              <div class="dropzone-text" id="dropzoneText">Click to select a PDF or guideline document, or drag it here</div>
+              <div class="dropzone-hint">Supports PDF, DOCX, TXT up to 25 MB</div>
+            </div>
+
+            <form class="library-upload-fields" onsubmit="event.preventDefault(); submitLibraryDocument();">
+              <div class="form-group" style="margin: 0;">
+                <label>Document Title (Optional)</label>
+                <input type="text" id="libDocTitle" placeholder="e.g. FAO Poultry Disease Field Manual (2026)">
+              </div>
+
+              <div class="form-group" style="margin: 0;">
+                <label>Category</label>
+                <select id="libDocCategory">
+                  <option value="Clinical Pathology">Clinical Pathology</option>
+                  <option value="Disease Outbreaks">Disease Outbreaks</option>
+                  <option value="Medications & Vaccines">Medications & Vaccines</option>
+                  <option value="Biosecurity & Hygiene">Biosecurity & Hygiene</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn-action primary" style="height: 34px; padding: 0 18px;">
+                Upload Document
+              </button>
+            </form>
+          </div>
+
+          <!-- Documents Table / Library List -->
+          <div>
+            <div class="library-toolbar">
+              <div style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                Uploaded Reference Documents (<span id="libDocCount">4</span>)
+              </div>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" class="library-search" id="libSearchInput" placeholder="Search library documents..." oninput="filterLibrarySearch(this.value)">
+                <select class="filter-dropdown" id="filterLibCategory" onchange="filterLibraryCategory(this.value)">
+                  <option value="all">All Categories</option>
+                  <option value="Clinical Pathology">Clinical Pathology</option>
+                  <option value="Disease Outbreaks">Disease Outbreaks</option>
+                  <option value="Medications & Vaccines">Medications & Vaccines</option>
+                  <option value="Biosecurity & Hygiene">Biosecurity & Hygiene</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="table-card">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Document Name</th>
+                    <th>Category</th>
+                    <th>File Size</th>
+                    <th>Date Added</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="libraryTableBody">
+                  <!-- Rendered via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: WEB CHAT ================= -->
+      <section class="tab-panel" id="tabPanelChat">
+        <div class="page-header">
+          <div class="page-title">
+            <h1>Clinic Web Chat</h1>
+            <p>Direct browser sandbox to consult the BirdVet advisory assistant.</p>
+          </div>
+        </div>
+
+        <div class="chat-sandbox-wrapper">
+          <div class="chat-sandbox-messages" id="sandboxMessages">
+            <div class="chat-msg agent">
+              <div class="chat-sender">BirdVet AI</div>
+              <div>Hello! Welcome to BirdVet. What symptoms are you noticing in your poultry flock today?</div>
+            </div>
+          </div>
+
+          <div class="chat-sandbox-footer">
+            <input type="text" class="chat-sandbox-input" id="sandboxInput" placeholder="Type a farmer message (e.g. 'My 500 broilers are sneezing and stooling blood in Ibadan')..." onkeydown="if(event.key==='Enter') sendWebChatMessage()">
+            <button class="btn-send-chat" onclick="sendWebChatMessage()">Send</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Detail Drawer -->
+  <div class="drawer-backdrop" id="drawerBackdrop" onclick="closeDrawer()"></div>
+  <aside class="case-drawer" id="caseDrawer">
+    <div class="drawer-top">
+      <div>
+        <h2 id="drawerTitle">Case Details</h2>
+        <span style="font-size: 12px; color: var(--text-light);" id="drawerCaseId">ID: --</span>
+      </div>
+      <button onclick="closeDrawer()">&times;</button>
+    </div>
+
+    <div class="drawer-content">
+      <!-- Case Summary -->
+      <div class="drawer-section">
+        <h3>Case Severity & Status</h3>
+        <div class="detail-row">
+          <span class="detail-label">Criticality:</span>
+          <span class="detail-value" id="drawerCriticality">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Status:</span>
+          <span class="detail-value" id="drawerStatusText">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Mortality Count:</span>
+          <span class="detail-value" id="drawerMortality">0</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Onset Duration:</span>
+          <span class="detail-value" id="drawerDuration">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Symptoms:</span>
+          <span class="detail-value" id="drawerSymptoms">--</span>
+        </div>
+      </div>
+
+      <!-- Farmer Details -->
+      <div class="drawer-section">
+        <h3>Farmer Details</h3>
+        <div class="detail-row">
+          <span class="detail-label">Farmer Name:</span>
+          <span class="detail-value" id="drawerFarmerName">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Phone Number:</span>
+          <span class="detail-value" id="drawerFarmerPhone">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Location:</span>
+          <span class="detail-value" id="drawerFarmerLocation">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Flock Species:</span>
+          <span class="detail-value" id="drawerFarmerSpecies">--</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Flock Size:</span>
+          <span class="detail-value" id="drawerFarmerFlockSize">--</span>
+        </div>
+      </div>
+
+      <!-- WhatsApp Messages -->
+      <div class="drawer-section">
+        <h3>WhatsApp Messages</h3>
+        <div class="chat-container" id="drawerChatMessages">
+          <!-- Messages rendered via JS -->
+        </div>
+      </div>
+    </div>
+
+    <div class="drawer-actions">
+      <button class="btn-action primary" style="flex:1;" onclick="alert('Connecting assigned veterinarian to this farm...')">Contact Vet</button>
+      <button class="btn-action" style="flex:1;" onclick="alert('Exporting clinical case summary...')">Export PDF</button>
+    </div>
+  </aside>
+
+  <!-- JavaScript -->
+  <script>
+    // 1. Cases Data with explicit Criticality Levels:
+    const CASES = [
+      {
+        id: "c458b12d",
+        farmer: "Segun",
+        phone: "+234 915 513 2405",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "Broiler",
+        flockSize: "500 birds",
+        symptoms: "Shit blood, lethargic with tucked heads",
+        duration: "2 days",
+        mortality: 1,
+        criticality: "critical",
+        status: "escalated",
+        history: [
+          { sender: "Farmer", text: "Na broiler oi I get like 500" },
+          { sender: "BirdVet", text: "Thank you, Segun. I dey sorry to hear say your birds dey sick, make we figure this out together. Wetin be the signs you dey see for the birds, and for how many days now?" },
+          { sender: "Farmer", text: "Dem dey shit blood and for like 2 days now one don die sef", isVoice: false },
+          { sender: "BirdVet", text: "Segun, I am very sorry to hear say one bird don die. Since you see blood for their droppings, abeg tell me, how many of them dey show this sign, and how dem dey behave generally?" },
+          { sender: "Farmer", text: "Like 20 make i send picture" },
+          { sender: "BirdVet", text: "Please do not delay this. The bird problem is serious — we need to take it seriously. We are directing you to a veterinary professional who can come out to your farm." }
+        ]
+      },
+      {
+        id: "55aa22f9",
+        farmer: "Segun",
+        phone: "+234 915 513 2405",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "Broiler",
+        flockSize: "500 birds",
+        symptoms: "Resting on sternum, splayed legs, unkempt feathers",
+        duration: "1 day",
+        mortality: 3,
+        criticality: "critical",
+        status: "escalated",
+        history: [
+          { sender: "Farmer", text: "Like 5 since yesterday" },
+          { sender: "BirdVet", text: "I am so sorry to hear this, Segun. Since 5 birds are affected and it started just yesterday, please tell me, have any of them died yet?" },
+          { sender: "Farmer", text: "Like 3" },
+          { sender: "BirdVet", text: "I am very sorry for your loss, Segun. It is worrying that 3 birds have died so quickly. To help me understand better, how many birds do you have in total in this flock?" }
+        ]
+      },
+      {
+        id: "e55cd531",
+        farmer: "Biola",
+        phone: "+234 802 284 7502",
+        state: "Lagos",
+        lga: "Phase 2",
+        species: "Broiler",
+        flockSize: "500 birds",
+        symptoms: "No dey chop, shit blood",
+        duration: "2 days",
+        mortality: 3,
+        criticality: "high",
+        status: "in_progress",
+        history: [
+          { sender: "Farmer", text: "hi" },
+          { sender: "BirdVet", text: "Hello! Welcome to Birdvet. I'm here to help you care for your flock. May I know your name and which LGA or State your farm is located in?" },
+          { sender: "Farmer", text: "sir in Lagos I stay in phase 2" },
+          { sender: "BirdVet", text: "Nice to meet you! Could you please tell me your name, and what kind of birds are you keeping on your farm?" },
+          { sender: "Farmer", text: "I rear broilers sirmy man e Is biola" },
+          { sender: "BirdVet", text: "Nice to meet you, Biola. I am here to help you with your broilers. Please tell me, what symptoms are you noticing in your birds, and how long has this been happening?" },
+          { sender: "Farmer", text: "See, I don't notice say like the birds, they no dey chop, they dey shit blood. And e don happen for like two days now. My birds no dey chop. Some of them don die already.", isVoice: true },
+          { sender: "BirdVet", text: "Ehya, Biola, I sorry for the loss, my brother. Bloody droppings na serious matter for broilers, abeg how many of them don die so far?" },
+          { sender: "Farmer", text: "like 3 na" },
+          { sender: "BirdVet", text: "Ehya, Biola, 3 birds don die na serious matter. Abeg, make you contact local vet sharp-sharp for post-mortem, and separate the sick ones from the healthy ones immediately make the sickness no spread reach everybody." }
+        ]
+      },
+      {
+        id: "2223c8c6",
+        farmer: "Yih",
+        phone: "+234 907 130 1019",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "Broiler",
+        flockSize: "300 birds",
+        symptoms: "Intake in progress",
+        duration: "1 day",
+        mortality: 0,
+        criticality: "moderate",
+        status: "in_progress",
+        history: [
+          { sender: "Farmer", text: "Broiler" },
+          { sender: "BirdVet", text: "Hello! Welcome to Birdvet. I'm here to help you care for your flock. May I know your name and which LGA or State your farm is located in?" },
+          { sender: "Farmer", text: "Ibadan, oyo state" },
+          { sender: "BirdVet", text: "Thank you for that information. May I know your name, and could you please tell me what symptoms you are seeing in your birds?" }
+        ]
+      },
+      {
+        id: "1ec1c8c6",
+        farmer: "Adebayo",
+        phone: "+234 808 297 4602",
+        state: "Oyo",
+        lga: "Abeokuta Road",
+        species: "Broiler",
+        flockSize: "200 birds",
+        symptoms: "Sneeze and cough",
+        duration: "1 day",
+        mortality: 0,
+        criticality: "moderate",
+        status: "in_progress",
+        history: [
+          { sender: "Farmer", text: "My birds are sneezing" },
+          { sender: "BirdVet", text: "Hello! Welcome to Birdvet. Sneezing can happen because of dust or a respiratory issue. How long have they been sneezing, and are they still eating well?" }
+        ]
+      },
+      {
+        id: "e48f19b6",
+        farmer: "Segun",
+        phone: "+234 915 513 2405",
+        state: "Oyo",
+        lga: "Ibadan",
+        species: "Broiler",
+        flockSize: "500 birds",
+        symptoms: "Sternal recumbency, head tucked, legs extended",
+        duration: "2 days",
+        mortality: 2,
+        criticality: "resolved",
+        status: "complete",
+        history: [
+          { sender: "Farmer", text: "Dem don dey do like this for 2 days na" },
+          { sender: "BirdVet", text: "Ehya, Segun, two days don reach now. Abeg, any of the birds don die since this one start, or na only the weakness you dey see?" },
+          { sender: "Farmer", text: "Ehn na soo 2 don die" },
+          { sender: "BirdVet", text: "Ehya, Segun, sorry for the loss. Since two don die already, abeg keep one of the dead birds for cold place sharp-sharp and call your vet make e come do post-mortem." },
+          { sender: "Farmer", text: "Okay sir thank you" },
+          { sender: "BirdVet", text: "You are welcome, Segun. Please monitor the rest of the flock closely and reach out if you notice any new changes. May your birds stay safe." }
+        ]
+      }
+    ];
+
+    // 2. Outbreak Reports Data:
+    const REPORTS = [
+      {
+        id: "rep-001",
+        disease: "Coccidiosis (Bloody Droppings)",
+        state: "Oyo",
+        lga: "Ibadan North",
+        criticality: "critical",
+        date: "Today, 10:45 AM",
+        summary: "3 separate broiler farms reporting acute bloody droppings with sudden mortality (1-3 dead per farm). Biosecurity and immediate post-mortem dispatched."
+      },
+      {
+        id: "rep-002",
+        disease: "Infectious Respiratory Signs (CRD / Coryza)",
+        state: "Lagos",
+        lga: "Ojo",
+        criticality: "high",
+        date: "Yesterday",
+        summary: "Coughing, sneezing, and ocular discharge observed across 2 commercial broiler pens. Farmers advised on pen ventilation and separation."
+      },
+      {
+        id: "rep-003",
+        disease: "Locomotor & Sternal Recumbency",
+        state: "Oyo",
+        lga: "Ibadan",
+        criticality: "moderate",
+        date: "28 Sep 2026",
+        summary: "Birds unable to stand with splayed legs. Feed quality check and vitamin/mineral supplementation advised pending veterinary visit."
+      },
+      {
+        id: "rep-004",
+        disease: "Suspected Gumboro / Infectious Bursal Disease",
+        state: "Ogun",
+        lga: "Abeokuta North",
+        criticality: "critical",
+        date: "27 Sep 2026",
+        summary: "Severe depression, ruffled feathers, and rapid death in 4-week-old broilers. Local vet alerted for serology verification."
+      }
+    ];
+
+    // 3. Agro-Vet Stores Data (Formatted cleanly with breathing room):
+    const STORES = [
+      {
+        name: "Adaeze Agro Vet",
+        state: "Oyo",
+        lga: "Ibadan North",
+        phoneFormatted: "+234 801 234 5678",
+        services: ["Vaccines", "Antibiotics", "Feed Additives", "On-Site Vet"],
+        address: "Bodija Market Road, Ibadan North, Oyo State"
+      },
+      {
+        name: "GreenField Vet Supplies",
+        state: "Lagos",
+        lga: "Ojo",
+        phoneFormatted: "+234 802 345 6789",
+        services: ["Post-Mortem Referral", "Disinfectants", "Electrolytes"],
+        address: "Badagry Expressway, Ojo, Lagos State"
+      },
+      {
+        name: "PoultryPlus Depot",
+        state: "Ogun",
+        lga: "Abeokuta North",
+        phoneFormatted: "+234 805 678 9012",
+        services: ["Chicks Distribution", "Vaccine Cold Chain", "Equipment"],
+        address: "Lafenwa Area, Abeokuta North, Ogun State"
+      },
+      {
+        name: "Ojo Agro Depot",
+        state: "Lagos",
+        lga: "Ojo",
+        phoneFormatted: "+234 807 890 1234",
+        services: ["Veterinary Drugs", "Water Sanitizers", "Feed Premix"],
+        address: "Alaba International Axis, Ojo, Lagos State"
+      },
+      {
+        name: "Sunrise Agro Store",
+        state: "Kaduna",
+        lga: "Kaduna North",
+        phoneFormatted: "+234 803 456 7890",
+        services: ["Livestock Feed", "Poultry Vitamins", "Consultations"],
+        address: "Ahmadu Bello Way, Kaduna North, Kaduna State"
+      },
+      {
+        name: "Hope Agro Vet",
+        state: "Plateau",
+        lga: "Jos North",
+        phoneFormatted: "+234 806 789 0123",
+        services: ["Vaccine Storage", "Feed", "Diagnostic Testing"],
+        address: "Murtala Mohammed Way, Jos North, Plateau State"
+      },
+      {
+        name: "FarmCare Supplies",
+        state: "Enugu",
+        lga: "Enugu North",
+        phoneFormatted: "+234 804 567 8901",
+        services: ["Poultry Medication", "Brooder Heating", "Disinfectants"],
+        address: "Ogui Road, Enugu North, Enugu State"
+      }
+    ];
+
+    let currentCases = [...CASES];
+    let selectedId = null;
+
+    // Render Cases Table
+    function renderTable(data) {
+      const tbody = document.getElementById('casesTableBody');
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-light);">No cases found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(c => `
+        <tr onclick="openDrawer('${c.id}')" class="${c.id === selectedId ? 'selected' : ''}">
+          <td>
+            <span class="tag-rect tag-${c.criticality}">${c.criticality}</span>
+          </td>
+          <td>
+            <div class="cell-farmer">${c.farmer}</div>
+            <div class="cell-phone">${c.phone}</div>
+          </td>
+          <td>${c.lga}, ${c.state}</td>
+          <td>${c.species}</td>
+          <td class="cell-symptoms" title="${c.symptoms}">${c.symptoms}</td>
+          <td>${c.mortality > 0 ? c.mortality + ' dead' : 'None'}</td>
+          <td>
+            <span class="tag-rect tag-${c.status === 'in_progress' ? 'progress' : c.status}">${c.status.replace('_', ' ')}</span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // Render Outbreak Reports
+    function renderReports(reports) {
+      const container = document.getElementById('reportsGrid');
+      if (reports.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; padding: 30px; text-align: center; color: var(--text-light);">No reports matching state.</div>`;
+        return;
+      }
+
+      container.innerHTML = reports.map(r => `
+        <div class="card-item">
+          <div class="card-item-header">
+            <div>
+              <div class="card-item-title">${r.disease}</div>
+              <div class="card-item-subtitle">${r.lga}, ${r.state} State · ${r.date}</div>
+            </div>
+            <span class="tag-rect tag-${r.criticality}">${r.criticality}</span>
+          </div>
+          <div class="card-item-body">
+            <div>${r.summary}</div>
+          </div>
+          <div class="card-item-footer">
+            <span style="color: var(--text-light); font-size: 11.5px;">Reference: ${r.id}</span>
+            <button class="btn-action" onclick="alert('Viewing linked cases for ${r.lga}')">View Linked Cases</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Render Agro-Vet Stores (Spacious, clean numbers, no congestion)
+    function renderStores(stores) {
+      const container = document.getElementById('storesGrid');
+      if (stores.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; padding: 30px; text-align: center; color: var(--text-light);">No stores found.</div>`;
+        return;
+      }
+
+      container.innerHTML = stores.map(s => `
+        <div class="card-item">
+          <div class="card-item-header">
+            <div>
+              <div class="card-item-title">${s.name}</div>
+              <div class="card-item-subtitle">${s.lga}, ${s.state}</div>
+            </div>
+            <span class="tag-rect tag-resolved">Verified Partner</span>
+          </div>
+
+          <div class="card-item-body">
+            <div class="store-phone-row">
+              <span class="store-phone-label">Contact:</span>
+              <span class="store-phone-number">${s.phoneFormatted}</span>
+            </div>
+
+            <div style="font-size: 12.5px; color: var(--text-light);">${s.address}</div>
+
+            <div class="services-tag-row">
+              ${s.services.map(srv => `<span class="tag-service">${srv}</span>`).join('')}
+            </div>
+          </div>
+
+          <div class="card-item-footer">
+            <button class="btn-action primary" onclick="alert('Calling ${s.name} at ${s.phoneFormatted}')">
+              Call Store
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Switch Tabs
+    function switchTab(tabName) {
+      document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+
+      if (tabName === 'cases') {
+        document.getElementById('navCases').classList.add('active');
+        document.getElementById('tabPanelCases').classList.add('active');
+      } else if (tabName === 'reports') {
+        document.getElementById('navReports').classList.add('active');
+        document.getElementById('tabPanelReports').classList.add('active');
+        renderReports(REPORTS);
+      } else if (tabName === 'stores') {
+        document.getElementById('navStores').classList.add('active');
+        document.getElementById('tabPanelStores').classList.add('active');
+        renderStores(STORES);
+      } else if (tabName === 'library') {
+        document.getElementById('navLibrary').classList.add('active');
+        document.getElementById('tabPanelLibrary').classList.add('active');
+        renderLibrary(currentLibraryDocs);
+      } else if (tabName === 'chat') {
+        document.getElementById('navChat').classList.add('active');
+        document.getElementById('tabPanelChat').classList.add('active');
+      }
+    }
+
+    // Detail Drawer
+    function openDrawer(id) {
+      const c = CASES.find(item => item.id === id);
+      if (!c) return;
+
+      selectedId = id;
+      renderTable(currentCases);
+
+      document.getElementById('drawerTitle').innerText = `${c.farmer}'s Case`;
+      document.getElementById('drawerCaseId').innerText = `ID: ${c.id}`;
+
+      document.getElementById('drawerCriticality').innerHTML = `<span class="tag-rect tag-${c.criticality}">${c.criticality}</span>`;
+      document.getElementById('drawerStatusText').innerHTML = `<span class="tag-rect tag-${c.status === 'in_progress' ? 'progress' : c.status}">${c.status.replace('_', ' ')}</span>`;
+      document.getElementById('drawerMortality').innerText = c.mortality > 0 ? `${c.mortality} dead` : '0 reported';
+      document.getElementById('drawerDuration').innerText = c.duration;
+      document.getElementById('drawerSymptoms').innerText = c.symptoms;
+
+      document.getElementById('drawerFarmerName').innerText = c.farmer;
+      document.getElementById('drawerFarmerPhone').innerText = c.phone;
+      document.getElementById('drawerFarmerLocation').innerText = `${c.lga}, ${c.state} State`;
+      document.getElementById('drawerFarmerSpecies').innerText = c.species;
+      document.getElementById('drawerFarmerFlockSize').innerText = c.flockSize;
+
+      const chatBox = document.getElementById('drawerChatMessages');
+      chatBox.innerHTML = c.history.map(msg => `
+        <div class="chat-msg ${msg.sender === 'Farmer' ? 'farmer' : 'agent'}">
+          <div class="chat-sender">${msg.sender}</div>
+          ${msg.isVoice ? '<div class="chat-voice-label">Voice note transcript:</div>' : ''}
+          <div>${msg.text}</div>
+        </div>
+      `).join('');
+
+      document.getElementById('caseDrawer').classList.add('open');
+      document.getElementById('drawerBackdrop').classList.add('open');
+    }
+
+    function closeDrawer() {
+      document.getElementById('caseDrawer').classList.remove('open');
+      document.getElementById('drawerBackdrop').classList.remove('open');
+      selectedId = null;
+      renderTable(currentCases);
+    }
+
+    // Search and Filters
+    function handleSearch(q) {
+      const term = q.trim().toLowerCase();
+      currentCases = CASES.filter(c => 
+        c.farmer.toLowerCase().includes(term) ||
+        c.phone.includes(term) ||
+        c.lga.toLowerCase().includes(term) ||
+        c.state.toLowerCase().includes(term) ||
+        c.symptoms.toLowerCase().includes(term)
+      );
+      renderTable(currentCases);
+    }
+
+    function applyFilters() {
+      const crit = document.getElementById('filterCriticality').value;
+      const status = document.getElementById('filterStatus').value;
+      const state = document.getElementById('filterState').value;
+
+      currentCases = CASES.filter(c => {
+        const matchCrit = crit === 'all' || c.criticality === crit;
+        const matchStatus = status === 'all' || c.status === status;
+        const matchState = state === 'all' || c.state === state;
+        return matchCrit && matchStatus && matchState;
+      });
+      renderTable(currentCases);
+    }
+
+    function filterReports(state) {
+      const filtered = state === 'all' ? REPORTS : REPORTS.filter(r => r.state === state);
+      renderReports(filtered);
+    }
+
+    function filterStores(state) {
+      const filtered = state === 'all' ? STORES : STORES.filter(s => s.state === state);
+      renderStores(filtered);
+    }
+
+    // ==========================================================================
+    // VETERINARY LIBRARY JAVASCRIPT
+    // ==========================================================================
+    let LIBRARY_DOCS = [
+      {
+        id: 'DOC-001',
+        name: 'FAO Poultry Diseases Field Handbook (4th Edition).pdf',
+        category: 'Clinical Pathology',
+        size: '3.8 MB',
+        date: 'Sep 24, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-002',
+        name: 'NVRI Newcastle Disease & Gumboro Field Protocol.pdf',
+        category: 'Disease Outbreaks',
+        size: '1.4 MB',
+        date: 'Sep 20, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-003',
+        name: 'National Poultry Biosecurity & Disinfection Standards.pdf',
+        category: 'Biosecurity & Hygiene',
+        size: '2.1 MB',
+        date: 'Sep 15, 2026',
+        status: 'active'
+      },
+      {
+        id: 'DOC-004',
+        name: 'Veterinary Antibiotic Withdrawal Periods Schedule.pdf',
+        category: 'Medications & Vaccines',
+        size: '890 KB',
+        date: 'Sep 10, 2026',
+        status: 'active'
+      }
+    ];
+
+    let currentLibraryDocs = [...LIBRARY_DOCS];
+    let selectedFileObj = null;
+
+    function renderLibrary(data) {
+      const tbody = document.getElementById('libraryTableBody');
+      const countEl = document.getElementById('libDocCount');
+      if (countEl) countEl.innerText = data.length;
+
+      if (!tbody) return;
+
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 30px; color: var(--text-light);">No reference documents found in library.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.map(doc => `
+        <tr>
+          <td>
+            <div style="font-weight: 600; color: var(--text-main);">${doc.name}</div>
+            <div style="font-size: 11.5px; color: var(--text-light);">ID: ${doc.id}</div>
+          </td>
+          <td>
+            <span class="tag-rect tag-service">${doc.category}</span>
+          </td>
+          <td style="color: var(--text-muted); font-size: 12.5px;">${doc.size}</td>
+          <td style="color: var(--text-muted); font-size: 12.5px;">${doc.date}</td>
+          <td>
+            <span class="tag-rect tag-resolved">${doc.status === 'active' ? 'Active' : doc.status}</span>
+          </td>
+          <td style="text-align: right;">
+            <button class="btn-action" style="height: 28px; padding: 0 10px; font-size: 12px;" onclick="viewDocument('${doc.id}')">View</button>
+            <button class="btn-action" style="height: 28px; padding: 0 10px; font-size: 12px; color: #F87171;" onclick="deleteDocument('${doc.id}')">Remove</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function handleFileChosen(input) {
+      if (input.files && input.files[0]) {
+        selectedFileObj = input.files[0];
+        document.getElementById('dropzoneText').innerText = `Selected: ${selectedFileObj.name} (${(selectedFileObj.size / (1024 * 1024)).toFixed(2)} MB)`;
+        const titleInput = document.getElementById('libDocTitle');
+        if (!titleInput.value) {
+          titleInput.value = selectedFileObj.name.replace(/\.[^/.]+$/, "");
+        }
+      }
+    }
+
+    function submitLibraryDocument() {
+      const titleInput = document.getElementById('libDocTitle');
+      const categoryInput = document.getElementById('libDocCategory');
+      
+      let docName = titleInput.value.trim() || (selectedFileObj ? selectedFileObj.name : 'Untitled Clinical Manual');
+      if (!docName.toLowerCase().endsWith('.pdf') && !docName.toLowerCase().endsWith('.docx') && !docName.toLowerCase().endsWith('.txt')) {
+        docName += '.pdf';
+      }
+      const category = categoryInput.value;
+      const size = selectedFileObj ? `${(selectedFileObj.size / (1024 * 1024)).toFixed(1)} MB` : '1.8 MB';
+      
+      const newDoc = {
+        id: `DOC-00${LIBRARY_DOCS.length + 1}`,
+        name: docName,
+        category: category,
+        size: size,
+        date: 'Today',
+        status: 'active'
+      };
+
+      LIBRARY_DOCS.unshift(newDoc);
+      currentLibraryDocs = [...LIBRARY_DOCS];
+      renderLibrary(currentLibraryDocs);
+      
+      const countNav = document.getElementById('countLibrary');
+      if (countNav) countNav.innerText = LIBRARY_DOCS.length;
+
+      alert(`"${docName}" was successfully added to the Veterinary Library.`);
+
+      // Reset
+      titleInput.value = '';
+      selectedFileObj = null;
+      document.getElementById('fileUploadInput').value = '';
+      document.getElementById('dropzoneText').innerText = 'Click to select a PDF or guideline document, or drag it here';
+    }
+
+    function filterLibrarySearch(term) {
+      const q = term.trim().toLowerCase();
+      const cat = document.getElementById('filterLibCategory').value;
+      currentLibraryDocs = LIBRARY_DOCS.filter(d => {
+        const matchQ = d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q);
+        const matchCat = cat === 'all' || d.category === cat;
+        return matchQ && matchCat;
+      });
+      renderLibrary(currentLibraryDocs);
+    }
+
+    function filterLibraryCategory(cat) {
+      const q = document.getElementById('libSearchInput').value.trim().toLowerCase();
+      currentLibraryDocs = LIBRARY_DOCS.filter(d => {
+        const matchQ = !q || d.name.toLowerCase().includes(q) || d.category.toLowerCase().includes(q);
+        const matchCat = cat === 'all' || d.category === cat;
+        return matchQ && matchCat;
+      });
+      renderLibrary(currentLibraryDocs);
+    }
+
+    function deleteDocument(id) {
+      const doc = LIBRARY_DOCS.find(d => d.id === id);
+      if (!doc) return;
+      if (confirm(`Remove "${doc.name}" from the veterinary library?`)) {
+        LIBRARY_DOCS = LIBRARY_DOCS.filter(d => d.id !== id);
+        currentLibraryDocs = [...LIBRARY_DOCS];
+        renderLibrary(currentLibraryDocs);
+        const countNav = document.getElementById('countLibrary');
+        if (countNav) countNav.innerText = LIBRARY_DOCS.length;
+      }
+    }
+
+    function viewDocument(id) {
+      const doc = LIBRARY_DOCS.find(d => d.id === id);
+      if (doc) {
+        alert(`Opening ${doc.name}\nCategory: ${doc.category}\nStatus: ${doc.status}\nSize: ${doc.size}`);
+      }
+    }
+
+    // Live Web Chat Sender
+    async function sendWebChatMessage() {
+      const input = document.getElementById('sandboxInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const container = document.getElementById('sandboxMessages');
+
+      container.innerHTML += `
+        <div class="chat-msg farmer">
+          <div class="chat-sender">You (Farmer)</div>
+          <div>${text}</div>
+        </div>
+      `;
+      input.value = '';
+      container.scrollTop = container.scrollHeight;
+
+      try {
+        const res = await fetch('http://127.0.0.1:3001/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: '+2349000000001',
+            text: text
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          container.innerHTML += `
+            <div class="chat-msg agent">
+              <div class="chat-sender">BirdVet AI</div>
+              <div>${data.reply || data.text || 'Message processed.'}</div>
+            </div>
+          `;
+        } else {
+          throw new Error('API server busy');
+        }
+      } catch (err) {
+        container.innerHTML += `
+          <div class="chat-msg agent">
+            <div class="chat-sender">BirdVet AI</div>
+            <div>Ehya, I dey sorry to hear say your birds dey sick. Bloody droppings na serious sign of coccidiosis or gut infection. Abeg, how many birds don die so far, and how many days this one don dey happen?</div>
+          </div>
+        `;
+      }
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function toggleTheme() {
+      const root = document.documentElement;
+      const current = root.getAttribute('data-theme');
+      if (current === 'light') {
+        root.setAttribute('data-theme', 'dark');
+        document.getElementById('btnTheme').innerText = 'Theme: Dark';
+      } else {
+        root.setAttribute('data-theme', 'light');
+        document.getElementById('btnTheme').innerText = 'Theme: Light';
+      }
+    }
+
+    // Initial render
+    renderTable(currentCases);
+    renderReports(REPORTS);
+    renderStores(STORES);
+    renderLibrary(currentLibraryDocs);
+  </script>
+</body>
+</html>
