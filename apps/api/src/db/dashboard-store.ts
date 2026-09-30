@@ -113,13 +113,27 @@ function rowToSummary(row: {
   };
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 2): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: any) {
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return withRetry(fn, retries - 1);
+    }
+    throw err;
+  }
+}
+
 export function postgresDashboardStore(db: ApiDatabase): DashboardStore {
   return {
     async listCases(filter) {
-      const rows = await db
-        .select()
-        .from(sessions)
-        .orderBy(desc(sessions.lastActive));
+      const rows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .orderBy(desc(sessions.lastActive))
+      );
 
       let matched = rows.map((r) => rowToSummary(r as never));
 
@@ -152,20 +166,24 @@ export function postgresDashboardStore(db: ApiDatabase): DashboardStore {
     },
 
     async getCase(id) {
-      const sessionRows = await db
-        .select()
-        .from(sessions)
-        .where(or(eq(sessions.id, id), eq(sessions.caseId, id)))
-        .limit(1);
+      const sessionRows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .where(or(eq(sessions.id, id), eq(sessions.caseId, id)))
+          .limit(1)
+      );
 
       const session = sessionRows[0];
       if (session === undefined) return undefined;
 
-      const farmerRows = await db
-        .select()
-        .from(farmers)
-        .where(eq(farmers.phone, session.phone))
-        .limit(1);
+      const farmerRows = await withRetry(() =>
+        db
+          .select()
+          .from(farmers)
+          .where(eq(farmers.phone, session.phone))
+          .limit(1)
+      );
 
       const farmerRow = farmerRows[0];
       const farmer: FarmerProfile | undefined =
@@ -203,10 +221,12 @@ export function postgresDashboardStore(db: ApiDatabase): DashboardStore {
     },
 
     async listReports(filter) {
-      const rows = await db
-        .select()
-        .from(sessions)
-        .orderBy(desc(sessions.startedAt));
+      const rows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .orderBy(desc(sessions.startedAt))
+      );
 
       const reportable = rows.filter((r) => {
         const c = (r.state as { case?: CaseData })?.case;

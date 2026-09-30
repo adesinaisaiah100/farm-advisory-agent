@@ -1,6 +1,23 @@
 import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage } from './types.js';
 
-const API_BASE = 'http://127.0.0.1:3001';
+const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? '' : 'http://127.0.0.1:3001';
+
+async function fetchWithRetry(url: string, init?: RequestInit, retries = 2): Promise<Response> {
+  try {
+    const res = await fetch(url, init);
+    if (!res.ok && res.status >= 500 && retries > 0) {
+      await new Promise(r => setTimeout(r, 400));
+      return fetchWithRetry(url, init, retries - 1);
+    }
+    return res;
+  } catch (err) {
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, 400));
+      return fetchWithRetry(url, init, retries - 1);
+    }
+    throw err;
+  }
+}
 
 function formatPhoneNumber(phone: string): string {
   if (!phone) return '';
@@ -49,7 +66,7 @@ function parseTurnMessage(raw: any): TurnMessage {
 
 export async function fetchCases(): Promise<readonly CaseSummary[]> {
   try {
-    const res = await fetch(`${API_BASE}/cases`);
+    const res = await fetchWithRetry(`${API_BASE}/cases`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data && Array.isArray(data.cases) && data.cases.length > 0) {
@@ -93,7 +110,7 @@ export async function fetchCases(): Promise<readonly CaseSummary[]> {
 
 export async function fetchCaseDetail(idOrSessionId: string): Promise<CaseSummary | null> {
   try {
-    const res = await fetch(`${API_BASE}/cases/${encodeURIComponent(idOrSessionId)}`);
+    const res = await fetchWithRetry(`${API_BASE}/cases/${encodeURIComponent(idOrSessionId)}`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const c = data.case || {};
@@ -151,7 +168,7 @@ export async function fetchCaseDetail(idOrSessionId: string): Promise<CaseSummar
 
 export async function fetchReports(): Promise<readonly OutbreakReport[]> {
   try {
-    const res = await fetch(`${API_BASE}/reports`);
+    const res = await fetchWithRetry(`${API_BASE}/reports`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data && Array.isArray(data.reports) && data.reports.length > 0) {
@@ -183,7 +200,7 @@ export async function fetchReports(): Promise<readonly OutbreakReport[]> {
 
 export async function fetchStores(): Promise<readonly AgroVetStore[]> {
   try {
-    const res = await fetch(`${API_BASE}/stores`);
+    const res = await fetchWithRetry(`${API_BASE}/stores`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     const rawStores = Array.isArray(data) ? data : (data.stores || []);

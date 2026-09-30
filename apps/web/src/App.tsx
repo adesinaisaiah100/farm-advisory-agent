@@ -23,17 +23,27 @@ export function App() {
   const [libraryDocs, setLibraryDocs] = useState<readonly LibraryDoc[]>(INITIAL_LIBRARY_DOCS);
 
   const [selectedCase, setSelectedCase] = useState<CaseSummary | null>(null);
+  const [loadingCases, setLoadingCases] = useState<boolean>(true);
 
   // Sync initial theme attribute to document
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // Fetch live cases, outbreak reports, and verified stores from Neon Postgres on mount
-  useEffect(() => {
-    fetchCases().then(setCases).catch(() => {});
+  const loadData = () => {
+    setLoadingCases(true);
+    fetchCases()
+      .then(setCases)
+      .catch(() => {})
+      .finally(() => setLoadingCases(false));
+
     fetchReports().then(setReports).catch(() => {});
     fetchStores().then(setStores).catch(() => {});
+  };
+
+  // Fetch live cases, outbreak reports, and verified stores from Neon Postgres on mount
+  useEffect(() => {
+    loadData();
   }, []);
 
   const toggleTheme = () => {
@@ -104,6 +114,8 @@ export function App() {
             cases={searchedCases}
             selectedCaseId={selectedCase?.id}
             onSelectCase={handleSelectCase}
+            isLoading={loadingCases}
+            onRefresh={loadData}
           />
         )}
 

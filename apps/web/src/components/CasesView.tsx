@@ -1,13 +1,21 @@
 import React, { useState } from 'react';
-import type { CaseSummary, Criticality, CaseStatus } from '../types.js';
+import type { CaseSummary } from '../types.js';
 
 interface CasesViewProps {
   readonly cases: readonly CaseSummary[];
   readonly selectedCaseId?: string | null;
   readonly onSelectCase: (caseItem: CaseSummary) => void;
+  readonly isLoading?: boolean;
+  readonly onRefresh?: () => void;
 }
 
-export function CasesView({ cases, selectedCaseId, onSelectCase }: CasesViewProps) {
+export function CasesView({
+  cases,
+  selectedCaseId,
+  onSelectCase,
+  isLoading = false,
+  onRefresh
+}: CasesViewProps) {
   const [filterCriticality, setFilterCriticality] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterState, setFilterState] = useState<string>('all');
@@ -15,7 +23,7 @@ export function CasesView({ cases, selectedCaseId, onSelectCase }: CasesViewProp
   const filtered = cases.filter(c => {
     const matchCrit = filterCriticality === 'all' || c.criticality === filterCriticality;
     const matchStatus = filterStatus === 'all' || c.status === filterStatus;
-    const matchState = filterState === 'all' || c.state === filterState;
+    const matchState = filterState === 'all' || (c.state && c.state.toLowerCase() === filterState.toLowerCase());
     return matchCrit && matchStatus && matchState;
   });
 
@@ -65,6 +73,19 @@ export function CasesView({ cases, selectedCaseId, onSelectCase }: CasesViewProp
             <option value="Kano">Kano</option>
             <option value="Plateau">Plateau</option>
           </select>
+
+          {onRefresh && (
+            <button
+              type="button"
+              className="btn-action"
+              onClick={onRefresh}
+              title="Refresh cases from Neon database"
+              style={{ height: '36px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              <span>↻</span>
+              <span>{isLoading ? 'Loading...' : 'Refresh'}</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -82,10 +103,26 @@ export function CasesView({ cases, selectedCaseId, onSelectCase }: CasesViewProp
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+                  Connecting to Neon Postgres and fetching clinical sessions...
+                </td>
+              </tr>
+            ) : filtered.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: '36px', color: 'var(--text-light)' }}>
-                  No cases found matching filters.
+                  <div>No cases found matching filters.</div>
+                  {onRefresh && (
+                    <button
+                      type="button"
+                      className="btn-action"
+                      onClick={onRefresh}
+                      style={{ marginTop: '12px' }}
+                    >
+                      Check Neon Database
+                    </button>
+                  )}
                 </td>
               </tr>
             ) : (
@@ -102,7 +139,7 @@ export function CasesView({ cases, selectedCaseId, onSelectCase }: CasesViewProp
                     <div className="cell-farmer">{c.farmer}</div>
                     <div className="cell-phone">{c.phone}</div>
                   </td>
-                  <td>{c.lga}, {c.state}</td>
+                  <td>{c.lga ? `${c.lga}, ` : ''}{c.state || 'Oyo'}</td>
                   <td>{c.species}</td>
                   <td className="cell-symptoms" title={c.symptoms}>
                     {c.symptoms}
