@@ -42,7 +42,12 @@ export async function handleChat(
   }
   const request: ChatRequest = parsed.data;
 
-  const farmer = await deps.farmerStore?.getFarmer(request.farmerPhone);
+  let farmer: Awaited<ReturnType<NonNullable<typeof deps.farmerStore>['getFarmer']>> | undefined;
+  try {
+    farmer = await deps.farmerStore?.getFarmer(request.farmerPhone);
+  } catch (err) {
+    console.warn('[turn] farmerStore.getFarmer failed, proceeding without profile:', err);
+  }
 
   let existing = await deps.store.openSession(request.farmerPhone);
   let inheritedCase: Partial<CaseData> = {};
@@ -163,14 +168,18 @@ export async function handleChat(
     deps.farmerStore &&
     (updatedCase.farmerName || updatedCase.lga || updatedCase.state || updatedCase.farmSize || updatedCase.species)
   ) {
-    await deps.farmerStore.upsertFarmer({
-      phone: request.farmerPhone,
-      name: updatedCase.farmerName,
-      lga: updatedCase.lga,
-      state: updatedCase.state,
-      farmSize: updatedCase.farmSize,
-      species: updatedCase.species,
-    });
+    try {
+      await deps.farmerStore.upsertFarmer({
+        phone: request.farmerPhone,
+        name: updatedCase.farmerName,
+        lga: updatedCase.lga,
+        state: updatedCase.state,
+        farmSize: updatedCase.farmSize,
+        species: updatedCase.species,
+      });
+    } catch (err) {
+      console.warn('[turn] farmerStore.upsertFarmer failed:', err);
+    }
   }
 
   // Do not abruptly close on status === 'complete'! The farmer may have follow-ups,

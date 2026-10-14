@@ -19,37 +19,67 @@ export function createHttpTurnHandler(options: HttpTurnOptions): TurnHandler {
         return null;
       }
 
-      try {
-        const response = await fetchFn(options.url, {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({
-            farmerPhone: message.from,
-            text,
-          }),
-        });
+      const maxAttempts = 3;
+      let lastError: unknown;
 
-        if (!response.ok) {
-          const detail = await response.text().catch(() => '');
-          log?.error('turn API rejected request', {
-            status: response.status,
-            detail,
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          const response = await fetchFn(options.url, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              farmerPhone: message.from,
+              text,
+            }),
+          });
+
+          if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            log?.warn('turn API rejected request', {
+              attempt,
+              status: response.status,
+              detail,
+              phone: message.from,
+            });
+            if (attempt < maxAttempts) {
+              await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+              continue;
+            }
+            log?.error('turn API rejected request', {
+              status: response.status,
+              detail,
+              phone: message.from,
+            });
+            return null;
+          }
+
+          const data = (await response.json()) as { reply?: string };
+          if (typeof data.reply !== 'string' || data.reply.trim().length === 0) {
+            log?.warn('turn API returned empty reply', { data, attempt });
+            if (attempt < maxAttempts) {
+              await new Promise((resolve) => setTimeout(resolve, 500));
+              continue;
+            }
+            return null;
+          }
+
+          return data.reply;
+        } catch (error) {
+          lastError = error;
+          log?.warn('turn API request attempt failed', {
+            attempt,
+            error: String(error),
             phone: message.from,
           });
-          return null;
+          if (attempt < maxAttempts) {
+            await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+            continue;
+          }
         }
-
-        const data = (await response.json()) as { reply?: string };
-        if (typeof data.reply !== 'string' || data.reply.trim().length === 0) {
-          log?.warn('turn API returned empty reply', { data });
-          return null;
-        }
-
-        return data.reply;
-      } catch (error) {
-        log?.error('turn API request failed', { error: String(error), phone: message.from });
-        return null;
       }
+
+      log?.error('turn API request failed', { error: String(lastError), phone: message.from });
+      return null;
     },
   };
 }
