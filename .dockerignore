@@ -1,0 +1,13 @@
+node_modules
+.git
+.github
+.gemini
+.bridge-session
+apps/bridge/.bridge-session
+dist
+apps/web/dist
+coverage
+*.log
+.env
+.env.*
+!.env.example
