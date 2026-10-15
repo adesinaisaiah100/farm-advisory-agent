@@ -1,3 +1,4 @@
+import http from 'node:http';
 import {
   Deduplicator,
   InMemoryDedupStore,
@@ -311,10 +312,28 @@ async function main(): Promise<void> {
 
   selfJid = bridge.selfJid();
 
+  const httpPort = process.env.PORT ? Number(process.env.PORT) : 3002;
+  const healthServer = http.createServer((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(
+      JSON.stringify({
+        status: 'ok',
+        service: 'birdvet-bridge',
+        connected: Boolean(selfJid),
+        self: selfJid || null,
+      }),
+    );
+  });
+
+  healthServer.listen(httpPort, () => {
+    log.info('bridge health probe listening', { port: httpPort });
+  });
+
   log.info('outbox poller not started: no durable outbox table exists yet');
 
   const shutdown = (): void => {
     log.info('shutting down');
+    healthServer.close();
     bridge.close();
     process.exit(0);
   };

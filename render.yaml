@@ -1,0 +1,67 @@
+services:
+  # 1. BirdVet API Web Service (Hono Server)
+  - type: web
+    name: birdvet-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.api
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.1-flash-lite
+      - key: GEMINI_TRANSCRIBE_MODEL
+        value: gemini-3.5-transcribe
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_BUCKET
+        value: birdvet
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_URL
+        value: https://r2.birdvet.cloud
+
+  # 2. BirdVet WhatsApp Bridge Daemon (Baileys Node Server)
+  - type: web
+    name: birdvet-bridge
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile.bridge
+    dockerContext: .
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3002
+      - key: BRIDGE_LOG_LEVEL
+        value: info
+      - key: BRIDGE_TURN_URL
+        fromService:
+          type: web
+          name: birdvet-api
+          property: url
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_TRANSCRIBE_MODEL
+        value: gemini-3.5-transcribe
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_BUCKET
+        value: birdvet
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
