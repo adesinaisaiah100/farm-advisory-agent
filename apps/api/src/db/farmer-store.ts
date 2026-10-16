@@ -27,14 +27,28 @@ export interface FarmerStore {
   }): Promise<void>;
 }
 
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 350): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return withRetry(fn, retries - 1, delayMs * 1.5);
+    }
+    throw err;
+  }
+}
+
 export function postgresFarmerStore(db: ApiDatabase): FarmerStore {
   return {
     async getFarmer(phone) {
-      const rows = await db
-        .select()
-        .from(farmers)
-        .where(eq(farmers.phone, phone))
-        .limit(1);
+      const rows = await withRetry(() =>
+        db
+          .select()
+          .from(farmers)
+          .where(eq(farmers.phone, phone))
+          .limit(1)
+      );
 
       const row = rows[0];
       if (!row) return undefined;
@@ -54,11 +68,13 @@ export function postgresFarmerStore(db: ApiDatabase): FarmerStore {
 
     async upsertFarmer(profile) {
       const now = new Date();
-      const existing = await db
-        .select()
-        .from(farmers)
-        .where(eq(farmers.phone, profile.phone))
-        .limit(1);
+      const existing = await withRetry(() =>
+        db
+          .select()
+          .from(farmers)
+          .where(eq(farmers.phone, profile.phone))
+          .limit(1)
+      );
 
       const current = existing[0];
 
@@ -73,24 +89,26 @@ export function postgresFarmerStore(db: ApiDatabase): FarmerStore {
         updatedAt: now,
       };
 
-      await db
-        .insert(farmers)
-        .values({
-          ...merged,
-          createdAt: current?.createdAt ?? now,
-        })
-        .onConflictDoUpdate({
-          target: farmers.phone,
-          set: {
-            name: merged.name,
-            state: merged.state,
-            lga: merged.lga,
-            farmSize: merged.farmSize,
-            species: merged.species,
-            preferredLang: merged.preferredLang,
-            updatedAt: now,
-          },
-        });
+      await withRetry(() =>
+        db
+          .insert(farmers)
+          .values({
+            ...merged,
+            createdAt: current?.createdAt ?? now,
+          })
+          .onConflictDoUpdate({
+            target: farmers.phone,
+            set: {
+              name: merged.name,
+              state: merged.state,
+              lga: merged.lga,
+              farmSize: merged.farmSize,
+              species: merged.species,
+              preferredLang: merged.preferredLang,
+              updatedAt: now,
+            },
+          })
+      );
     },
   };
 }

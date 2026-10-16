@@ -12,14 +12,28 @@ import { sessions } from './schema.js';
  * malformed row is a corrupt conversation, and the farmer should get a fresh one
  * rather than a turn built on garbage.
  */
+async function withRetry<T>(fn: () => Promise<T>, retries = 3, delayMs = 350): Promise<T> {
+  try {
+    return await fn();
+  } catch (err: unknown) {
+    if (retries > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      return withRetry(fn, retries - 1, delayMs * 1.5);
+    }
+    throw err;
+  }
+}
+
 export function postgresSessionStore(db: ApiDatabase): SessionStore {
   return {
     async openSession(phone) {
-      const rows = await db
-        .select()
-        .from(sessions)
-        .where(and(eq(sessions.phone, phone), eq(sessions.status, 'open')))
-        .limit(1);
+      const rows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .where(and(eq(sessions.phone, phone), eq(sessions.status, 'open')))
+          .limit(1)
+      );
 
       const row = rows[0];
       if (row === undefined) return undefined;
@@ -45,12 +59,14 @@ export function postgresSessionStore(db: ApiDatabase): SessionStore {
     },
 
     async latestSession(phone) {
-      const rows = await db
-        .select()
-        .from(sessions)
-        .where(eq(sessions.phone, phone))
-        .orderBy(desc(sessions.lastActive))
-        .limit(1);
+      const rows = await withRetry(() =>
+        db
+          .select()
+          .from(sessions)
+          .where(eq(sessions.phone, phone))
+          .orderBy(desc(sessions.lastActive))
+          .limit(1)
+      );
 
       const row = rows[0];
       if (row === undefined) return undefined;
@@ -67,36 +83,40 @@ export function postgresSessionStore(db: ApiDatabase): SessionStore {
     },
 
     async save(session) {
-      await db
-        .insert(sessions)
-        .values({
-          id: session.id,
-          phone: session.phone,
-          status: session.status,
-          state: session.state,
-          startedAt: new Date(session.startedAt),
-          lastActive: new Date(session.lastActive),
-          caseId: session.caseId ?? null,
-        })
-        .onConflictDoUpdate({
-          target: sessions.id,
-          set: {
+      await withRetry(() =>
+        db
+          .insert(sessions)
+          .values({
+            id: session.id,
+            phone: session.phone,
             status: session.status,
             state: session.state,
+            startedAt: new Date(session.startedAt),
             lastActive: new Date(session.lastActive),
             caseId: session.caseId ?? null,
-          },
-        });
+          })
+          .onConflictDoUpdate({
+            target: sessions.id,
+            set: {
+              status: session.status,
+              state: session.state,
+              lastActive: new Date(session.lastActive),
+              caseId: session.caseId ?? null,
+            },
+          })
+      );
     },
 
     async close(phone, status) {
       // Scoped to `status = 'open'` so closing twice is a no-op rather than
       // reopening a completed conversation, and so a farmer's *current* case is
       // the only thing a stray close can touch.
-      await db
-        .update(sessions)
-        .set({ status, lastActive: new Date() })
-        .where(and(eq(sessions.phone, phone), eq(sessions.status, 'open')));
+      await withRetry(() =>
+        db
+          .update(sessions)
+          .set({ status, lastActive: new Date() })
+          .where(and(eq(sessions.phone, phone), eq(sessions.status, 'open')))
+      );
     },
   };
 }

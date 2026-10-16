@@ -12,6 +12,9 @@
     "test": "pnpm -r --workspace-concurrency=1 test",
     "test:unit": "pnpm -r --workspace-concurrency=1 test:unit",
     "test:integ": "pnpm -r --workspace-concurrency=1 test:integ",
+    "build:web": "pnpm --filter @poultry/web build",
+    "start:api": "pnpm --dir apps/api start",
+    "start:bridge": "pnpm --dir apps/bridge start",
     "bridge": "pnpm --dir apps/bridge start",
     "bridge:check": "pnpm --dir apps/bridge typecheck && pnpm --dir apps/bridge lint && pnpm --dir apps/bridge test:unit",
     "check": "pnpm typecheck && pnpm lint && pnpm test:unit && pnpm bridge:check"

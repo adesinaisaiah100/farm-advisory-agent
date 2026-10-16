@@ -1,6 +1,8 @@
 import type { CaseSummary, OutbreakReport, AgroVetStore, TurnMessage, SessionSummaryItem, Criticality, CaseStatus, LibraryDoc } from './types.js';
 
-const API_BASE = (typeof window !== 'undefined' && window.location && window.location.origin) ? '' : 'http://127.0.0.1:3001';
+const API_BASE =
+  (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ||
+  (typeof window !== 'undefined' && window.location && window.location.origin ? '' : 'http://127.0.0.1:3001');
 
 async function fetchWithRetry(url: string, init?: RequestInit, retries = 2): Promise<Response> {
   try {

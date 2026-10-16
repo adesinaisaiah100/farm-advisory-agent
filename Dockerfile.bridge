@@ -1,0 +1,33 @@
+# Production Dockerfile for BirdVet WhatsApp Bridge (apps/bridge)
+FROM node:22-alpine
+
+# Install pnpm matching packageManager in package.json
+RUN npm install -g pnpm@12.6.0
+
+WORKDIR /app
+
+# Copy root workspace files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+
+# Copy packages and apps required by bridge dependencies
+COPY packages/ ./packages/
+COPY apps/api/ ./apps/api/
+COPY apps/web/ ./apps/web/
+COPY apps/bridge/ ./apps/bridge/
+
+# Install root dependencies
+RUN pnpm install --frozen-lockfile
+
+# Install bridge dependencies (since apps/bridge is isolated from pnpm workspace)
+RUN pnpm --dir apps/bridge install
+
+# Ensure volume mount directory exists for WhatsApp auth credentials
+RUN mkdir -p /data/session
+
+# Default environment configuration
+ENV NODE_ENV=production
+ENV BRIDGE_SESSION_DIR=/data/session
+ENV BRIDGE_LOG_LEVEL=info
+
+# Start Baileys WhatsApp Bridge daemon
+CMD ["pnpm", "--dir", "apps/bridge", "start"]

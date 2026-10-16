@@ -9,6 +9,7 @@ export default defineConfig({
       '/reports': 'http://127.0.0.1:3001',
       '/stores': 'http://127.0.0.1:3001',
       '/chat': 'http://127.0.0.1:3001',
+      '/library': 'http://127.0.0.1:3001',
     },
   },
 });
