@@ -1,6 +1,16 @@
-# BirdVet Production Deployment Runbook (Option 1: Railway + Cloudflare Pages)
+# BirdVet Production Deployment Runbook (Render + Cloudflare Pages)
 
-This guide documents how to deploy the entire BirdVet trinity (Hono API, Baileys WhatsApp Bridge, and React Clinician Web Dashboard) so that the entire system operates 24/7 autonomously in the cloud without requiring a local machine.
+This guide documents how the entire BirdVet trinity (Hono API, Baileys WhatsApp Bridge, and React Clinician Web Dashboard) is deployed and operated 24/7 autonomously in the cloud for $0/month.
+
+---
+
+## Live Production Environments
+
+| Service | Component | Platform | Live URL | Health Check / Probe |
+| :--- | :--- | :--- | :--- | :--- |
+| **Frontend Dashboard** | React + Vite SPA | Cloudflare Pages | [https://birdvet-dashboard.pages.dev](https://birdvet-dashboard.pages.dev) | Edge CDN (200 OK) |
+| **Triage & Clinical API** | Hono Node 22 Server | Render (Free Web Service) | [https://birdvet-api.onrender.com](https://birdvet-api.onrender.com) | `GET /health`, `GET /ready` |
+| **WhatsApp Daemon** | Baileys Node Host | Render (Free Web Service) | [https://birdvet-bridge.onrender.com](https://birdvet-bridge.onrender.com) | `GET /health` |
 
 ---
 
@@ -11,14 +21,16 @@ This guide documents how to deploy the entire BirdVet trinity (Hono API, Baileys
                                     │ (Direct 24/7 WebSocket)
                                     ▼
        ┌────────────────────────────────────────────────────────┐
-       │                    RAILWAY PLATFORM                    │
+       │                    RENDER PLATFORM                     │
        │                                                        │
        │  ┌──────────────────────────────────────────────────┐  │
        │  │ Service: birdvet-bridge (Dockerfile.bridge)       │  │
        │  │  - Baileys Node WebSocket daemon                 │  │
-       │  │  - Volume: /data (persists /data/session)        │◄─┼─── (Credentials survive redeploys)
+       │  │  - HTTP Keep-alive & Health Probe on PORT 3002   │  │
+       │  │  - Connected Phone: +234 707 179 4632            │  │
        │  └──────────────────────────┬───────────────────────┘  │
-       │                             │ HTTP POST /chat          │
+       │                             │ Internal Private DNS     │
+       │                             │ (http://birdvet-api:3000)│
        │  ┌──────────────────────────▼───────────────────────┐  │
        │  │ Service: birdvet-api (Dockerfile.api)            │  │
        │  │  - Hono API on Node 22                           │  │
@@ -32,15 +44,35 @@ This guide documents how to deploy the entire BirdVet trinity (Hono API, Baileys
        ┌─────────────────────────────┴──────────────────────────┐
        │                   CLOUDFLARE PAGES                     │
        │                                                        │
-       │  Service: birdvet-web (React + Vite SPA)               │
+       │  Service: birdvet-dashboard (React + Vite SPA)         │
        │   - Global Edge CDN (Free unlimited bandwidth)         │
-       │   - VITE_API_URL -> https://<railway-api-url>          │
+       │   - VITE_API_URL -> https://birdvet-api.onrender.com   │
        └────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Prerequisites
+## Zero-Cost 24/7 Keep-Alive Strategy (UptimeRobot)
+
+Render free web services enter sleep mode after 15 minutes of zero inbound HTTP traffic. To keep both `birdvet-api` and `birdvet-bridge` awake 24/7 at $0 cost:
+
+1. Create a free account at [uptimerobot.com](https://uptimerobot.com) (or cron-job.org).
+2. Add Monitor 1:
+   - **Type**: HTTP(s)
+   - **Friendly Name**: `BirdVet API Keepalive`
+   - **URL**: `https://birdvet-api.onrender.com/health`
+   - **Interval**: Every 5 minutes
+3. Add Monitor 2:
+   - **Type**: HTTP(s)
+   - **Friendly Name**: `BirdVet WhatsApp Bridge Keepalive`
+   - **URL**: `https://birdvet-bridge.onrender.com/health`
+   - **Interval**: Every 5 minutes
+
+This guarantees the WhatsApp WebSocket connection and Hono API never sleep.
+
+---
+
+## Deployment Instructions
 
 1. A **Railway** account ([railway.com](https://railway.com)).
 2. A **Cloudflare** account ([cloudflare.com](https://cloudflare.com)).
