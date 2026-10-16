@@ -13,14 +13,40 @@ services:
         value: production
       - key: PORT
         value: 3000
+
+      # Database: Neon Postgres
       - key: DATABASE_URL
         sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: NEON_BRANCH
+        value: production
+
+      # Google Gemini Models & Keys
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_PROD
         sync: false
       - key: GEMINI_MODEL
         value: gemini-3.1-flash-lite
+      - key: GEMINI_INGEST_MODEL
+        value: gemini-flash-lite-latest
       - key: GEMINI_TRANSCRIBE_MODEL
         value: gemini-3.5-transcribe
+      - key: GEMINI_EMBED_MODEL
+        value: gemini-embedding-001
+      - key: GEMINI_EMBED_DIMS
+        value: "768"
+      - key: GEMINI_EMBED_NORMALIZE
+        value: "true"
+
+      # OpenRouter (Fallback Triage Provider)
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_FALLBACK_MODEL
+        value: openrouter/free
+
+      # Cloudflare R2 Object Storage
       - key: R2_ACCOUNT_ID
         sync: false
       - key: R2_BUCKET
@@ -31,6 +57,16 @@ services:
         sync: false
       - key: R2_PUBLIC_URL
         value: https://r2.birdvet.cloud
+
+      # Observability (Langfuse & Sentry)
+      - key: LANGFUSE_PUBLIC_KEY
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_HOST
+        value: https://cloud.langfuse.com
+      - key: SENTRY_DSN
+        sync: false
 
   # 2. BirdVet WhatsApp Bridge Daemon (Baileys Node Server)
   - type: web
@@ -48,12 +84,20 @@ services:
         value: 3002
       - key: BRIDGE_LOG_LEVEL
         value: info
+      - key: BRIDGE_SESSION_DIR
+        value: /data/session
+      - key: BRIDGE_ALLOWED_FROM
+        value: ""
       - key: BRIDGE_TURN_URL
         value: http://birdvet-api:3000/chat
+
+      # Google Gemini (Audio Transcription)
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_TRANSCRIBE_MODEL
         value: gemini-3.5-transcribe
+
+      # Cloudflare R2 (Audio / Image storage)
       - key: R2_ACCOUNT_ID
         sync: false
       - key: R2_BUCKET
@@ -62,3 +106,5 @@ services:
         sync: false
       - key: R2_SECRET_ACCESS_KEY
         sync: false
+      - key: R2_PUBLIC_URL
+        value: https://r2.birdvet.cloud
