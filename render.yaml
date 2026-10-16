@@ -89,7 +89,7 @@ services:
       - key: BRIDGE_ALLOWED_FROM
         value: ""
       - key: BRIDGE_TURN_URL
-        value: http://birdvet-api:3000/chat
+        value: https://birdvet-api.onrender.com/chat
 
       # Google Gemini (Audio Transcription)
       - key: GEMINI_API_KEY

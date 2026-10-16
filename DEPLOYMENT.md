@@ -29,8 +29,9 @@ This guide documents how the entire BirdVet trinity (Hono API, Baileys WhatsApp 
        │  │  - HTTP Keep-alive & Health Probe on PORT 3002   │  │
        │  │  - Connected Phone: +234 707 179 4632            │  │
        │  └──────────────────────────┬───────────────────────┘  │
-       │                             │ Internal Private DNS     │
-       │                             │ (http://birdvet-api:3000)│
+       │                             │ HTTPS POST /chat         │
+       │                             │ (https://birdvet-api     │
+       │                             │   .onrender.com/chat)    │
        │  ┌──────────────────────────▼───────────────────────┐  │
        │  │ Service: birdvet-api (Dockerfile.api)            │  │
        │  │  - Hono API on Node 22                           │  │
