@@ -49,10 +49,7 @@ services:
       - key: BRIDGE_LOG_LEVEL
         value: info
       - key: BRIDGE_TURN_URL
-        fromService:
-          type: web
-          name: birdvet-api
-          property: url
+        value: http://birdvet-api:3000/chat
       - key: GEMINI_API_KEY
         sync: false
       - key: GEMINI_TRANSCRIBE_MODEL
